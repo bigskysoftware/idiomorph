@@ -23,21 +23,23 @@ class Idiomorph {
                 // walk up the parent hierarchy of that element, adding the id
                 // of this element to the parents id set
                 while (current !== nodeParent && current != null) {
-                    let idSet = idMap.get(elt);
+                    let idSet = idMap.get(current);
                     // if the id set doesn't exist, create it and insert it in the  map
                     if (idSet == null) {
                         idSet = new Set();
-                        idMap.put(elt, idSet);
+                        idMap.set(current, idSet);
                     }
                     idSet.add(elt.id);
-                    current = elt.parentElement;
+                    current = current.parentElement;
                 }
             }
         }
         return idMap;
     }
 
-    potentialIDMatchCount(sourceSet, potentialIdsSet, idsAlreadyMerged) {
+    potentialIDMatchCount(sourceNode, targetNode, idsAlreadyMerged) {
+        let sourceSet = this.getIdSet(sourceNode);
+        let potentialIdsSet = this.getIdSet(targetNode);
         let matchCount = 0;
         for (const id of sourceSet) {
             // a potential match is an id in the source and potentialIdsSet, but
@@ -61,12 +63,10 @@ class Idiomorph {
 
     goodMatch(node1, node2, idsAlreadyMerged) {
         if (node1.tagName === node2.tagName) {
-            if (node1.id === node2.id) {
+            if (node1.id !== "" && node1.id === node2.id) {
                 return true;
             } else {
-                let idSet1 = this.getIdSet(node1);
-                let idSet2 = this.getIdSet(node2);
-                return this.potentialIDMatchCount(idSet1, idSet2, idsAlreadyMerged) > 0;
+                return this.potentialIDMatchCount(node1, node2, idsAlreadyMerged) > 0;
             }
         }
         return false;
@@ -77,6 +77,7 @@ class Idiomorph {
         let insertionPoint = oldNode.firstChild;
         let idsAlreadyMerged = new Set();
         for (const newChild of children) {
+
             // if the current node is a good match (it shares ids) then morph
             if (this.goodMatch(newChild, insertionPoint, idsAlreadyMerged)) {
                 this.morphFrom(insertionPoint, newChild);
