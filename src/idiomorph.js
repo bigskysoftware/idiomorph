@@ -78,8 +78,11 @@ class Idiomorph {
         let idsAlreadyMerged = new Set();
         for (const newChild of children) {
 
-            // if the current node is a good match (it shares ids) then morph
-            if (this.goodMatch(newChild, insertionPoint, idsAlreadyMerged)) {
+            // if we are at the end of the children, just append
+            if (insertionPoint == null) {
+                oldNode.appendChild(newChild);
+                // if the current node is a good match (it shares ids) then morph
+            } else if (this.goodMatch(newChild, insertionPoint, idsAlreadyMerged)) {
                 this.morphFrom(insertionPoint, newChild);
                 insertionPoint = insertionPoint.nextSibling;
             } else {
@@ -105,7 +108,12 @@ class Idiomorph {
                 // point and morph
                 if (potentialMatch != null && this.goodMatch(newChild, potentialMatch, idsAlreadyMerged)) {
                     this.morphFrom(potentialMatch, newChild);
-                    insertionPoint = potentialMatch.nextSibling;
+                    while (insertionPoint !== potentialMatch) {
+                        let tempNode = insertionPoint;
+                        insertionPoint = insertionPoint.nextSibling;
+                        tempNode.remove();
+                    }
+                    insertionPoint = insertionPoint.nextSibling;
                 } else {
                     // no good matches found, if the current insertion point is a
                     // tag match, and it doesn't match any other potential merge

@@ -5,16 +5,17 @@ function make(htmlStr) {
     let fragment = range.createContextualFragment(htmlStr);
 
     let element = fragment.children[0];
-    element.childMutations = 0;
-    element.attrMutations = 0;
+    element.mutations = {elt: element, attribute:0, childrenAdded:0, childrenRemoved:0, characterData:0};
 
     let observer = new MutationObserver((mutationList, observer) => {
-        console.log(element, mutationList);
         for (const mutation of mutationList) {
             if (mutation.type === 'childList') {
-                element.childMutations++;
+                element.mutations.childrenAdded += mutation.addedNodes.length;
+                element.mutations.childrenRemoved += mutation.removedNodes.length;
             } else if (mutation.type === 'attributes') {
-                element.attrMutations++;
+                element.mutations.attribute++;
+            } else if (mutation.type === 'characterData') {
+                element.mutations.characterData++;
             }
         }
     });
@@ -32,7 +33,7 @@ function clearWorkArea() {
 }
 
 function print(elt) {
-    let text = document.createTextNode( elt.innerHTML + "\n\n" );
+    let text = document.createTextNode( elt.outerHTML + "\n\n" );
     getWorkArea().appendChild(text);
     return elt;
 }

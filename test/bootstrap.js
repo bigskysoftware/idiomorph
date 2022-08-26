@@ -40,7 +40,7 @@ describe("Bootstrap test", function(){
         btn1.innerHTML.should.equal(btn2.innerHTML);
     });
 
-    it('basic deep morph works', function()
+    it('basic deep morph works', function(done)
     {
         let div1 = make('<div id="root1"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
 
@@ -48,8 +48,9 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        let div2 = make('<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div></div><div><div id="d1">D</div></div>')
+        let div2 = make('<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div>')
 
+        print(div1);
         Idiomorph.morph(div1, div2);
         print(div1);
 
@@ -60,12 +61,13 @@ describe("Bootstrap test", function(){
         d2.innerHTML.should.equal("E");
         d3.innerHTML.should.equal("F");
 
-        console.log(div1, "idiomorph mutations : ", div1.childMutations);
-        console.log(div2, "idiomorph mutations : ", div2.childMutations);
-        print(div1);
+        setTimeout(()=> {
+            console.log("idiomorph mutations : ", div1.mutations);
+            done();
+        }, 0)
     });
 
-    it('deep morphdom does not work ideally', function()
+    it('deep morphdom does not work ideally', function(done)
     {
         let div1 = make('<div id="root"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
 
@@ -73,16 +75,12 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        morphdom(div1, '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div></div><div><div id="d1">D</div></div>');
+        morphdom(div1, '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div>');
 
-        // first paragraph should have been discarded in favor of later matches
-        d1.innerHTML.should.equal("A");
-
-        // second and third paragraph should have morphed
-        d2.innerHTML.should.equal("E");
-        d3.innerHTML.should.equal("F");
-
-        console.log(div1, "morphdom mutations : ", div1.childMutations);
+        setTimeout(()=> {
+            console.log("morphdom mutations : ", div1.mutations);
+            done();
+        }, 0)
         print(div1);
     });
 
