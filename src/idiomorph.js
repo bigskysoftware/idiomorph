@@ -7,15 +7,24 @@ class Idiomorph {
         im.morphFrom(oldNode, newNode);
     }
 
+    /*
+       Creates a map of elements to the ids contained within that element.
+     */
     createIdMap(nodeArr) {
         let idMap = new Map();
+        // for each top level node
         for (const node of nodeArr) {
             let nodeParent = node.parentElement;
+            // find all elements with an id property
             let idElements = node.querySelectorAll('[id]');
+
             for (const elt of idElements) {
                 let current = elt;
+                // walk up the parent hierarchy of that element, adding the id
+                // of this element to the parents id set
                 while (current !== nodeParent && current != null) {
                     let idSet = idMap.get(elt);
+                    // if the id set doesn't exist, create it and insert it in the  map
                     if (idSet == null) {
                         idSet = new Set();
                         idMap.put(elt, idSet);
@@ -28,23 +37,16 @@ class Idiomorph {
         return idMap;
     }
 
-    potentialIDMatchCount(idSet1, idSet2, idsAlreadyMerged) {
+    potentialIDMatchCount(sourceSet, potentialIdsSet, idsAlreadyMerged) {
         let matchCount = 0;
-        for (const id of idSet1) {
-            if (!idsAlreadyMerged.has(id) && idSet2.has(id)) {
+        for (const id of sourceSet) {
+            // a potential match is an id in the source and potentialIdsSet, but
+            // that has not already been merged into the DOM
+            if (!idsAlreadyMerged.has(id) && potentialIdsSet.has(id)) {
                 ++matchCount;
             }
         }
         return matchCount;
-    }
-
-    setsIntersect(idSet1, idSet2) {
-        for (const id of idSet1) {
-            if (idSet2.has(id)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     morphFrom(oldNode, newNode) {
@@ -64,7 +66,7 @@ class Idiomorph {
             } else {
                 let idSet1 = this.getIdSet(node1);
                 let idSet2 = this.getIdSet(node2);
-                return this.potentialIDMatchCount(idSet1, idSet2) > 0;
+                return this.potentialIDMatchCount(idSet1, idSet2, idsAlreadyMerged) > 0;
             }
         }
         return false;
@@ -154,9 +156,7 @@ class Idiomorph {
         }
 
         if (type === 8 /* comment */ || type === 3 /* text */) {
-            if (from.nodeValue !== to.nodeValue) {
-                to.nodeValue = from.nodeValue
-            }
+            to.nodeValue = from.nodeValue
         }
     }
 
