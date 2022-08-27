@@ -73,7 +73,7 @@ class Idiomorph {
     }
 
     morphChildren(newNode, oldNode) {
-        let children = newNode.childNodes;
+        let children = [...newNode.childNodes]; // make a stable copy
         let insertionPoint = oldNode.firstChild;
         let idsAlreadyMerged = new Set();
         for (const newChild of children) {
@@ -86,24 +86,29 @@ class Idiomorph {
                 this.morphFrom(insertionPoint, newChild);
                 insertionPoint = insertionPoint.nextSibling;
             } else {
-                // otherwise search forward in the existing siblings for
+                // otherwise maybe search forward in the existing siblings for
                 // a good match
-                let potentialMatch = insertionPoint.nextSibling;
 
                 // track other potential id matches vs this newChild node
                 let currentNodesPotentialIdMatches = this.potentialIDMatchCount(newChild, oldNode, idsAlreadyMerged);
-                let otherPotentialIdMatches = 0;
 
-                while (potentialMatch != null && !this.goodMatch(newChild, potentialMatch, idsAlreadyMerged)) {
-                    otherPotentialIdMatches += this.potentialIDMatchCount(potentialMatch, newNode, idsAlreadyMerged);
-                    if (otherPotentialIdMatches > currentNodesPotentialIdMatches) {
-                        // if we have more other potential matches, break out of looking forward
-                        // so we don't discard those potential matches
-                        potentialMatch = null;
-                        break;
+                let potentialMatch = null;
+                // only search forward if there is a possibility of a good match
+                if (currentNodesPotentialIdMatches > 0) {
+                    potentialMatch = insertionPoint.nextSibling;
+                    let otherPotentialIdMatches = 0;
+                    while (potentialMatch != null && !this.goodMatch(newChild, potentialMatch, idsAlreadyMerged)) {
+                        otherPotentialIdMatches += this.potentialIDMatchCount(potentialMatch, newNode, idsAlreadyMerged);
+                        if (otherPotentialIdMatches > currentNodesPotentialIdMatches) {
+                            // if we have more other potential matches, break out of looking forward
+                            // so we don't discard those potential matches
+                            potentialMatch = null;
+                            break;
+                        }
+                        potentialMatch = potentialMatch.nextSibling;
                     }
-                    potentialMatch = potentialMatch.nextSibling;
                 }
+
                 // if we found a potential match, remove the nodes until that
                 // point and morph
                 if (potentialMatch != null && this.goodMatch(newChild, potentialMatch, idsAlreadyMerged)) {

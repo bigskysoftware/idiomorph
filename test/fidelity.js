@@ -8,6 +8,10 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         let initial = make(start);
         let final = make(end);
         Idiomorph.morph(initial, final);
+        if (initial.outerHTML !== end) {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + initial.outerHTML);
+        }
         initial.outerHTML.should.equal(end);
     }
 
@@ -32,5 +36,14 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         testFidelity("<div><p>A</p><p>B</p></div>", "<div><p>C</p><p>D</p>  </div>")
     });
 
+    it('drops content', function()
+    {
+        testFidelity("<div><p>A</p><p>B</p></div>", "<div></div>")
+    });
+
+    it('adds content', function()
+    {
+        testFidelity("<div></div>", "<div><p>A</p><p>B</p></div>")
+    });
 
 })
