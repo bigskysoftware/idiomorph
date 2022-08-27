@@ -73,10 +73,10 @@ class Idiomorph {
     }
 
     morphChildren(newNode, oldNode) {
-        console.log("----------------------------------------")
-        console.log("merging children of ", newNode.outerHTML);
-        console.log("  into ", oldNode.outerHTML);
-        console.log("----------------------------------------")
+        // console.log("----------------------------------------")
+        // console.log("merging children of ", newNode.outerHTML);
+        // console.log("  into ", oldNode.outerHTML);
+        // console.log("----------------------------------------")
         let children = [...newNode.childNodes]; // make a stable copy
         let insertionPoint = oldNode.firstChild;
         let idsAlreadyMerged = new Set();
