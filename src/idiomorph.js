@@ -73,6 +73,10 @@ class Idiomorph {
     }
 
     morphChildren(newNode, oldNode) {
+        console.log("----------------------------------------")
+        console.log("merging children of ", newNode.outerHTML);
+        console.log("  into ", oldNode.outerHTML);
+        console.log("----------------------------------------")
         let children = [...newNode.childNodes]; // make a stable copy
         let insertionPoint = oldNode.firstChild;
         let idsAlreadyMerged = new Set();
@@ -160,7 +164,9 @@ class Idiomorph {
             const fromAttributes = from.attributes;
             const toAttributes = to.attributes;
             for (const fromAttribute of fromAttributes) {
-                to.setAttribute(fromAttribute.name, fromAttribute.value);
+                if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
+                    to.setAttribute(fromAttribute.name, fromAttribute.value);
+                }
             }
             for (const toAttribute of toAttributes) {
                 if (!from.hasAttribute(toAttribute.name)) {

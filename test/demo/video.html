@@ -1,0 +1,79 @@
+<html>
+<head>
+    <script src="../../src/idiomorph.js"></script>
+    <script src="../lib/morphdom.js"></script>
+    <style>
+        div, button {
+            margin:16px;
+        }
+    </style>
+</head>
+<body>
+<div id="idiomorph">
+    <div>
+        <h3>Above...</h3>
+    </div>
+    <div>
+        <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+</div>
+
+<button onclick="Idiomorph.morph(document.getElementById('idiomorph'), document.getElementById('idiomorph-after').content.cloneNode(true).firstElementChild)">
+    Idiomorph
+</button>
+
+
+<template id="idiomorph-after">
+    <div>
+        <div>
+            <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                    title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+        <div>
+            <h3>Below...</h3>
+        </div>
+    </div>
+</template>
+
+<hr/>
+
+<div id="morphdom">
+    <div>
+        <h3>Above...</h3>
+    </div>
+    <div>
+        <iframe id="video2" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+</div>
+
+<button onclick="morphdom(document.getElementById('morphdom'), document.getElementById('morphdom-after').content.cloneNode(true).firstElementChild, {})">
+    Morphdom
+</button>
+
+
+<template id="morphdom-after">
+    <div>
+        <div>
+            <iframe id="video2" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                    title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+        <div>
+            <h3>Below...</h3>
+        </div>
+    </div>
+</template>
+
+
+</body>
+
+</html>
