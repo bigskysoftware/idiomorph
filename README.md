@@ -86,3 +86,54 @@ this information it is able to only move/detach _one_ grandchild node, #p1.  (Th
 
 So, you can see, by computing id sets for nodes, idiomoroph is able to achieve better DOM matching, with fewer node 
 detachments.
+
+## Demo
+
+You can see a practical demo of idiomorph out-performing morphdom (with respect to DOM stability, _not_ performance) 
+here:
+
+https://github.com/bigskysoftware/idiomorph/blob/main/test/demo/video.html
+
+There are two different buttons that both attempt to merge this HTML:
+
+```html
+<div>
+    <div>
+        <h3>Above...</h3>
+    </div>
+    <div>
+        <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+</div>
+```
+
+into this HTML:
+
+```html 
+<div>
+    <div>
+        <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+    <div>
+        <h3>below...</h3>
+    </div>
+</div>
+```
+
+The crux of this HTML is that the iframe has an id on it, but the first-level divs do not have ids on them.  This means
+that morphdom is unable to tell that the video element has moved up, and the first div should be discarded to preserve
+the video element.  idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded
+child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly
+discards the first div and merges the video content with the second node.
+
+You can see visually that idiomoroph is able to keep the video running because of this, whereas morphdom is not:
+
+![Rick Roll Demo](https://github.com/bigskysoftware/idiomorph/raw/main/test/demo/rickroll-idiomorph.gif)
+
+To keep things stable with morphdom, you would need to add ids to at least one of the top level divs.
