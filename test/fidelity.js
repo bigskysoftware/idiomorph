@@ -46,4 +46,27 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         testFidelity("<div></div>", "<div><p>A</p><p>B</p></div>")
     });
 
+    it('should morph a node', function()
+    {
+        testFidelity("<p>hello world</p>", "<p>hello you</p>")
+    });
+
+    it('should stay same if same', function()
+    {
+        testFidelity("<p>hello world</p>", "<p>hello world</p>")
+    });
+
+    it('should replace a node', function()
+    {
+        testFidelity("<main><p>hello world</p></main>", "<main><div>hello you</div></main>")
+    });
+
+    it('should append a node', function()
+    {
+        testFidelity("<main></main>", "<main><p>hello you</p></main>")
+    });
+
+
+
+
 })
