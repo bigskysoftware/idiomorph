@@ -121,7 +121,7 @@ into this HTML:
                 allowfullscreen></iframe>
     </div>
     <div>
-        <h3>below...</h3>
+        <h3>Below...</h3>
     </div>
 </div>
 ```
