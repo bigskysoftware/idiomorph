@@ -48,7 +48,8 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        let div2 = make('<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div>')
+        let morphTo = '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
+        let div2 = make(morphTo)
 
         print(div1);
         Idiomorph.morph(div1, div2);
@@ -60,6 +61,10 @@ describe("Bootstrap test", function(){
         // second and third paragraph should have morphed
         d2.innerHTML.should.equal("E");
         d3.innerHTML.should.equal("F");
+
+        console.log(morphTo);
+        console.log(div1.outerHTML);
+        div1.outerHTML.should.equal(morphTo)
 
         setTimeout(()=> {
             console.log("idiomorph mutations : ", div1.mutations);
@@ -75,7 +80,7 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        morphdom(div1, '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div>');
+        morphdom(div1, '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>', {});
 
         setTimeout(()=> {
             console.log("morphdom mutations : ", div1.mutations);
