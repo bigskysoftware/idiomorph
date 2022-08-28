@@ -127,7 +127,9 @@ is moprhed into this HTML:
 ```
 
 Note that the iframe has an id on it, but the first-level divs do not have ids on them.  This means
-that morphdom is unable to tell that the video element has moved up, and the first div should be discarded, rather than morphed int, to preserve the video element.  idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly discards the first div and merges the video content with the second node.
+that morphdom is unable to tell that the video element has moved up, and the first div should be discarded, rather than morphed into, to preserve the video element.  
+
+idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly discards the first div and merges the video content with the second node.
 
 You can see visually that idiomoroph is able to keep the video running because of this, whereas morphdom is not:
 
