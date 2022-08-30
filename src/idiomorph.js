@@ -2,10 +2,16 @@ class Idiomorph {
 
     static EMPTY_SET = new Set();
 
-    static morph(oldNode, newNode) {
+    static morph(oldNode, newContent) {
+        if (typeof newContent === 'string') {
+            let parser = new DOMParser();
+            let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
+            newContent = responseDoc.body.querySelector('template').content.firstElementChild
+        }
         const im = new Idiomorph();
-        im.morphFrom(oldNode, newNode);
+        im.morphFrom(oldNode, newContent);
     }
+
 
     /*
        Creates a map of elements to the ids contained within that element.
@@ -51,13 +57,13 @@ class Idiomorph {
         return matchCount;
     }
 
-    morphFrom(oldNode, newNode) {
-        this.nodeIdMap = this.nodeIdMap || this.createIdMap([oldNode, newNode]);
-        if (oldNode.tagName !== newNode.tagName) {
-            oldNode.parentElement.replaceChild(newNode, oldNode);
+    morphFrom(oldNode, newContent) {
+        this.nodeIdMap = this.nodeIdMap || this.createIdMap([oldNode, newContent]);
+        if (oldNode.tagName !== newContent.tagName) {
+            oldNode.parentElement.replaceChild(newContent, oldNode);
         } else {
-            this.syncNodeFrom(newNode, oldNode);
-            this.morphChildren(newNode, oldNode);
+            this.syncNodeFrom(newContent, oldNode);
+            this.morphChildren(newContent, oldNode);
         }
     }
 
@@ -72,12 +78,12 @@ class Idiomorph {
         return false;
     }
 
-    morphChildren(newNode, oldNode) {
+    morphChildren(newContent, oldNode) {
         // console.log("----------------------------------------")
         // console.log("merging children of ", newNode.outerHTML);
         // console.log("  into ", oldNode.outerHTML);
         // console.log("----------------------------------------")
-        let children = [...newNode.childNodes]; // make a stable copy
+        let children = [...newContent.childNodes]; // make a stable copy
         let insertionPoint = oldNode.firstChild;
         let idsAlreadyMerged = new Set();
         for (const newChild of children) {
@@ -102,7 +108,7 @@ class Idiomorph {
                     potentialMatch = insertionPoint.nextSibling;
                     let otherPotentialIdMatches = 0;
                     while (potentialMatch != null && !this.goodMatch(newChild, potentialMatch, idsAlreadyMerged)) {
-                        otherPotentialIdMatches += this.potentialIDMatchCount(potentialMatch, newNode, idsAlreadyMerged);
+                        otherPotentialIdMatches += this.potentialIDMatchCount(potentialMatch, newContent, idsAlreadyMerged);
                         if (otherPotentialIdMatches > currentNodesPotentialIdMatches) {
                             // if we have more other potential matches, break out of looking forward
                             // so we don't discard those potential matches
@@ -129,7 +135,7 @@ class Idiomorph {
                     // nodes, morph
                     if (newChild.nodeType === insertionPoint.nodeType &&
                         newChild.tagName === insertionPoint.tagName &&
-                        this.potentialIDMatchCount(insertionPoint, newNode, idsAlreadyMerged) === 0) {
+                        this.potentialIDMatchCount(insertionPoint, newContent, idsAlreadyMerged) === 0) {
                         this.morphFrom(insertionPoint, newChild);
                         insertionPoint = insertionPoint.nextSibling;
                     } else {
@@ -176,7 +182,9 @@ class Idiomorph {
         }
 
         if (type === 8 /* comment */ || type === 3 /* text */) {
-            to.nodeValue = from.nodeValue
+            if (to.nodeValue !== from.nodeValue) {
+                to.nodeValue = from.nodeValue;
+            }
         }
     }
 
