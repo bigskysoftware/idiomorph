@@ -1,0 +1,138 @@
+<html lang="en">
+<head>
+    <title>htmx/idiomorph demo</title>
+    <script src="https://unpkg.com/htmx.org"></script>
+    <script src="https://unpkg.com/hyperscript.org"></script>
+    <script src="../../src/idiomorph.js"></script>
+    <script src="../../src/idiomorph-htmx.js" defer></script>
+    <script>(function(){
+
+        function addScript(url) {
+            var myScript = document.createElement('script');
+            myScript.setAttribute('src', url);
+            document.head.appendChild(myScript);
+        }
+
+        function interpolate(str, params) {
+            try {
+                var escapedCode = str.replace(/`/, '\\`');
+                return eval(
+                    `env => { with (env) { return \`${escapedCode}\` } }`
+                )(params)
+            } catch (e) {
+                log('demo:response-error', "An error occured during a mock response", e);
+                return e.message;
+            }
+        }
+
+        function log(name, message) {
+            console.log("@ " + new Date().valueOf() + " - ", ...arguments);
+            var event = new Event(name, {name:name, info:arguments});
+            if (document.body) {
+                document.body.dispatchEvent(event);
+            }
+        }
+
+        function initHtmxAndHyperscript() {
+            if (typeof htmx === "undefined" || typeof _hyperscript === "undefined") {
+                setTimeout(initHtmxAndHyperscript, 20);
+            } else {
+                enableThings();
+                log('demo:ready', "the demo environment is ready");
+            }
+        }
+
+        var DISABLEABLE_ELTS = "button, command, fieldset, keygen, optgroup, option, select, textarea, input";
+        function disableThings() {
+            log('demo:disabling-elts', "disabling elements");
+            document.querySelectorAll(DISABLEABLE_ELTS).forEach(function(elt){
+                elt.setAttribute("data-was-disabled", elt.hasAttribute('disabled'));
+                elt.setAttribute("disabled", "true");
+            })
+        }
+
+        function enableThings() {
+            log('demo:enabling-elts', "enabling elements");
+            document.querySelectorAll(DISABLEABLE_ELTS).forEach(function(elt){
+                if (elt.getAttribute("data-was-disabled") == "false") {
+                    elt.removeAttribute("disabled");
+                }
+            })
+        }
+
+        function initMockRequests() {
+            if(typeof MockRequests === "undefined") {
+                // console.log("Not defined yet");
+                setTimeout(initMockRequests, 20);
+            } else {
+
+                log('demo:mock-request-loaded', "mock-request library loaded, mocking requests and loading htmx & hyperscript")
+
+                //-----------------------------------------------------------------
+                // mock requests based on template tags
+                //-----------------------------------------------------------------
+                document.querySelectorAll("template").forEach(function(elt){
+                    if(elt.getAttribute("url")){
+                        var configDelay = elt.getAttribute("delay");
+                        if (configDelay) {
+                            var delay = Number.parseInt(configDelay);
+                        }
+                        MockRequests.setDynamicMockUrlResponse(elt.getAttribute("url"),
+                            {dynamicResponseModFn:
+                                    function(request, response, parameters) {
+                                        log("demo:request", "A mock request was made: ", request, response, parameters)
+                                        return interpolate(elt.innerHTML, { ...parameters, ...Object.fromEntries(new URLSearchParams(request)) });
+                                    },
+                                delay: delay,
+                                usePathnameForAllQueries: true});
+                    }
+                });
+
+                log('demo:htmx-loading', "loading htmx & hyperscript...")
+                initHtmxAndHyperscript();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            disableThings();
+            log('demo:mock-request-loading', "loading mock-request library...")
+            addScript("https://unpkg.com/mock-requests@1.3.2/index.js");
+            initMockRequests();
+        }, false);
+    })();
+    </script>
+</head>
+<body>
+
+<button hx-get="/demo" hx-target="#workarea" hx-ext="morph" hx-swap="morph">
+    Merge It
+</button>
+
+<div id="workarea">
+    <div>
+        <h3>Above...</h3>
+    </div>
+    <div>
+        <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+</div>
+
+<template url="/demo">
+<div>
+    <div>
+        <iframe id="video" width="422" height="240" src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                title="Rick Astley - Never Gonna Give You Up (Official Music Video)" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
+    <div>
+        <h3>Below...</h3>
+    </div>
+</div>
+
+</template>
+</body>
+</html>
