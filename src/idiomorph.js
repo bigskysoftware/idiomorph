@@ -68,18 +68,22 @@ let Idiomorph = (function(){
         return false;
     }
 
-    function morphChildren(newContent, oldNode, ctx) {
+    function morphChildren(newContent, oldParent, ctx) {
         // console.log("----------------------------------------")
         // console.log("merging children of ", newNode.outerHTML);
         // console.log("  into ", oldNode.outerHTML);
         // console.log("----------------------------------------")
-        let children = [...newContent.childNodes]; // make a stable copy
-        let insertionPoint = oldNode.firstChild;
-        for (const newChild of children) {
+        let nextNewChild = newContent.firstChild;
+        let insertionPoint = oldParent.firstChild;
+
+        // run through all the new content
+        while(nextNewChild) {
+            let newChild = nextNewChild;
+            nextNewChild = newChild.nextSibling;
 
             // if we are at the end of the children, just append
             if (insertionPoint == null) {
-                oldNode.appendChild(newChild);
+                oldParent.appendChild(newChild);
                 // if the current node is a good match (it shares ids) then morph
             } else if (hasIdMatch(newChild, insertionPoint, ctx)) {
                 morphFrom(insertionPoint, newChild, ctx);
@@ -89,7 +93,7 @@ let Idiomorph = (function(){
                 // a good match
 
                 // track other potential id matches vs newChild node
-                let currentNodesPotentialIdMatches = potentialIDMatchCount(newChild, oldNode, ctx);
+                let currentNodesPotentialIdMatches = potentialIDMatchCount(newChild, oldParent, ctx);
 
                 let potentialMatch = null;
                 // only search forward if there is a possibility of a good match
@@ -138,7 +142,7 @@ let Idiomorph = (function(){
                     } else {
                         // Abandon all hope of morphing, just insert the new child
                         // before the insertion point and move on
-                        oldNode.insertBefore(newChild, insertionPoint);
+                        oldParent.insertBefore(newChild, insertionPoint);
                     }
                 }
             }
