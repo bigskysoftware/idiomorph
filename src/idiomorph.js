@@ -28,6 +28,12 @@ let Idiomorph = (function(){
             idIsWithinNode : function(id, targetNode) {
                 let idSet = ctx.getIdSet(targetNode);
                 return idSet.has(id);
+            },
+            removeIdsFromConsiderationFor : function (node) {
+                let idSet = ctx.getIdSet(node);
+                for (const id of idSet) {
+                    mergedIds.add(id);
+                }
             }
         };
         return ctx
@@ -58,6 +64,9 @@ let Idiomorph = (function(){
     }
 
     function hasIdMatch(node1, node2, ctx) {
+        if (node1 == null || node2 == null) {
+            return false;
+        }
         if (node1.tagName === node2.tagName) {
             if (node1.id !== "" && node1.id === node2.id) {
                 return true;
@@ -66,6 +75,57 @@ let Idiomorph = (function(){
             }
         }
         return false;
+    }
+
+
+    function removeNodesBetween(insertionPoint, potentialMatch, ctx) {
+        while (insertionPoint !== potentialMatch) {
+            let tempNode = insertionPoint;
+            insertionPoint = insertionPoint.nextSibling;
+            tempNode.remove();
+            ctx.removeIdsFromConsiderationFor(tempNode);
+        }
+        ctx.removeIdsFromConsiderationFor(insertionPoint);
+        return insertionPoint.nextSibling;
+    }
+
+    //=============================================================================
+    // Scans forward from the insertionPoint in the old parent looking for a potential id match
+    // for the newChild.  We stop if we find a potential id match for the new child OR
+    // if the number of potential id matches we are discarding is greater than the
+    // potential id matches for the new child
+    //=============================================================================
+    function findIdMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
+
+        // max id matches are are willing to discard in our search
+        let newChildPotentialIdCount = potentialIDMatchCount(newChild, oldParent, ctx);
+
+        let potentialMatch = insertionPoint;
+
+        // only search forward if there is a possibility of an id match
+        if (newChildPotentialIdCount > 0) {
+            // if there is a possibility of an id match, scan forward
+            // keep track of the potential id match count we are discarding (the
+            // newChildPotentialIdCount must be greater than this to make it likely
+            // worth it)
+            let otherMatchCount = 0;
+            while (potentialMatch != null && !hasIdMatch(newChild, potentialMatch, ctx)) {
+                // computer the other potential matches of this new content
+                otherMatchCount += potentialIDMatchCount(potentialMatch, newContent, ctx);
+                if (otherMatchCount > newChildPotentialIdCount) {
+                    // if we have more potential id matches in _other_ content, we
+                    // do not have a good candidate for an id match
+                    return null;
+                } else if (hasIdMatch(newChild, potentialMatch, ctx)) {
+                    // If we have an id match, return the current potential match
+                    return potentialMatch;
+                } else {
+                    // advanced to the next old content child
+                    potentialMatch = potentialMatch.nextSibling;
+                }
+            }
+        }
+        return potentialMatch;
     }
 
     function morphChildren(newContent, oldParent, ctx) {
@@ -81,49 +141,26 @@ let Idiomorph = (function(){
             let newChild = nextNewChild;
             nextNewChild = newChild.nextSibling;
 
-            // if we are at the end of the children, just append
+            // if we are at the end of the exiting parent's children, just append
             if (insertionPoint == null) {
                 oldParent.appendChild(newChild);
-                // if the current node is a good match (it shares ids) then morph
+                // if the current node has an ID match then morph
             } else if (hasIdMatch(newChild, insertionPoint, ctx)) {
                 morphFrom(insertionPoint, newChild, ctx);
                 insertionPoint = insertionPoint.nextSibling;
             } else {
-                // otherwise maybe search forward in the existing siblings for
-                // a good match
 
-                // track other potential id matches vs newChild node
-                let currentNodesPotentialIdMatches = potentialIDMatchCount(newChild, oldParent, ctx);
-
-                let potentialMatch = null;
-                // only search forward if there is a possibility of a good match
-                if (currentNodesPotentialIdMatches > 0) {
-                    potentialMatch = insertionPoint.nextSibling;
-                    let otherPotentialIdMatches = 0;
-                    while (potentialMatch != null && !hasIdMatch(newChild, potentialMatch, ctx)) {
-                        otherPotentialIdMatches += potentialIDMatchCount(potentialMatch, newContent, ctx);
-                        if (otherPotentialIdMatches > currentNodesPotentialIdMatches) {
-                            // if we have more other potential matches, break out of looking forward
-                            // so we don't discard those potential matches
-                            potentialMatch = null;
-                            break;
-                        }
-                        potentialMatch = potentialMatch.nextSibling;
-                    }
-                }
+                // otherwise search forward in the existing old children for an id match
+                let foundIdMatch = findIdMatch(newContent, oldParent, newChild, insertionPoint, ctx);
 
                 // if we found a potential match, remove the nodes until that
                 // point and morph
-                if (potentialMatch != null && hasIdMatch(newChild, potentialMatch, ctx)) {
-                    morphFrom(potentialMatch, newChild, ctx);
-                    while (insertionPoint !== potentialMatch) {
-                        let tempNode = insertionPoint;
-                        insertionPoint = insertionPoint.nextSibling;
-                        tempNode.remove();
-                    }
-                    insertionPoint = insertionPoint.nextSibling;
+                if (foundIdMatch) {
+                    insertionPoint = removeNodesBetween(insertionPoint, foundIdMatch, ctx);
+                    morphFrom(foundIdMatch, newChild, ctx);
                 } else {
-                    // no good matches found, scan forward until we run into a potential match for the current
+
+                    // no good matches found, scan forward until we run into a soft match for the current
                     // node that isn't going to match anything else
                     while (insertionPoint &&
                            (newChild.nodeType !== insertionPoint.nodeType || newChild.tagName !== insertionPoint.tagName) &&
@@ -148,10 +185,7 @@ let Idiomorph = (function(){
             }
 
             // ids already merged
-            let idSet = ctx.getIdSet(newChild);
-            for (const id of idSet) {
-                ctx.mergedIds.add(id);
-            }
+            ctx.removeIdsFromConsiderationFor(newChild);
         }
 
         // remove any remaining old nodes
