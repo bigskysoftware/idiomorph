@@ -1,4 +1,9 @@
-//AMD insanity... i hate javascript so much
+//=============================================================================
+// AMD insanity... i hate javascript so much
+//
+// IGNORE EVERYTHING FROM HERE UNTIL THE COMMENT SAYING 'AND NOW IT BEGINS..."
+//=============================================================================
+
 (function (root, factory) {
     //@ts-ignore
     if (typeof define === 'function' && define.amd) {
@@ -12,6 +17,11 @@
 }(typeof self !== 'undefined' ? self : this, function () {
     return (function () {
         'use strict';
+
+        //=============================================================================
+        // AND NOW IT BEGINS...
+        //=============================================================================
+
         let EMPTY_SET = new Set();
 
         function morph(oldNode, newContent) {
@@ -236,7 +246,13 @@
             }
         }
 
-
+        /**
+         * syncs a given node with another node, copying over all attributes and
+         * inner element state from the 'from' node to the 'to' node
+         *
+         * @param {Element} from the element to copy attributes & state from
+         * @param {Element} to the element to copy attributes & state to
+         */
         function syncNodeFrom(from, to) {
             let type = from.nodeType
 
@@ -270,7 +286,7 @@
             // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
 
             // sync input value
-            if (from.nodeName === "INPUT" && type !== 'file') {
+            if (from.nodeName === "INPUT" && from.type !== 'file') {
                 let fromValue = from.value;
                 let toValue = to.value;
 
@@ -310,9 +326,15 @@
             }
         }
 
-        /*
-       Creates a map of elements to the ids contained within that element.
-     */
+        /**
+         * This function computes a map of nodes to all ids contained within that node (inclusive of the
+         * node).  This map can be used to ask if two nodes have intersecting sets of ids, which allows
+         * for a looser definition of "matching" than tradition id matching, and allows child nodes
+         * to contribute to a parent nodes matching.
+         *
+         * @param {Element[]} nodeArr  - A string param.
+         * @returns {Map<Node, Set<String>>} - A map of nodes to id sets for the
+         */
         function createIdMap(nodeArr) {
             let idMap = new Map();
             // for each top level node
@@ -324,7 +346,7 @@
                 for (const elt of idElements) {
                     let current = elt;
                     // walk up the parent hierarchy of that element, adding the id
-                    // of element to the parents id set
+                    // of element to the parent's id set
                     while (current !== nodeParent && current != null) {
                         let idSet = idMap.get(current);
                         // if the id set doesn't exist, create it and insert it in the  map
@@ -340,7 +362,9 @@
             return idMap;
         }
 
-        // idiomorph public API
+        //=============================================================================
+        // This is what ends up becoming the Idiomorph global object
+        //=============================================================================
         return {
             morph
         }
