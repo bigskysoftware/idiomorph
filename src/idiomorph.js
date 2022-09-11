@@ -46,66 +46,91 @@
                 }
             }
 
+            /**
+             * This is the core algorithm for matching up children.  The idea is to use id sets to try to match up
+             * nodes as faithfully as possible.  We greedily match, which allows us to keep the algorithm fast, but
+             * by using id sets, we are able to better mathc up
+             *
+             * @param {Element} newContent the parent element of the new content
+             * @param {Element } oldParent the old content that we are merging the new content into
+             * @param ctx
+             */
             function morphChildren(newContent, oldParent, ctx) {
+
                 let nextNewChild = newContent.firstChild;
                 let insertionPoint = oldParent.firstChild;
 
                 // run through all the new content
                 while (nextNewChild) {
+
                     let newChild = nextNewChild;
                     nextNewChild = newChild.nextSibling;
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
+
                         ctx.callbacks.beforeNodeAdded(newChild);
                         oldParent.appendChild(newChild);
                         ctx.callbacks.afterNodeAdded(newChild);
-                        // if the current node has an ID match then morph
+
+                        // if the current node has an id set match then morph
                     } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+
                         ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                         morphOldNodeTo(insertionPoint, newChild, ctx);
                         ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
                         insertionPoint = insertionPoint.nextSibling;
+
                     } else {
 
-                        // otherwise search forward in the existing old children for an id match
+                        // otherwise search forward in the existing old children for an id set match
                         let idSetMatch = findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx);
 
-                        // if we found a potential match, remove the nodes until that
-                        // point and morph
+                        // if we found a potential match, remove the nodes until that point and morph
                         if (idSetMatch) {
+
                             insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
                             ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                             morphOldNodeTo(idSetMatch, newChild, ctx);
                             ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
+
                         } else {
-                            // no id matches found, scan forward for a soft match for the current node
+
+                            // no id set match found, so scan forward for a soft match for the current node
                             let softMatch = findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx);
-                            // if we found a soft match node, morph
+
+                            // if we found a soft match for the current node, morph
                             if (softMatch) {
+
                                 insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
                                 ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                                 morphOldNodeTo(insertionPoint, newChild, ctx);
                                 ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
+
                             } else {
-                                // Abandon all hope of morphing, just insert the new child
-                                // before the insertion point and move on
+
+                                // abandon all hope of morphing, just insert the new child before the insertion point
+                                // and move on
                                 ctx.callbacks.beforeNodeAdded(newChild);
                                 oldParent.insertBefore(newChild, insertionPoint);
                                 ctx.callbacks.afterNodeAdded(newChild);
+
                             }
                         }
                     }
 
-                    // ids already merged
+                    // remove the processed new contents ids from consideration in future merge decisions
                     removeIdsFromConsideration(ctx, newChild);
                 }
 
-                // remove any remaining old nodes
+                // remove any remaining old nodes that didn't match up with new content
                 while (insertionPoint !== null) {
+
                     let tempNode = insertionPoint;
                     insertionPoint = insertionPoint.nextSibling;
+                    removeIdsFromConsideration(ctx, tempNode)
                     tempNode.remove();
+
                 }
             }
 
