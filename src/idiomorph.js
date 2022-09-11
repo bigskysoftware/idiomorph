@@ -36,7 +36,9 @@
             }
 
             function morphOldNodeTo(oldNode, newContent, ctx) {
-                if (oldNode.tagName !== newContent.tagName) {
+                if (newContent == null) {
+                    oldNode.remove()
+                } else if (!isSoftMatch(oldNode, newContent)) {
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     return newContent;
                 } else {
