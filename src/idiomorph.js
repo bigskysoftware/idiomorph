@@ -49,11 +49,24 @@
             /**
              * This is the core algorithm for matching up children.  The idea is to use id sets to try to match up
              * nodes as faithfully as possible.  We greedily match, which allows us to keep the algorithm fast, but
-             * by using id sets, we are able to better mathc up
+             * by using id sets, we are able to better match up with content deeper in the DOM.
+             *
+             * Basic algorithm is, for each node in the new content:
+             *
+             * - if we have reached the end of the old parent, append the new content
+             * - if the new content has an id set match with the current insertion point, morph
+             * - search for an id set match
+             * - if id set match found, morph
+             * - otherwise search for a "soft" match
+             * - if a soft match is found, morph
+             * - otherwise, prepend the new node before the current insertion point
+             *
+             * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
+             * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
              *
              * @param {Element} newContent the parent element of the new content
              * @param {Element } oldParent the old content that we are merging the new content into
-             * @param ctx
+             * @param ctx the merge context
              */
             function morphChildren(newContent, oldParent, ctx) {
 
