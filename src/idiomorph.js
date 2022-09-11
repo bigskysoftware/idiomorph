@@ -27,11 +27,11 @@
             // Core Morphing Algorithm - morph, morphOldNodeTo, morphChildren
             //=============================================================================
 
-            function morph(oldNode, newContent) {
+            function morph(oldNode, newContent, config = {}) {
                 if (typeof newContent === 'string') {
                     newContent = parseContent(newContent);
                 }
-                let morphContext = createMorphContext(oldNode, newContent)
+                let morphContext = createMorphContext(oldNode, newContent, config)
                 return morphOldNodeTo(oldNode, newContent, morphContext);
             }
 
@@ -57,32 +57,42 @@
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
+                        ctx.callbacks.beforeNodeAdded(newChild);
                         oldParent.appendChild(newChild);
+                        ctx.callbacks.afterNodeAdded(newChild);
                         // if the current node has an ID match then morph
                     } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+                        ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                         morphOldNodeTo(insertionPoint, newChild, ctx);
+                        ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
                         insertionPoint = insertionPoint.nextSibling;
                     } else {
 
                         // otherwise search forward in the existing old children for an id match
-                        let foundIdMatch = findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx);
+                        let idSetMatch = findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx);
 
                         // if we found a potential match, remove the nodes until that
                         // point and morph
-                        if (foundIdMatch) {
-                            insertionPoint = removeNodesBetween(insertionPoint, foundIdMatch, ctx);
-                            morphOldNodeTo(foundIdMatch, newChild, ctx);
+                        if (idSetMatch) {
+                            insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+                            ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
+                            morphOldNodeTo(idSetMatch, newChild, ctx);
+                            ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
                         } else {
                             // no id matches found, scan forward for a soft match for the current node
-                            let foundSoftMatch = findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx);
+                            let softMatch = findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx);
                             // if we found a soft match node, morph
-                            if (foundSoftMatch) {
-                                insertionPoint = removeNodesBetween(insertionPoint, foundSoftMatch(), ctx);
+                            if (softMatch) {
+                                insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+                                ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                                 morphOldNodeTo(insertionPoint, newChild, ctx);
+                                ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
                             } else {
                                 // Abandon all hope of morphing, just insert the new child
                                 // before the insertion point and move on
+                                ctx.callbacks.beforeNodeAdded(newChild);
                                 oldParent.insertBefore(newChild, insertionPoint);
+                                ctx.callbacks.afterNodeAdded(newChild);
                             }
                         }
                     }
@@ -190,10 +200,20 @@
             // Misc
             //=============================================================================
 
-            function createMorphContext(oldNode, newContent) {
+            function noOp() {}
+
+            function createMorphContext(oldNode, newContent, config) {
                 return {
                     idMap: createIdMap([oldNode, newContent]),
-                    deadIds: new Set()
+                    deadIds: new Set(),
+                    callbacks: Object.assign({
+                        beforeNodeAdded: noOp,
+                        afterNodeAdded : noOp,
+                        beforeNodeMorphed: noOp,
+                        afterNodeMorphed : noOp,
+                        beforeNodeRemoved: noOp,
+                        afterNodeRemoved : noOp,
+                    }, config.callbacks),
                 }
             }
 
@@ -218,15 +238,17 @@
                 return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName
             }
 
-            function removeNodesBetween(insertionPoint, potentialMatch, ctx) {
-                while (insertionPoint !== potentialMatch) {
-                    let tempNode = insertionPoint;
-                    insertionPoint = insertionPoint.nextSibling;
+            function removeNodesBetween(startInclusive, endExclusive, ctx) {
+                while (startInclusive !== endExclusive) {
+                    let tempNode = startInclusive;
+                    startInclusive = startInclusive.nextSibling;
+                    ctx.callbacks.beforeNodeRemoved(tempNode);
                     tempNode.remove();
+                    ctx.callbacks.afterNodeRemoved(tempNode);
                     removeIdsFromConsideration(ctx, tempNode);
                 }
-                removeIdsFromConsideration(ctx, insertionPoint);
-                return insertionPoint.nextSibling;
+                removeIdsFromConsideration(ctx, endExclusive);
+                return startInclusive.nextSibling;
             }
 
             //=============================================================================
