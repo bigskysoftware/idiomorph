@@ -10,7 +10,7 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         Idiomorph.morph(initial, final);
         if (initial.outerHTML !== end) {
             console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + initial.outerHTML);
+            console.log("Expected:         " + end);
         }
         initial.outerHTML.should.equal(end);
     }

@@ -31,13 +31,34 @@
                 if (typeof newContent === 'string') {
                     newContent = parseContent(newContent);
                 }
-                let morphContext = createMorphContext(oldNode, newContent, config)
-                return morphOldNodeTo(oldNode, newContent, morphContext);
+                let normalizedContent = normalizeContent(newContent);
+                let ctx = createMorphContext(oldNode, normalizedContent, config);
+                if (config.morphStyle === "innerHTML") {
+                    morphChildren(normalizedContent, oldNode, ctx);
+                    return oldNode;
+                } else if(config.morphStyle === "outerHTML" || config.morphStyle == null) {
+                    // otherwise find the best element match, morph that, and merge its siblings
+                    // into either side
+                    let bestMatch = findBestNodeMatch(normalizedContent, oldNode, ctx);
+                    let previousSibling = bestMatch.previousSibling;
+                    let nextSibling = bestMatch.nextSibling;
+                    let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
+                    insertSiblings(previousSibling, morphedNode, nextSibling);
+                } else {
+                    throw "Do not understand how to morph style " + config.morphStyle;
+                }
             }
 
+            /**
+             * @param oldNode root node to merge content into
+             * @param newContent new content to merge
+             * @param ctx the merge context
+             * @returns {Element} the element that ended up in the DOM
+             */
             function morphOldNodeTo(oldNode, newContent, ctx) {
                 if (newContent == null) {
                     oldNode.remove()
+                    return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     return newContent;
@@ -66,13 +87,13 @@
              * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
              * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
              *
-             * @param {Element} newContent the parent element of the new content
+             * @param {Element} newParent the parent element of the new content
              * @param {Element } oldParent the old content that we are merging the new content into
              * @param ctx the merge context
              */
-            function morphChildren(newContent, oldParent, ctx) {
+            function morphChildren(newParent, oldParent, ctx) {
 
-                let nextNewChild = newContent.firstChild;
+                let nextNewChild = newParent.firstChild;
                 let insertionPoint = oldParent.firstChild;
 
                 // run through all the new content
@@ -99,7 +120,7 @@
                     } else {
 
                         // otherwise search forward in the existing old children for an id set match
-                        let idSetMatch = findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx);
+                        let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
 
                         // if we found a potential match, remove the nodes until that point and morph
                         if (idSetMatch) {
@@ -112,7 +133,7 @@
                         } else {
 
                             // no id set match found, so scan forward for a soft match for the current node
-                            let softMatch = findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx);
+                            let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
 
                             // if we found a soft match for the current node, morph
                             if (softMatch) {
@@ -244,7 +265,7 @@
 
             function createMorphContext(oldNode, newContent, config) {
                 return {
-                    idMap: createIdMap([oldNode, newContent]),
+                    idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
                         beforeNodeAdded: noOp,
@@ -370,7 +391,70 @@
             function parseContent(newContent) {
                 let parser = new DOMParser();
                 let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-                return responseDoc.body.querySelector('template').content.firstElementChild
+                let content = responseDoc.body.querySelector('template').content;
+                content.generatedByIdiomorph = true;
+                return content
+            }
+
+            function normalizeContent(newContent) {
+                if (newContent.generatedByIdiomorph) {
+                    // the template tag created by idiomorph parsing can serve as a dummy parent
+                    return newContent;
+                } else if (newContent instanceof Node) {
+                    // a single node is added as a child to a dummy parent
+                    const dummyParent = document.createElement('div');
+                    dummyParent.append(newContent);
+                    return dummyParent;
+                } else {
+                    // all nodes in the array or HTMLElement collection are consolidated under
+                    // a single dummy parent element
+                    const dummyParent = document.createElement('div');
+                    for (const elt of [...newContent]) {
+                        dummyParent.append(elt);
+                    }
+                    return dummyParent;
+                }
+            }
+
+            function insertSiblings(previousSibling, morphedNode, nextSibling) {
+                let stack = []
+                while (previousSibling != null) {
+                    stack.push(previousSibling);
+                    previousSibling = previousSibling.previousSibling;
+                }
+                while (stack.length > 0) {
+                    morphedNode.parentElement.insertBefore(stack.pop(), morphedNode);
+                }
+                while (nextSibling != null) {
+                    stack.push(nextSibling);
+                    nextSibling = nextSibling.nextSibling;
+                }
+                while (stack.length > 0) {
+                    morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
+                }
+            }
+
+            function findBestNodeMatch(newContent, oldNode, ctx) {
+                let currentElement = null;
+                currentElement = newContent.firstChild;
+                let bestElement = currentElement;
+                let score = 0;
+                while (currentElement) {
+                    let newScore = scoreElement(currentElement, oldNode, ctx);
+                    if (newScore > score) {
+                        bestElement = currentElement;
+                        score = newScore;
+                    }
+                    currentElement = currentElement.nextSibling;
+                }
+                return bestElement;
+            }
+
+            function scoreElement(node1, node2, ctx) {
+                if (isSoftMatch(node1, node2)) {
+                    return .5 + getIdIntersectionCount(ctx, node1, node2);
+                }
+                return 0;
             }
 
             //=============================================================================
@@ -406,6 +490,27 @@
                 return matchCount;
             }
 
+            function populateIdMapForNode(node, idMap) {
+                let nodeParent = node.parentElement;
+                // find all elements with an id property
+                let idElements = node.querySelectorAll('[id]');
+                for (const elt of idElements) {
+                    let current = elt;
+                    // walk up the parent hierarchy of that element, adding the id
+                    // of element to the parent's id set
+                    while (current !== nodeParent && current != null) {
+                        let idSet = idMap.get(current);
+                        // if the id set doesn't exist, create it and insert it in the  map
+                        if (idSet == null) {
+                            idSet = new Set();
+                            idMap.set(current, idSet);
+                        }
+                        idSet.add(elt.id);
+                        current = current.parentElement;
+                    }
+                }
+            }
+
             /**
              * This function computes a map of nodes to all ids contained within that node (inclusive of the
              * node).  This map can be used to ask if two nodes have intersecting sets of ids, which allows
@@ -415,30 +520,10 @@
              * @param {Element[]} nodeArr  - A string param.
              * @returns {Map<Node, Set<String>>} - A map of nodes to id sets for the
              */
-            function createIdMap(nodeArr) {
+            function createIdMap(oldContent, newContent) {
                 let idMap = new Map();
-                // for each top level node
-                for (const node of nodeArr) {
-                    let nodeParent = node.parentElement;
-                    // find all elements with an id property
-                    let idElements = node.querySelectorAll('[id]');
-
-                    for (const elt of idElements) {
-                        let current = elt;
-                        // walk up the parent hierarchy of that element, adding the id
-                        // of element to the parent's id set
-                        while (current !== nodeParent && current != null) {
-                            let idSet = idMap.get(current);
-                            // if the id set doesn't exist, create it and insert it in the  map
-                            if (idSet == null) {
-                                idSet = new Set();
-                                idMap.set(current, idSet);
-                            }
-                            idSet.add(elt.id);
-                            current = current.parentElement;
-                        }
-                    }
-                }
+                populateIdMapForNode(oldContent, idMap);
+                populateIdMapForNode(newContent, idMap);
                 return idMap;
             }
 

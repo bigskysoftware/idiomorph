@@ -89,5 +89,4 @@ describe("Bootstrap test", function(){
         print(div1);
     });
 
-
 })

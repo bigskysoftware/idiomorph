@@ -19,9 +19,15 @@ function make(htmlStr) {
             }
         }
     });
-    observer.observe(element, {attributes: true, childList: true, subtree: true});
+    observer.observe(fragment, {attributes: true, childList: true, subtree: true});
 
     return element;
+}
+
+function makeElements(htmlStr) {
+    let range = document.createRange();
+    let fragment = range.createContextualFragment(htmlStr);
+    return fragment.children;
 }
 
 function getWorkArea() {
