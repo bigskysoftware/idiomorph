@@ -24,20 +24,18 @@
             let EMPTY_SET = new Set();
 
             //=============================================================================
-            // Core Morphing Algorithm - morph, morphFrom, morphChildren
+            // Core Morphing Algorithm - morph, morphOldNodeTo, morphChildren
             //=============================================================================
 
             function morph(oldNode, newContent) {
                 if (typeof newContent === 'string') {
-                    let parser = new DOMParser();
-                    let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-                    newContent = responseDoc.body.querySelector('template').content.firstElementChild
+                    newContent = parseContent(newContent);
                 }
                 let morphContext = createMorphContext(oldNode, newContent)
-                return morphFrom(oldNode, newContent, morphContext);
+                return morphOldNodeTo(oldNode, newContent, morphContext);
             }
 
-            function morphFrom(oldNode, newContent, ctx) {
+            function morphOldNodeTo(oldNode, newContent, ctx) {
                 if (oldNode.tagName !== newContent.tagName) {
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     return newContent;
@@ -62,7 +60,7 @@
                         oldParent.appendChild(newChild);
                         // if the current node has an ID match then morph
                     } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-                        morphFrom(insertionPoint, newChild, ctx);
+                        morphOldNodeTo(insertionPoint, newChild, ctx);
                         insertionPoint = insertionPoint.nextSibling;
                     } else {
 
@@ -73,14 +71,14 @@
                         // point and morph
                         if (foundIdMatch) {
                             insertionPoint = removeNodesBetween(insertionPoint, foundIdMatch, ctx);
-                            morphFrom(foundIdMatch, newChild, ctx);
+                            morphOldNodeTo(foundIdMatch, newChild, ctx);
                         } else {
                             // no id matches found, scan forward for a soft match for the current node
                             let foundSoftMatch = findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx);
                             // if we found a soft match node, morph
                             if (foundSoftMatch) {
                                 insertionPoint = removeNodesBetween(insertionPoint, foundSoftMatch(), ctx);
-                                morphFrom(insertionPoint, newChild, ctx);
+                                morphOldNodeTo(insertionPoint, newChild, ctx);
                             } else {
                                 // Abandon all hope of morphing, just insert the new child
                                 // before the insertion point and move on
@@ -305,6 +303,12 @@
                 }
 
                 return potentialSoftMatch;
+            }
+
+            function parseContent(newContent) {
+                let parser = new DOMParser();
+                let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
+                return responseDoc.body.querySelector('template').content.firstElementChild
             }
 
             //=============================================================================
