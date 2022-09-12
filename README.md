@@ -1,32 +1,45 @@
-# idiomorph
+# Idiomorph
 
-idiomorph is a javascript library for morphing one DOM tree to another.  It is inspired by other libraries that 
+Idiomorph is a javascript library for morphing one DOM tree to another.  It is inspired by other libraries that 
 pioneered this functionality:
 
 * [morphdom](https://github.com/patrick-steele-idem/morphdom) - the original DOM morphing library
 * [nanomorph](https://github.com/choojs/nanomorph) - an updated take on morphdom
 
 Both morphdom and nanomorph use the `id` property of a node to match up elements within a given set of sibling nodes.  When
-an id match is found, the existing element is often not removed from the DOM, but is morphed in place to the new content.
-This preserves the node in the DOM, and allows state (such as focus) to be retained. However, in both these algorithms,
-the structure of the _children_ of sibling nodes is not considered when morphing two nodes: only the ids of the nodes are
-considered.  This is due to performance considerations: it is not feasible to recurse through all the children of 
-siblings when matching things up. 
+an id match is found, the existing element is not removed from the DOM, but is instead morphed in place to the new content.
+This preserves the node in the DOM, and allows state (such as focus) to be retained. 
 
-idiomorph takes a slightly different approach: before node-matching occurs, both the new content and the old content
+However, in both these algorithms, the structure of the _children_ of sibling nodes is not considered when morphing two 
+nodes: only the ids of the nodes are considered.  This is due to performance: it is not feasible to recurse through all 
+the children of siblings when matching things up. 
+
+## id sets
+
+Idiomorph takes a different approach: before node-matching occurs, both the new content and the old content
 are processed to create _id sets_, a mapping of elements to _a set of all ids found within that element_.  That is, the
 set of all ids in all children of the element, plus the elements' id, if any.
 
-id sets can be computed relatively efficiently via a query selector + a bottom up algorithm.
+Id sets can be computed relatively efficiently via a query selector + a bottom up algorithm.
 
 Given an id set, you can now adopt a broader sense of "matching" than simply using id matching: if the intersection between
-the id sets of element 1 and element 2 is non-empty, they match.  This allows idiomorph to relatively quickly match elements
-based on structural information from children, who contribute to a parents id set, which allows for better overall matching
-when compared with id-based matching.
+the id sets of element 1 and element 2 is non-empty, they match.  This allows Idiomorph to relatively quickly match elements
+based on structural information from children, who contribute to a parent's id set, which allows for better overall matching
+when compared with simple id-based matching.
 
 ## Usage
 
-idiomorph has a very simple usage:
+Idiomorph is a small (1.7k min/gz'd), dependency free JavaScript library, and can be installed via NPM or your favorite 
+dependency management system under the `Idiomorph` dependency name.  You can also include it via a CDN like unpkg to
+load it directly in a browser:
+
+```html
+<script src="https://unpkg.com/Idiomorph"></script>
+```
+
+Or you can download the source to your local project.
+
+Idiomorph has a very simple usage:
 
 ```js
   Idiomorph.morph(existingNode, newNode);
@@ -55,10 +68,10 @@ This will replace the _inner_ content of the existing node with the new content.
 ### htmx
 
 Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used as a swapping mechanism by including
-the `idiomorph-ext` file in your HTML:
+the `Idiomorph-ext` file in your HTML:
 
 ```html
-<script src="https://unpkg.com/idiomorph/dist/idiomorph-ext.min.js"></script>
+<script src="https://unpkg.com/Idiomorph/dist/Idiomorph-ext.min.js"></script>
 <div hx-ext="morph">
     
     <button hx-get="/example" hx-swap="morph:innerHTML">
@@ -78,16 +91,18 @@ the `idiomorph-ext` file in your HTML:
 
 ## Performance
 
-Idiomorph is not intended to be as fast as morphdom or nanomorph.  Rather, its goals are:
+Idiomorph is not designed to be as fast as either morphdom or nanomorph.  Rather, its goals are:
 
 * Better DOM tree matching
 * Relatively simple code
 
-Performance is a consideration, but better matching is the reason idiomorph was created
+Performance is a consideration, but better matching is the reason Idiomorph was created.  Initial tests indicate that
+it is approximately equal to 10% slower than morphdom for large DOM morphs, and equal to or faster than morphdom for 
+smaller morphs.
 
 ## Example Morph
 
-Here is a simple example of some HTML in which idiomorph does a better job of matching up than morphdom:
+Here is a simple example of some HTML in which Idiomorph does a better job of matching up than morphdom:
 
 *Initial HTML*
 ```html
@@ -121,7 +136,7 @@ for layout reasons) and the "leaf" nodes have ids associated with them.
 Given this example, morphdom will detach both #p1 and #p2 from the DOM because, when it is considering the order of the
 children, it does not see that the #p2 grandchild is now within the first child.
 
-idiomorph, on the other hand, has an _id set_ for the (id-less) children, which includes the ids of the grandchildren.
+Idiomorph, on the other hand, has an _id set_ for the (id-less) children, which includes the ids of the grandchildren.
 Therefore, it is able to detect the fact that the #p2 grandchild is now a child of the first id-less child.  Because of
 this information it is able to only move/detach _one_ grandchild node, #p1.  (This is unavoidable, since they changed order)
 
@@ -130,10 +145,10 @@ detachments.
 
 ## Demo
 
-You can see a practical demo of idiomorph out-performing morphdom (with respect to DOM stability, _not_ performance) 
+You can see a practical demo of Idiomorph out-performing morphdom (with respect to DOM stability, _not_ performance) 
 here:
 
-https://github.com/bigskysoftware/idiomorph/blob/main/test/demo/video.html
+https://github.com/bigskysoftware/Idiomorph/blob/main/test/demo/video.html
 
 For both algorithms, this HTML:
 
@@ -170,10 +185,10 @@ is moprhed into this HTML:
 Note that the iframe has an id on it, but the first-level divs do not have ids on them.  This means
 that morphdom is unable to tell that the video element has moved up, and the first div should be discarded, rather than morphed into, to preserve the video element.  
 
-idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly discards the first div and merges the video content with the second node.
+Idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly discards the first div and merges the video content with the second node.
 
 You can see visually that idiomoroph is able to keep the video running because of this, whereas morphdom is not:
 
-![Rick Roll Demo](https://github.com/bigskysoftware/idiomorph/raw/main/test/demo/rickroll-idiomorph.gif)
+![Rick Roll Demo](https://github.com/bigskysoftware/Idiomorph/raw/main/test/demo/rickroll-Idiomorph.gif)
 
 To keep things stable with morphdom, you would need to add ids to at least one of the top level divs.
