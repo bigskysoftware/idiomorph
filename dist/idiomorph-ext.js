@@ -162,7 +162,7 @@
                             if (softMatch) {
 
                                 insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                                morphOldNodeTo(insertionPoint, newChild, ctx);
+                                morphOldNodeTo(softMatch, newChild, ctx);
 
                             } else {
 
@@ -350,19 +350,22 @@
                     // worth it)
                     let otherMatchCount = 0;
                     while (potentialMatch != null) {
+
+                        // If we have an id match, return the current potential match
+                        if (isIdSetMatch(newChild, potentialMatch, ctx)) {
+                            return potentialMatch;
+                        }
+
                         // computer the other potential matches of this new content
                         otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
                         if (otherMatchCount > newChildPotentialIdCount) {
                             // if we have more potential id matches in _other_ content, we
-                            // do not have a good candidate for an id match
+                            // do not have a good candidate for an id match, so return null
                             return null;
-                        } else if (isIdSetMatch(newChild, potentialMatch, ctx)) {
-                            // If we have an id match, return the current potential match
-                            return potentialMatch;
-                        } else {
-                            // advanced to the next old content child
-                            potentialMatch = potentialMatch.nextSibling;
                         }
+
+                        // advanced to the next old content child
+                        potentialMatch = potentialMatch.nextSibling;
                     }
                 }
                 return potentialMatch;
