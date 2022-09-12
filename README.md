@@ -26,14 +26,31 @@ when compared with id-based matching.
 
 ## Usage
 
-idiomorph has a very simple useage:
+idiomorph has a very simple usage:
 
 ```js
   Idiomorph.morph(existingNode, newNode);
 ```
 
 This will morph the existingNode to have the same structure as the newNode.  Note that this is a destructive operation
-with respect to both the existingNode and the newNode
+with respect to both the existingNode and the newNode.
+
+You can also pass string content in:
+
+```js
+  Idiomorph.morph(existingNode, "<div>New Content</div>");
+```
+
+And it will be parsed and merged into the new content.
+
+If you wish to target the `innerHTML` rather than the `outerHTML` of the content, you can pass in a `morphStyle` 
+in a third config argument:
+
+```js
+  Idiomorph.morph(existingNode, "<div>New Content</div>", {morphStyle:'innerHTML'});
+```
+
+This will replace the _inner_ content of the existing node with the new content.
 
 ## Performance
 
