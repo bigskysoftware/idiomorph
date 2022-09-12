@@ -3,8 +3,10 @@ htmx.defineExtension('morph', {
         return swapStyle === 'morph';
     },
     handleSwap: function (swapStyle, target, fragment) {
-        if (swapStyle === 'morph') {
-            return Idiomorph.morph(target, fragment.firstElementChild);
+        if (swapStyle === 'morph' || swapStyle === 'morphOuterHTML') {
+            return Idiomorph.morph(target, fragment.children);
+        } else if (swapStyle === 'morphInnerHTML') {
+            return Idiomorph.morph(target, fragment.children, {morphStyle:'innerHTML'});
         }
     }
 });
