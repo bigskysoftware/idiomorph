@@ -325,7 +325,7 @@
                     removeNode(tempNode, ctx);
                 }
                 removeIdsFromConsideration(ctx, endExclusive);
-                return startInclusive.nextSibling;
+                return endExclusive.nextSibling;
             }
 
             //=============================================================================
@@ -339,16 +339,17 @@
                 // max id matches we are willing to discard in our search
                 let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
 
-                let potentialMatch = insertionPoint;
+                let potentialMatch = null;
 
                 // only search forward if there is a possibility of an id match
                 if (newChildPotentialIdCount > 0) {
+                    let potentialMatch = insertionPoint;
                     // if there is a possibility of an id match, scan forward
                     // keep track of the potential id match count we are discarding (the
                     // newChildPotentialIdCount must be greater than this to make it likely
                     // worth it)
                     let otherMatchCount = 0;
-                    while (potentialMatch != null && !isIdSetMatch(newChild, potentialMatch, ctx)) {
+                    while (potentialMatch != null) {
                         // computer the other potential matches of this new content
                         otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
                         if (otherMatchCount > newChildPotentialIdCount) {
