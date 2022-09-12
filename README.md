@@ -52,6 +52,30 @@ in a third config argument:
 
 This will replace the _inner_ content of the existing node with the new content.
 
+### htmx
+
+Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used as a swapping mechanism by including
+the `idiomorph-ext` file in your HTML:
+
+```html
+<script src="https://unpkg.com/idiomorph/idiomorph-ext.min.js"></script>
+<div hx-ext="morph">
+    
+    <button hx-get="/example" hx-swap="morph:innerHTML">
+        Morph My Inner HTML
+    </button>
+
+    <button hx-get="/example" hx-swap="morph:outerHTML">
+        Morph My Outer HTML
+    </button>
+    
+    <button hx-get="/example" hx-swap="morph">
+        Morph My Outer HTML
+    </button>
+    
+</div>
+```
+
 ## Performance
 
 Idiomorph is not intended to be as fast as morphdom or nanomorph.  Rather, its goals are:
