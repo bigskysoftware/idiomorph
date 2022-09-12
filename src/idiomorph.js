@@ -28,25 +28,39 @@
             //=============================================================================
 
             function morph(oldNode, newContent, config = {}) {
+
                 if (typeof newContent === 'string') {
                     newContent = parseContent(newContent);
                 }
+
                 let normalizedContent = normalizeContent(newContent);
+
                 let ctx = createMorphContext(oldNode, normalizedContent, config);
+
                 if (config.morphStyle === "innerHTML") {
+
+                    // innerHTML, so we are only updating the children
                     morphChildren(normalizedContent, oldNode, ctx);
                     return oldNode.children;
+
                 } else if(config.morphStyle === "outerHTML" || config.morphStyle == null) {
                     // otherwise find the best element match in the new content, morph that, and merge its siblings
                     // into either side of the best match
                     let bestMatch = findBestNodeMatch(normalizedContent, oldNode, ctx);
+
+                    // stash the siblings that will need to be inserted on either side of the best match
                     let previousSibling = bestMatch?.previousSibling;
                     let nextSibling = bestMatch?.nextSibling;
+
+                    // morph it
                     let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
+
                     if (bestMatch) {
+                        // if there was a best match, merge the siblings in too and return the
+                        // whole bunch
                         return insertSiblings(previousSibling, morphedNode, nextSibling);
                     } else {
-                        // nothing was added to the DOM
+                        // otherwise nothing was added to the DOM
                         return []
                     }
                 } else {
