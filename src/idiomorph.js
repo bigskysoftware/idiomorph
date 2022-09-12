@@ -76,14 +76,22 @@
              */
             function morphOldNodeTo(oldNode, newContent, ctx) {
                 if (newContent == null) {
+                    ctx.callbacks.beforeNodeRemoved(oldNode);
                     oldNode.remove()
+                    ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
+                    ctx.callbacks.beforeNodeRemoved(oldNode);
+                    ctx.callbacks.beforeNodeAdded(newContent);
                     oldNode.parentElement.replaceChild(newContent, oldNode);
+                    ctx.callbacks.afterNodeAdded(newContent);
+                    ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
+                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent)
                     syncNodeFrom(newContent, oldNode);
                     morphChildren(newContent, oldNode, ctx);
+                    ctx.callbacks.afterNodeMorphed(oldNode, newContent)
                     return oldNode;
                 }
             }
@@ -131,9 +139,7 @@
                         // if the current node has an id set match then morph
                     } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
 
-                        ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                         morphOldNodeTo(insertionPoint, newChild, ctx);
-                        ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
                         insertionPoint = insertionPoint.nextSibling;
 
                     } else {
@@ -145,9 +151,7 @@
                         if (idSetMatch) {
 
                             insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-                            ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                             morphOldNodeTo(idSetMatch, newChild, ctx);
-                            ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
 
                         } else {
 
@@ -158,9 +162,7 @@
                             if (softMatch) {
 
                                 insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                                ctx.callbacks.beforeNodeMorphed(insertionPoint, newChild);
                                 morphOldNodeTo(insertionPoint, newChild, ctx);
-                                ctx.callbacks.afterNodeMorphed(insertionPoint, newChild);
 
                             } else {
 
@@ -183,9 +185,7 @@
 
                     let tempNode = insertionPoint;
                     insertionPoint = insertionPoint.nextSibling;
-                    removeIdsFromConsideration(ctx, tempNode)
-                    tempNode.remove();
-
+                    removeNode(tempNode, ctx);
                 }
             }
 
@@ -322,10 +322,7 @@
                 while (startInclusive !== endExclusive) {
                     let tempNode = startInclusive;
                     startInclusive = startInclusive.nextSibling;
-                    ctx.callbacks.beforeNodeRemoved(tempNode);
-                    tempNode.remove();
-                    ctx.callbacks.afterNodeRemoved(tempNode);
-                    removeIdsFromConsideration(ctx, tempNode);
+                    removeNode(tempNode, ctx);
                 }
                 removeIdsFromConsideration(ctx, endExclusive);
                 return startInclusive.nextSibling;
@@ -485,6 +482,13 @@
                 return 0;
             }
 
+            function removeNode(tempNode, ctx) {
+                removeIdsFromConsideration(ctx, tempNode)
+                ctx.callbacks.beforeNodeRemoved(tempNode);
+                tempNode.remove();
+                ctx.callbacks.afterNodeRemoved(tempNode);
+            }
+
             //=============================================================================
             // ID Set Functions
             //=============================================================================
@@ -518,6 +522,14 @@
                 return matchCount;
             }
 
+            /**
+             * A bottom up algorithm that finds all elements with ids inside of the node
+             * argument and populates id sets for those nodes and all their parents, generating
+             * a set of ids contained within all nodes for the entire hierarchy in the DOM
+             *
+             * @param node {Element}
+             * @param {Map<Node, Set<String>>} idMap
+             */
             function populateIdMapForNode(node, idMap) {
                 let nodeParent = node.parentElement;
                 // find all elements with an id property
@@ -545,8 +557,9 @@
              * for a looser definition of "matching" than tradition id matching, and allows child nodes
              * to contribute to a parent nodes matching.
              *
-             * @param {Element[]} nodeArr  - A string param.
-             * @returns {Map<Node, Set<String>>} - A map of nodes to id sets for the
+             * @param {Element} oldContent  the old content that will be morphed
+             * @param {Element} newContent  the new content to morph to
+             * @returns {Map<Node, Set<String>>} a map of nodes to id sets for the
              */
             function createIdMap(oldContent, newContent) {
                 let idMap = new Map();
@@ -563,3 +576,4 @@
             }
         })()
     }));
+

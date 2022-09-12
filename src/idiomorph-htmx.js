@@ -3,9 +3,9 @@ htmx.defineExtension('morph', {
         return swapStyle === 'morph';
     },
     handleSwap: function (swapStyle, target, fragment) {
-        if (swapStyle === 'morph' || swapStyle === 'morphOuterHTML') {
+        if (swapStyle === 'morph' || swapStyle === 'morph:outerHTML') {
             return Idiomorph.morph(target, fragment.children);
-        } else if (swapStyle === 'morphInnerHTML') {
+        } else if (swapStyle === 'morph:innerHTML') {
             return Idiomorph.morph(target, fragment.children, {morphStyle:'innerHTML'});
         }
     }
