@@ -58,7 +58,7 @@ Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used
 the `idiomorph-ext` file in your HTML:
 
 ```html
-<script src="https://unpkg.com/idiomorph/idiomorph-ext.min.js"></script>
+<script src="https://unpkg.com/idiomorph/dist/idiomorph-ext.min.js"></script>
 <div hx-ext="morph">
     
     <button hx-get="/example" hx-swap="morph:innerHTML">
