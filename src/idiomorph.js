@@ -35,15 +35,20 @@
                 let ctx = createMorphContext(oldNode, normalizedContent, config);
                 if (config.morphStyle === "innerHTML") {
                     morphChildren(normalizedContent, oldNode, ctx);
-                    return oldNode;
+                    return oldNode.children;
                 } else if(config.morphStyle === "outerHTML" || config.morphStyle == null) {
-                    // otherwise find the best element match, morph that, and merge its siblings
-                    // into either side
+                    // otherwise find the best element match in the new content, morph that, and merge its siblings
+                    // into either side of the best match
                     let bestMatch = findBestNodeMatch(normalizedContent, oldNode, ctx);
-                    let previousSibling = bestMatch.previousSibling;
-                    let nextSibling = bestMatch.nextSibling;
+                    let previousSibling = bestMatch?.previousSibling;
+                    let nextSibling = bestMatch?.nextSibling;
                     let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
-                    insertSiblings(previousSibling, morphedNode, nextSibling);
+                    if (bestMatch) {
+                        return insertSiblings(previousSibling, morphedNode, nextSibling);
+                    } else {
+                        // nothing was added to the DOM
+                        return []
+                    }
                 } else {
                     throw "Do not understand how to morph style " + config.morphStyle;
                 }
@@ -397,7 +402,10 @@
             }
 
             function normalizeContent(newContent) {
-                if (newContent.generatedByIdiomorph) {
+                if (newContent == null) {
+                    const dummyParent = document.createElement('div');
+                    return dummyParent;
+                } else if (newContent.generatedByIdiomorph) {
                     // the template tag created by idiomorph parsing can serve as a dummy parent
                     return newContent;
                 } else if (newContent instanceof Node) {
@@ -418,20 +426,26 @@
 
             function insertSiblings(previousSibling, morphedNode, nextSibling) {
                 let stack = []
+                let added = []
                 while (previousSibling != null) {
                     stack.push(previousSibling);
                     previousSibling = previousSibling.previousSibling;
                 }
                 while (stack.length > 0) {
-                    morphedNode.parentElement.insertBefore(stack.pop(), morphedNode);
+                    let node = stack.pop();
+                    added.push(node); // push added preceding siblings on in order and insert
+                    morphedNode.parentElement.insertBefore(node, morphedNode);
                 }
+                added.push(morphedNode);
                 while (nextSibling != null) {
                     stack.push(nextSibling);
+                    added.push(nextSibling); // here we are going in order, so push on as we scan, rather than add
                     nextSibling = nextSibling.nextSibling;
                 }
                 while (stack.length > 0) {
                     morphedNode.parentElement.insertBefore(stack.pop(), morphedNode.nextSibling);
                 }
+                return added;
             }
 
             function findBestNodeMatch(newContent, oldNode, ctx) {
