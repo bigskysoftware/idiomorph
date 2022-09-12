@@ -18,7 +18,7 @@ the children of siblings when matching things up.
 
 Idiomorph takes a different approach: before node-matching occurs, both the new content and the old content
 are processed to create _id sets_, a mapping of elements to _a set of all ids found within that element_.  That is, the
-set of all ids in all children of the element, plus the elements' id, if any.
+set of all ids in all children of the element, plus the element's id, if any.
 
 Id sets can be computed relatively efficiently via a query selector + a bottom up algorithm.
 
