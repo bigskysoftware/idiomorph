@@ -34,7 +34,7 @@ dependency management system under the `Idiomorph` dependency name.  You can als
 load it directly in a browser:
 
 ```html
-<script src="https://unpkg.com/Idiomorph"></script>
+<script src="https://unpkg.com/idiomorph"></script>
 ```
 
 Or you can download the source to your local project.
@@ -71,7 +71,7 @@ Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used
 the `Idiomorph-ext` file in your HTML:
 
 ```html
-<script src="https://unpkg.com/Idiomorph/dist/Idiomorph-ext.min.js"></script>
+<script src="https://unpkg.com/idiomorph/dist/idiomorph-ext.min.js"></script>
 <div hx-ext="morph">
     
     <button hx-get="/example" hx-swap="morph:innerHTML">
