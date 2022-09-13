@@ -384,25 +384,33 @@
                 let siblingSoftMatchCount = 0;
 
                 while (potentialSoftMatch != null) {
+
                     if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
                         // the current potential soft match has a potential id set match with the remaining new
                         // content so bail out of looking
                         return null;
-                    } else if (isSoftMatch(newChild, potentialSoftMatch)) {
+                    }
+
+                    // if we have a soft match with the current node, return it
+                    if (isSoftMatch(newChild, potentialSoftMatch)) {
                         return potentialSoftMatch;
-                    } else if (isSoftMatch(nextSibling, potentialSoftMatch)) {
+                    }
+
+                    if (isSoftMatch(nextSibling, potentialSoftMatch)) {
                         // the next new node has a soft match with this node, so
-                        // increment
+                        // increment the count of future soft matches
                         siblingSoftMatchCount++;
+                        nextSibling = nextSibling.nextSibling;
+
+                        // If there are two future soft matches, bail to allow the siblings to soft match
+                        // so that we don't consume future soft matches for the sake of the current node
                         if (siblingSoftMatchCount >= 2) {
-                            // with two soft matches, bail to allow the siblings to soft match
                             return null;
                         }
-                        nextSibling = nextSibling.nextSibling;
-                    } else {
-                        // advanced to the next old content child
-                        potentialSoftMatch = potentialSoftMatch.nextSibling;
                     }
+
+                    // advanced to the next old content child
+                    potentialSoftMatch = potentialSoftMatch.nextSibling;
                 }
 
                 return potentialSoftMatch;
