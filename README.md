@@ -189,6 +189,10 @@ Idiomorph, however, has an id-set for the top level divs, which includes the id 
 
 You can see visually that idiomoroph is able to keep the video running because of this, whereas morphdom is not:
 
-![Rick Roll Demo](https://github.com/bigskysoftware/Idiomorph/raw/main/test/demo/rickroll-Idiomorph.gif)
+![Rick Roll Demo](https://github.com/bigskysoftware/Idiomorph/raw/main/test/demo/rickroll-idiomorph.gif)
 
 To keep things stable with morphdom, you would need to add ids to at least one of the top level divs.
+
+Here is a diagram explaining how the two algorithms differ in this case:
+
+![Comparison Diagram](https://github.com/bigskysoftware/Idiomorph/raw/main/img/comparison.png)
