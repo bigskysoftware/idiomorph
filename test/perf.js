@@ -15,6 +15,11 @@ describe("Tests to compare perf with morphdom", function(){
         runPerfTest("Large Table Perf", "./perf/table.start", "./perf/table.end", done);
     });
 
+    it('Checkboxes Performance', function(done)
+    {
+        runPerfTest("Checkboxes Performance", "./perf/checkboxes.start", "./perf/checkboxes.start", done);
+    });
+
     function runPerfTest(testName, startUrl, endUrl, done) {
         let startPromise = fetch(startUrl).then(value => value.text());
         let endPromise = fetch(endUrl).then(value => value.text());

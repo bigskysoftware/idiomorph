@@ -65,6 +65,52 @@ in a third config argument:
 
 This will replace the _inner_ content of the existing node with the new content.
 
+### The `head` tag
+
+The head tag is treated specially by idiomorph because:
+
+* It typically only has one level of children within it
+* Those children often to not have `id` attributes associated with them
+* It is important to remove as few elements as possible from the head, in order to minimize network requests for things
+  like style sheets
+* The order of elements in the head tag is (usually) not meaningful
+
+Because of this, by default, idiomorph adopts a `merge` algorithm between two head tags, `old` and `new`:
+
+* Elements that are in both `old` and `new` are ignored
+* Elements that are in `new` but not in `old` are added to the `old`
+* Elements that are in `old` but not in `new` are removed from `old`
+
+Thus the content of the two head tags will be the same, but the order of those elements will not be.
+
+#### Attribute Based Fine-Grained Head Control
+
+Sometimes you may want even more fine-grained control over head merging behavior.  For example, you may want a script
+tag to re-evaluate, even though it is in both `old` and `new`.  To do this, you can add the attribute `im-re-append='true'`
+to the script tag, and idiomorph will re-append the script tag even if it exists in both head tags, forcing re-evaluation
+of the script.
+
+Similarly, you may wish to preserve an element even if it is not in `new`.  You can use the attribute `im-preserve='true'`
+in this case to retain the element.
+
+#### Additional Configuration
+
+You are also able to override these behaviors, see the `head` config object in the source code.
+
+You can set `head.stategy` to:
+
+* `merge` - the default algorithm outlined above
+* `append` - simply append all content in `new` to `old`
+* `morph` - adopt the normal idiomorph morphing algorithm for the head
+
+For example, if you wanted to merge a whole page using the `morph` algorithm for the head tag, you would do this:
+
+```js
+Idiomorph.morph(document.documentElement, newPageSource, {head:{strategy: 'morph'}})
+```
+
+The `head` object also offers callbacks for configuring head merging specifics.
+
 ### htmx
 
 Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used as a swapping mechanism by including

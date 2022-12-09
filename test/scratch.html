@@ -1,84 +1,20 @@
 <html>
 <head>
     <script src="../src/idiomorph.js"></script>
-    <script src="lib/morphdom.js"></script>
     <link rel="stylesheet" href="https://the.missing.style">
-    <script src="https://unpkg.com/hyperscript.org@0.9.7"></script>
-    <script>
-        // hack to deal w/ the fact that hyperscript can't resolve classnames currently
-        var idiomorph = Idiomorph;
-    </script>
-    <style>
-        .smooth {
-            transition: all ease 200ms;
-        }
-    </style>
 </head>
 <body>
 
-<main style="padding-bottom: 64px">
-    <h1>Idiomorph Demo</h1>
+<script>
+    function doMorph() {
+        let html = "<html><head><title>Hello</title></head><body>World</body></html>"
+        Idiomorph.morph(document.documentElement, html);
+    }
+</script>
 
-    <h3>Inputs</h3>
-
-    <div class="f-row">
-        <div class="c-col margin">
-            <h3>Initial HTML</h3>
-            <textarea rows="15" id="initial-html"></textarea>
-        </div>
-        <div class="c-col  margin">
-            <h3>Final HTML</h3>
-            <textarea rows="15" id="final-html"></textarea>
-        </div>
-    </div>
-
-    <div class="f-row margin">
-        <button _="on click put the #initial-html's value into the #work-area">
-            Set To Initial
-        </button>
-        <button _="on click send reset to #work-area
-                            if the #delay's value is not empty
-                              wait #delay's value as Int seconds
-                            end
-                            set workSource to `<div id='work-area'>${the #final-html's value}</div>`
-                            idiomorph.morph(#work-area, workSource)">
-            Idiomporh
-        </button>
-
-
-        <button _="on click send reset to #work-area
-                            if the #delay's value is not empty
-                              wait #delay's value as Int seconds
-                            end
-                            set workSource to `<div id='work-area'>${the #final-html's value}</div>`
-                            morphdom(#work-area, workSource, {})">
-            Morphdom
-        </button>
-        <label for="delay">Delay:</label>
-        <input id="delay" type="number">
-
-
-    </div>
-
-
-    <div><label>Total Mutations:</label> <output class="stats" id="mutations"></output></div>
-    <div><label>Added:</label> <output class="stats" id="added"></output></div>
-    <div><label>Removed:</label> <output class="stats" id="removed"></output></div>
-
-    <h3>Work Area</h3>
-    <div _="on mutation of anything
-               set mutations to the mutationList of the event's detail
-               log mutations
-               put mutations.length into #mutations
-               put mutations.reduce(\ sum, m -> sum + m.addedNodes.length, 0) into #added
-               put mutations.reduce(\ sum, m -> sum + m.removedNodes.length, 0) into #removed
-           on reset put '0' into .stats">
-        <div id="work-area">
-        </div>
-    </div>
-
-</main>
-
+<button onclick='doMorph()'>
+    Test
+</button>
 
 </body>
 </html>

@@ -89,8 +89,12 @@
                     return newContent;
                 } else {
                     ctx.callbacks.beforeNodeMorphed(oldNode, newContent)
-                    syncNodeFrom(newContent, oldNode);
-                    morphChildren(newContent, oldNode, ctx);
+                    if (oldNode instanceof HTMLHeadElement && ctx.head.strategy !== "morph") {
+                        handleHeadElement(newContent, oldNode, ctx);
+                    } else {
+                        syncNodeFrom(newContent, oldNode);
+                        morphChildren(newContent, oldNode, ctx);
+                    }
                     ctx.callbacks.afterNodeMorphed(oldNode, newContent)
                     return oldNode;
                 }
@@ -277,8 +281,92 @@
             }
 
             //=============================================================================
+            // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' strategy
+            //=============================================================================
+            function handleHeadElement(newHeadTag, currentHead, ctx) {
+
+                let added = []
+                let removed = []
+                let preserved = []
+                let nodesToAppend = []
+
+                let headMergeStrategy = ctx.head.strategy;
+
+                // put all new head elements into a Map, by their outerHTML
+                let srcToNewHeadNodes = new Map();
+                for (const newHeadChild of newHeadTag.children) {
+                    srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
+                }
+
+                // for each elt in the current head
+                for (const currentHeadElt of currentHead.children) {
+
+                    // If the current head element is in the map
+                    let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
+                    let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
+                    let isPreserved = ctx.head.shouldPreserve(currentHeadElt);
+                    if (inNewContent || isPreserved) {
+                        if (isReAppended) {
+                            // remove the current version and let the new version replace it and re-execute
+                            removed.push(currentHeadElt);
+                        } else {
+                            // this element already exists and should not be re-appended, so remove it from
+                            // the new content map, preserving it in the DOM
+                            srcToNewHeadNodes.delete(currentHeadElt.outerHTML);
+                            preserved.push(currentHeadElt);
+                        }
+                    } else {
+                        if (headMergeStrategy === "append") {
+                            // we are appending and this existing element is not new content
+                            // so if and only if it is marked for re-append do we do anything
+                            if (isReAppended) {
+                                removed.push(currentHeadElt);
+                                nodesToAppend.push(currentHeadElt);
+                            }
+                        } else {
+                            // if this is a merge, we remove this content since it is not in the new head
+                            if (ctx.head.shouldRemove(currentHeadElt) !== false) {
+                                removed.push(currentHeadElt);
+                            }
+                        }
+                    }
+                }
+
+                // Push the remaining new head elements in the Map into the
+                // nodes to append to the head tag
+                nodesToAppend.push(...srcToNewHeadNodes.values());
+                log("to append: ", nodesToAppend);
+
+                for (const newNode of nodesToAppend) {
+                    log("adding: ", newNode);
+                    let newElt = document.createRange().createContextualFragment(newNode.outerHTML);
+                    log(newElt);
+                    if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+                        currentHead.appendChild(newElt);
+                        ctx.callbacks.afterNodeAdded(newElt);
+                        added.push(newElt);
+                    }
+                }
+
+                // remove all removed elements, after we have appended the new elements to avoid
+                // additional network requests for things like style sheets
+                for (const removedElement of removed) {
+                    if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
+                        currentHead.removeChild(removedElement);
+                        ctx.callbacks.afterNodeRemoved(removedElement);
+                    }
+                }
+
+                ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed})
+            }
+
+            //=============================================================================
             // Misc
             //=============================================================================
+
+            function log() {
+                //console.log(arguments);
+            }
 
             function noOp() {}
 
@@ -293,7 +381,15 @@
                         afterNodeMorphed : noOp,
                         beforeNodeRemoved: noOp,
                         afterNodeRemoved : noOp,
+
                     }, config.callbacks),
+                    head: Object.assign({
+                        strategy: 'merge',
+                        shouldPreserve : noOp,
+                        shouldReAppend : noOp,
+                        shouldRemove : noOp,
+                        afterHeadMorphed : noOp,
+                    }, config.head),
                 }
             }
 
@@ -418,14 +514,28 @@
 
             function parseContent(newContent) {
                 let parser = new DOMParser();
-                let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
-                let content = responseDoc.body.querySelector('template').content;
-                content.generatedByIdiomorph = true;
-                return content
+
+                // remove svgs to avoid false-positive matches on head, etc.
+                let contentWithSvgsRemoved = newContent.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim, '');
+
+                // if the newContent contains a html, head or body tag, we can simply parse it w/o wrapping
+                if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
+                    let content = parser.parseFromString(newContent, "text/html");
+                    content.generatedByIdiomorph = true;
+                    return content;
+                } else {
+                    // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help
+                    // deal with touchy tags like tr, tbody, etc.
+                    let responseDoc = parser.parseFromString("<body><template>" + newContent + "</template></body>", "text/html");
+                    let content = responseDoc.body.querySelector('template').content;
+                    content.generatedByIdiomorph = true;
+                    return content
+                }
             }
 
             function normalizeContent(newContent) {
                 if (newContent == null) {
+                    // noinspection UnnecessaryLocalVariableJS
                     const dummyParent = document.createElement('div');
                     return dummyParent;
                 } else if (newContent.generatedByIdiomorph) {
@@ -472,7 +582,7 @@
             }
 
             function findBestNodeMatch(newContent, oldNode, ctx) {
-                let currentElement = null;
+                let currentElement;
                 currentElement = newContent.firstChild;
                 let bestElement = currentElement;
                 let score = 0;

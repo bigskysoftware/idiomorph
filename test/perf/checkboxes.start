@@ -1,0 +1,609 @@
+<div id="list-values">
+    <input checked="checked" class="very-hidden" id="cb-expect-ikeys" name="expect.ikeys" type="checkbox" value="True">
+    <div class="form-check mx-auto filter-check" hx-post="ml" hx-target="#ml-lander" hx-trigger="click consume" hx-vals='{"base.sort.col": "rank", "base.sort.dir": "a", "filter.sort.str": "", "filter.sort.col": "", "modal.name": "symbol", "duplicated.col": ""}' id="cb-outer-combo-0">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="(Select All)" id="cb-0" name="i" style="pointer-events: none;" type="checkbox" value="0">
+        <label class="form-check-label w-10" for="cb-0" id="cb-label-0">
+            (Select All)
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-1">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="AAVE" id="cb-1" name="i" type="checkbox" value="1">
+        <label class="form-check-label w-10" for="cb-1" id="cb-label-1">
+            AAVE
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-2">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ADA" id="cb-2" name="i" type="checkbox" value="2">
+        <label class="form-check-label w-10" for="cb-2" id="cb-label-2">
+            ADA
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-3">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ALGO" id="cb-3" name="i" type="checkbox" value="3">
+        <label class="form-check-label w-10" for="cb-3" id="cb-label-3">
+            ALGO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-4">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="APE" id="cb-4" name="i" type="checkbox" value="4">
+        <label class="form-check-label w-10" for="cb-4" id="cb-label-4">
+            APE
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-5">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="AR" id="cb-5" name="i" type="checkbox" value="5">
+        <label class="form-check-label w-10" for="cb-5" id="cb-label-5">
+            AR
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-6">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ATOM" id="cb-6" name="i" type="checkbox" value="6">
+        <label class="form-check-label w-10" for="cb-6" id="cb-label-6">
+            ATOM
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-7">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="AVAX" id="cb-7" name="i" type="checkbox" value="7">
+        <label class="form-check-label w-10" for="cb-7" id="cb-label-7">
+            AVAX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-8">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="AXS" id="cb-8" name="i" type="checkbox" value="8">
+        <label class="form-check-label w-10" for="cb-8" id="cb-label-8">
+            AXS
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-9">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BAT" id="cb-9" name="i" type="checkbox" value="9">
+        <label class="form-check-label w-10" for="cb-9" id="cb-label-9">
+            BAT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-10">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BCH" id="cb-10" name="i" type="checkbox" value="10">
+        <label class="form-check-label w-10" for="cb-10" id="cb-label-10">
+            BCH
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-11">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BIT" id="cb-11" name="i" type="checkbox" value="11">
+        <label class="form-check-label w-10" for="cb-11" id="cb-label-11">
+            BIT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-12">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BMAX" id="cb-12" name="i" type="checkbox" value="12">
+        <label class="form-check-label w-10" for="cb-12" id="cb-label-12">
+            BMAX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-13">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BNB" id="cb-13" name="i" type="checkbox" value="13">
+        <label class="form-check-label w-10" for="cb-13" id="cb-label-13">
+            BNB
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-14">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BOT" id="cb-14" name="i" type="checkbox" value="14">
+        <label class="form-check-label w-10" for="cb-14" id="cb-label-14">
+            BOT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-15">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BSV" id="cb-15" name="i" type="checkbox" value="15">
+        <label class="form-check-label w-10" for="cb-15" id="cb-label-15">
+            BSV
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-16">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BTC" id="cb-16" name="i" type="checkbox" value="16">
+        <label class="form-check-label w-10" for="cb-16" id="cb-label-16">
+            BTC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-17">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BTT" id="cb-17" name="i" type="checkbox" value="17">
+        <label class="form-check-label w-10" for="cb-17" id="cb-label-17">
+            BTT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-18">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="BUSD" id="cb-18" name="i" type="checkbox" value="18">
+        <label class="form-check-label w-10" for="cb-18" id="cb-label-18">
+            BUSD
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-19">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CAKE" id="cb-19" name="i" type="checkbox" value="19">
+        <label class="form-check-label w-10" for="cb-19" id="cb-label-19">
+            CAKE
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-20">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CDAI" id="cb-20" name="i" type="checkbox" value="20">
+        <label class="form-check-label w-10" for="cb-20" id="cb-label-20">
+            CDAI
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-21">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CETH" id="cb-21" name="i" type="checkbox" value="21">
+        <label class="form-check-label w-10" for="cb-21" id="cb-label-21">
+            CETH
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-22">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CHZ" id="cb-22" name="i" type="checkbox" value="22">
+        <label class="form-check-label w-10" for="cb-22" id="cb-label-22">
+            CHZ
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-23">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CRO" id="cb-23" name="i" type="checkbox" value="23">
+        <label class="form-check-label w-10" for="cb-23" id="cb-label-23">
+            CRO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-24">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CUSDC" id="cb-24" name="i" type="checkbox" value="24">
+        <label class="form-check-label w-10" for="cb-24" id="cb-label-24">
+            CUSDC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-25">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="CWBTC" id="cb-25" name="i" type="checkbox" value="25">
+        <label class="form-check-label w-10" for="cb-25" id="cb-label-25">
+            CWBTC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-26">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="DAI" id="cb-26" name="i" type="checkbox" value="26">
+        <label class="form-check-label w-10" for="cb-26" id="cb-label-26">
+            DAI
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-27">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="DASH" id="cb-27" name="i" type="checkbox" value="27">
+        <label class="form-check-label w-10" for="cb-27" id="cb-label-27">
+            DASH
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-28">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="DOGE" id="cb-28" name="i" type="checkbox" value="28">
+        <label class="form-check-label w-10" for="cb-28" id="cb-label-28">
+            DOGE
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-29">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="DOT" id="cb-29" name="i" type="checkbox" value="29">
+        <label class="form-check-label w-10" for="cb-29" id="cb-label-29">
+            DOT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-30">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ECOIN" id="cb-30" name="i" type="checkbox" value="30">
+        <label class="form-check-label w-10" for="cb-30" id="cb-label-30">
+            ECOIN
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-31">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="EGLD" id="cb-31" name="i" type="checkbox" value="31">
+        <label class="form-check-label w-10" for="cb-31" id="cb-label-31">
+            EGLD
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-32">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ENJ" id="cb-32" name="i" type="checkbox" value="32">
+        <label class="form-check-label w-10" for="cb-32" id="cb-label-32">
+            ENJ
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-33">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ENS" id="cb-33" name="i" type="checkbox" value="33">
+        <label class="form-check-label w-10" for="cb-33" id="cb-label-33">
+            ENS
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-34">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="EOS" id="cb-34" name="i" type="checkbox" value="34">
+        <label class="form-check-label w-10" for="cb-34" id="cb-label-34">
+            EOS
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-35">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ETC" id="cb-35" name="i" type="checkbox" value="35">
+        <label class="form-check-label w-10" for="cb-35" id="cb-label-35">
+            ETC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-36">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ETH" id="cb-36" name="i" type="checkbox" value="36">
+        <label class="form-check-label w-10" for="cb-36" id="cb-label-36">
+            ETH
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-37">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ETHW" id="cb-37" name="i" type="checkbox" value="37">
+        <label class="form-check-label w-10" for="cb-37" id="cb-label-37">
+            ETHW
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-38">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="EVMOS" id="cb-38" name="i" type="checkbox" value="38">
+        <label class="form-check-label w-10" for="cb-38" id="cb-label-38">
+            EVMOS
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-39">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FEI" id="cb-39" name="i" type="checkbox" value="39">
+        <label class="form-check-label w-10" for="cb-39" id="cb-label-39">
+            FEI
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-40">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FIL" id="cb-40" name="i" type="checkbox" value="40">
+        <label class="form-check-label w-10" for="cb-40" id="cb-label-40">
+            FIL
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-41">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FLOW" id="cb-41" name="i" type="checkbox" value="41">
+        <label class="form-check-label w-10" for="cb-41" id="cb-label-41">
+            FLOW
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-42">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FRAX" id="cb-42" name="i" type="checkbox" value="42">
+        <label class="form-check-label w-10" for="cb-42" id="cb-label-42">
+            FRAX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-43">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FRAX3CRV-f" id="cb-43" name="i" type="checkbox" value="43">
+        <label class="form-check-label w-10" for="cb-43" id="cb-label-43">
+            FRAX3CRV-f
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-44">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FTM" id="cb-44" name="i" type="checkbox" value="44">
+        <label class="form-check-label w-10" for="cb-44" id="cb-label-44">
+            FTM
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-45">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="FTT" id="cb-45" name="i" type="checkbox" value="45">
+        <label class="form-check-label w-10" for="cb-45" id="cb-label-45">
+            FTT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-46">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="G-UNI" id="cb-46" name="i" type="checkbox" value="46">
+        <label class="form-check-label w-10" for="cb-46" id="cb-label-46">
+            G-UNI
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-47">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="GRT" id="cb-47" name="i" type="checkbox" value="47">
+        <label class="form-check-label w-10" for="cb-47" id="cb-label-47">
+            GRT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-48">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="GT" id="cb-48" name="i" type="checkbox" value="48">
+        <label class="form-check-label w-10" for="cb-48" id="cb-label-48">
+            GT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-49">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="HBAR" id="cb-49" name="i" type="checkbox" value="49">
+        <label class="form-check-label w-10" for="cb-49" id="cb-label-49">
+            HBAR
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-50">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="HEART" id="cb-50" name="i" type="checkbox" value="50">
+        <label class="form-check-label w-10" for="cb-50" id="cb-label-50">
+            HEART
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-51">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="HNT" id="cb-51" name="i" type="checkbox" value="51">
+        <label class="form-check-label w-10" for="cb-51" id="cb-label-51">
+            HNT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-52">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="HT" id="cb-52" name="i" type="checkbox" value="52">
+        <label class="form-check-label w-10" for="cb-52" id="cb-label-52">
+            HT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-53">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ICP" id="cb-53" name="i" type="checkbox" value="53">
+        <label class="form-check-label w-10" for="cb-53" id="cb-label-53">
+            ICP
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-54">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="KAVA" id="cb-54" name="i" type="checkbox" value="54">
+        <label class="form-check-label w-10" for="cb-54" id="cb-label-54">
+            KAVA
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-55">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="KCS" id="cb-55" name="i" type="checkbox" value="55">
+        <label class="form-check-label w-10" for="cb-55" id="cb-label-55">
+            KCS
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-56">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="KLAY" id="cb-56" name="i" type="checkbox" value="56">
+        <label class="form-check-label w-10" for="cb-56" id="cb-label-56">
+            KLAY
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-57">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="LDO" id="cb-57" name="i" type="checkbox" value="57">
+        <label class="form-check-label w-10" for="cb-57" id="cb-label-57">
+            LDO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-58">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="LINK" id="cb-58" name="i" type="checkbox" value="58">
+        <label class="form-check-label w-10" for="cb-58" id="cb-label-58">
+            LINK
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-59">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="LTC" id="cb-59" name="i" type="checkbox" value="59">
+        <label class="form-check-label w-10" for="cb-59" id="cb-label-59">
+            LTC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-60">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="LUNC" id="cb-60" name="i" type="checkbox" value="60">
+        <label class="form-check-label w-10" for="cb-60" id="cb-label-60">
+            LUNC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-61">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="MANA" id="cb-61" name="i" type="checkbox" value="61">
+        <label class="form-check-label w-10" for="cb-61" id="cb-label-61">
+            MANA
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-62">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="MATIC" id="cb-62" name="i" type="checkbox" value="62">
+        <label class="form-check-label w-10" for="cb-62" id="cb-label-62">
+            MATIC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-63">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="MIOTA" id="cb-63" name="i" type="checkbox" value="63">
+        <label class="form-check-label w-10" for="cb-63" id="cb-label-63">
+            MIOTA
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-64">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="MKR" id="cb-64" name="i" type="checkbox" value="64">
+        <label class="form-check-label w-10" for="cb-64" id="cb-label-64">
+            MKR
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-65">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="NEAR" id="cb-65" name="i" type="checkbox" value="65">
+        <label class="form-check-label w-10" for="cb-65" id="cb-label-65">
+            NEAR
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-66">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="NEO" id="cb-66" name="i" type="checkbox" value="66">
+        <label class="form-check-label w-10" for="cb-66" id="cb-label-66">
+            NEO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-67">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="NEXO" id="cb-67" name="i" type="checkbox" value="67">
+        <label class="form-check-label w-10" for="cb-67" id="cb-label-67">
+            NEXO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-68">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="OSMO" id="cb-68" name="i" type="checkbox" value="68">
+        <label class="form-check-label w-10" for="cb-68" id="cb-label-68">
+            OSMO
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-69">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="PAXG" id="cb-69" name="i" type="checkbox" value="69">
+        <label class="form-check-label w-10" for="cb-69" id="cb-label-69">
+            PAXG
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-70">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="QNT" id="cb-70" name="i" type="checkbox" value="70">
+        <label class="form-check-label w-10" for="cb-70" id="cb-label-70">
+            QNT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-71">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="RUNE" id="cb-71" name="i" type="checkbox" value="71">
+        <label class="form-check-label w-10" for="cb-71" id="cb-label-71">
+            RUNE
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-72">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="SAND" id="cb-72" name="i" type="checkbox" value="72">
+        <label class="form-check-label w-10" for="cb-72" id="cb-label-72">
+            SAND
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-73">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="SHIB" id="cb-73" name="i" type="checkbox" value="73">
+        <label class="form-check-label w-10" for="cb-73" id="cb-label-73">
+            SHIB
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-74">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="SNX" id="cb-74" name="i" type="checkbox" value="74">
+        <label class="form-check-label w-10" for="cb-74" id="cb-label-74">
+            SNX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-75">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="SOL" id="cb-75" name="i" type="checkbox" value="75">
+        <label class="form-check-label w-10" for="cb-75" id="cb-label-75">
+            SOL
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-76">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="STETH" id="cb-76" name="i" type="checkbox" value="76">
+        <label class="form-check-label w-10" for="cb-76" id="cb-label-76">
+            STETH
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-77">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="THETA" id="cb-77" name="i" type="checkbox" value="77">
+        <label class="form-check-label w-10" for="cb-77" id="cb-label-77">
+            THETA
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-78">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="TKX" id="cb-78" name="i" type="checkbox" value="78">
+        <label class="form-check-label w-10" for="cb-78" id="cb-label-78">
+            TKX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-79">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="TRX" id="cb-79" name="i" type="checkbox" value="79">
+        <label class="form-check-label w-10" for="cb-79" id="cb-label-79">
+            TRX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-80">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="TUSD" id="cb-80" name="i" type="checkbox" value="80">
+        <label class="form-check-label w-10" for="cb-80" id="cb-label-80">
+            TUSD
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-81">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="UNI" id="cb-81" name="i" type="checkbox" value="81">
+        <label class="form-check-label w-10" for="cb-81" id="cb-label-81">
+            UNI
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-82">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="USDC" id="cb-82" name="i" type="checkbox" value="82">
+        <label class="form-check-label w-10" for="cb-82" id="cb-label-82">
+            USDC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-83">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="USDD" id="cb-83" name="i" type="checkbox" value="83">
+        <label class="form-check-label w-10" for="cb-83" id="cb-label-83">
+            USDD
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-84">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="USDP" id="cb-84" name="i" type="checkbox" value="84">
+        <label class="form-check-label w-10" for="cb-84" id="cb-label-84">
+            USDP
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-85">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="USDT" id="cb-85" name="i" type="checkbox" value="85">
+        <label class="form-check-label w-10" for="cb-85" id="cb-label-85">
+            USDT
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-86">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="USTC" id="cb-86" name="i" type="checkbox" value="86">
+        <label class="form-check-label w-10" for="cb-86" id="cb-label-86">
+            USTC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-87">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="VET" id="cb-87" name="i" type="checkbox" value="87">
+        <label class="form-check-label w-10" for="cb-87" id="cb-label-87">
+            VET
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-88">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="VGX" id="cb-88" name="i" type="checkbox" value="88">
+        <label class="form-check-label w-10" for="cb-88" id="cb-label-88">
+            VGX
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-89">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="WBTC" id="cb-89" name="i" type="checkbox" value="89">
+        <label class="form-check-label w-10" for="cb-89" id="cb-label-89">
+            WBTC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-90">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XCN" id="cb-90" name="i" type="checkbox" value="90">
+        <label class="form-check-label w-10" for="cb-90" id="cb-label-90">
+            XCN
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-91">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XDC" id="cb-91" name="i" type="checkbox" value="91">
+        <label class="form-check-label w-10" for="cb-91" id="cb-label-91">
+            XDC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-92">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XEC" id="cb-92" name="i" type="checkbox" value="92">
+        <label class="form-check-label w-10" for="cb-92" id="cb-label-92">
+            XEC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-93">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XLM" id="cb-93" name="i" type="checkbox" value="93">
+        <label class="form-check-label w-10" for="cb-93" id="cb-label-93">
+            XLM
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-94">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XMR" id="cb-94" name="i" type="checkbox" value="94">
+        <label class="form-check-label w-10" for="cb-94" id="cb-label-94">
+            XMR
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-95">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XRD" id="cb-95" name="i" type="checkbox" value="95">
+        <label class="form-check-label w-10" for="cb-95" id="cb-label-95">
+            XRD
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-96">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XRP" id="cb-96" name="i" type="checkbox" value="96">
+        <label class="form-check-label w-10" for="cb-96" id="cb-label-96">
+            XRP
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-97">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="XTZ" id="cb-97" name="i" type="checkbox" value="97">
+        <label class="form-check-label w-10" for="cb-97" id="cb-label-97">
+            XTZ
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-98">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ZEC" id="cb-98" name="i" type="checkbox" value="98">
+        <label class="form-check-label w-10" for="cb-98" id="cb-label-98">
+            ZEC
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-99">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="ZIL" id="cb-99" name="i" type="checkbox" value="99">
+        <label class="form-check-label w-10" for="cb-99" id="cb-label-99">
+            ZIL
+        </label>
+    </div>
+    <div class="form-check mx-auto filter-check" id="cb-outer-combo-100">
+        <input checked="checked" class="form-check-input float-none tcheckbox" data-value="f6-sOHM" id="cb-100" name="i" type="checkbox" value="100">
+        <label class="form-check-label w-10" for="cb-100" id="cb-label-100">
+            f6-sOHM
+        </label>
+    </div>
+</div>
