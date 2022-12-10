@@ -29,6 +29,10 @@
 
             function morph(oldNode, newContent, config = {}) {
 
+                if (oldNode instanceof Document) {
+                    oldNode = oldNode.documentElement;
+                }
+
                 if (typeof newContent === 'string') {
                     newContent = parseContent(newContent);
                 }
