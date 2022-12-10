@@ -24,9 +24,8 @@
             let EMPTY_SET = new Set();
 
             //=============================================================================
-            // Core Morphing Algorithm - morph, morphOldNodeTo, morphChildren
+            // Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
             //=============================================================================
-
             function morph(oldNode, newContent, config = {}) {
 
                 if (oldNode instanceof Document) {
@@ -41,16 +40,38 @@
 
                 let ctx = createMorphContext(oldNode, normalizedContent, config);
 
-                if (config.morphStyle === "innerHTML") {
+                return morphNormalizedContent(oldNode, normalizedContent, ctx);
+            }
+
+            function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
+                if (ctx.head.block) {
+                    let oldHead = oldNode.querySelector('head');
+                    let newHead = normalizedNewContent.querySelector('head');
+                    if (oldHead && newHead) {
+                        let promises = handleHeadElement(newHead, oldHead, ctx);
+                        // when head promises resolve, call morph again, ignoring the head tag
+                        Promise.all(promises).then(function () {
+                            morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
+                                head: {
+                                    block: false,
+                                    ignore: true
+                                }
+                            }));
+                        });
+                        return;
+                    }
+                }
+
+                if (ctx.morphStyle === "innerHTML") {
 
                     // innerHTML, so we are only updating the children
-                    morphChildren(normalizedContent, oldNode, ctx);
+                    morphChildren(normalizedNewContent, oldNode, ctx);
                     return oldNode.children;
 
-                } else if(config.morphStyle === "outerHTML" || config.morphStyle == null) {
+                } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
                     // otherwise find the best element match in the new content, morph that, and merge its siblings
                     // into either side of the best match
-                    let bestMatch = findBestNodeMatch(normalizedContent, oldNode, ctx);
+                    let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
 
                     // stash the siblings that will need to be inserted on either side of the best match
                     let previousSibling = bestMatch?.previousSibling;
@@ -68,9 +89,11 @@
                         return []
                     }
                 } else {
-                    throw "Do not understand how to morph style " + config.morphStyle;
+                    throw "Do not understand how to morph style " + ctx.morphStyle;
                 }
             }
+
+
 
             /**
              * @param oldNode root node to merge content into
@@ -93,7 +116,9 @@
                     return newContent;
                 } else {
                     ctx.callbacks.beforeNodeMorphed(oldNode, newContent)
-                    if (oldNode instanceof HTMLHeadElement && ctx.head.strategy !== "morph") {
+                    if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+                        // ignore the head element
+                    } else if (oldNode instanceof HTMLHeadElement && ctx.head.strategy !== "morph") {
                         handleHeadElement(newContent, oldNode, ctx);
                     } else {
                         syncNodeFrom(newContent, oldNode);
@@ -341,11 +366,22 @@
                 nodesToAppend.push(...srcToNewHeadNodes.values());
                 log("to append: ", nodesToAppend);
 
+                let promises = [];
                 for (const newNode of nodesToAppend) {
                     log("adding: ", newNode);
-                    let newElt = document.createRange().createContextualFragment(newNode.outerHTML);
+                    let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
                     log(newElt);
                     if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+                        if (newElt.href || newElt.src) {
+                            let resolve = null;
+                            let promise = new Promise(function (_resolve) {
+                                resolve = _resolve;
+                            });
+                            newElt.addEventListener('load',function() {
+                                resolve();
+                            });
+                            promises.push(promise);
+                        }
                         currentHead.appendChild(newElt);
                         ctx.callbacks.afterNodeAdded(newElt);
                         added.push(newElt);
@@ -361,7 +397,8 @@
                     }
                 }
 
-                ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed})
+                ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed});
+                return promises;
             }
 
             //=============================================================================
@@ -376,6 +413,9 @@
 
             function createMorphContext(oldNode, newContent, config) {
                 return {
+                    target:oldNode,
+                    newContent: newContent,
+                    config: config,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
