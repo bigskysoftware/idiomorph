@@ -102,9 +102,11 @@
              * @returns {Element} the element that ended up in the DOM
              */
             function morphOldNodeTo(oldNode, newContent, ctx) {
-                if (newContent == null) {
+                if (ctx.ignoreActive && oldNode === document.activeElement) {
+                    // don't morph focused element
+                } else if (newContent == null) {
                     ctx.callbacks.beforeNodeRemoved(oldNode);
-                    oldNode.remove()
+                    oldNode.remove();
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
@@ -115,16 +117,16 @@
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
-                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent)
+                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent);
                     if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
                         // ignore the head element
-                    } else if (oldNode instanceof HTMLHeadElement && ctx.head.strategy !== "morph") {
+                    } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                         handleHeadElement(newContent, oldNode, ctx);
                     } else {
                         syncNodeFrom(newContent, oldNode);
                         morphChildren(newContent, oldNode, ctx);
                     }
-                    ctx.callbacks.afterNodeMorphed(oldNode, newContent)
+                    ctx.callbacks.afterNodeMorphed(oldNode, newContent);
                     return oldNode;
                 }
             }
@@ -310,7 +312,7 @@
             }
 
             //=============================================================================
-            // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' strategy
+            // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
             //=============================================================================
             function handleHeadElement(newHeadTag, currentHead, ctx) {
 
@@ -319,7 +321,7 @@
                 let preserved = []
                 let nodesToAppend = []
 
-                let headMergeStrategy = ctx.head.strategy;
+                let headMergeStyle = ctx.head.style;
 
                 // put all new head elements into a Map, by their outerHTML
                 let srcToNewHeadNodes = new Map();
@@ -345,7 +347,7 @@
                             preserved.push(currentHeadElt);
                         }
                     } else {
-                        if (headMergeStrategy === "append") {
+                        if (headMergeStyle === "append") {
                             // we are appending and this existing element is not new content
                             // so if and only if it is marked for re-append do we do anything
                             if (isReAppended) {
@@ -417,6 +419,7 @@
                     newContent: newContent,
                     config: config,
                     morphStyle : config.morphStyle,
+                    ignoreActive : config.ignoreActive,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
@@ -429,7 +432,7 @@
 
                     }, config.callbacks),
                     head: Object.assign({
-                        strategy: 'merge',
+                        style: 'merge',
                         shouldPreserve : function(elt) {
                             return elt.getAttribute("im-preserve") === "true";
                         },
@@ -570,8 +573,20 @@
                 // if the newContent contains a html, head or body tag, we can simply parse it w/o wrapping
                 if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
                     let content = parser.parseFromString(newContent, "text/html");
-                    content.generatedByIdiomorph = true;
-                    return content;
+                    // if it is a full HTML document, return the document itself as the parent container
+                    if (contentWithSvgsRemoved.match(/<\/html>/)) {
+                        content.generatedByIdiomorph = true;
+                        return content;
+                    } else {
+                        // otherwise return the html element as the parent container
+                        let htmlElement = content.firstChild;
+                        if (htmlElement) {
+                            htmlElement.generatedByIdiomorph = true;
+                            return htmlElement;
+                        } else {
+                            return null;
+                        }
+                    }
                 } else {
                     // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help
                     // deal with touchy tags like tr, tbody, etc.

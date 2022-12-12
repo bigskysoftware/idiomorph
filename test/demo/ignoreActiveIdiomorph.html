@@ -1,0 +1,37 @@
+<html>
+<head>
+    <script type="text/javascript">
+        var bodySource = "";
+        document.addEventListener("DOMContentLoaded", function() {
+            bodySource = document.body.outerHTML;
+        })
+
+        function genNewSrc() {
+            let rand = Math.random() * 255
+            let newColor = `hsl(${rand} 100% 90%)`;
+            let newSrc = bodySource.replace("white", newColor)
+            return newSrc;
+        }
+
+        function updateWIdiomorph(ignoreActive) {
+            Idiomorph.morph(document.body, genNewSrc(), {ignoreActive: ignoreActive, swapStyle:'outerHTML'});
+        }
+
+        function updateWMorphdom() {
+            morphdom(document.body, genNewSrc());
+        }
+    </script>
+    <script src="../../src/idiomorph.js"></script>
+    <script src="../lib/morphdom.js"></script>
+</head>
+<body style="background-color: white;height:100%">
+<h1>Ignore Active Demo...</h1>
+
+<h2>Idiomorph w/o Ignore Active</h2>
+<input onkeyup="updateWIdiomorph(false)">
+
+<h2>Idiomorph w Ignore Active</h2>
+<input onkeyup="updateWIdiomorph(true)">
+
+</body>
+</html>

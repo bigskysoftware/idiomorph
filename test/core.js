@@ -1,4 +1,4 @@
-describe("Tests to ensure inner and outer morphing works properly", function(){
+describe("Core morphing tests", function(){
 
     beforeEach(function() {
         clearWorkArea();
@@ -183,6 +183,20 @@ describe("Tests to ensure inner and outer morphing works properly", function(){
         let initial = make("<div>Foo</div>");
         Idiomorph.morph(initial, [], {morphStyle:'innerHTML'});
         initial.outerHTML.should.equal("<div></div>");
+    });
+
+    it('ignores active element when ignoreActive set to true', function()
+    {
+        let initialSource = "<div><div id='d1'>Foo</div><input id='i1'></div>";
+        getWorkArea().innerHTML = initialSource;
+        let i1 = document.getElementById('i1');
+        i1.focus();
+        let d1 = document.getElementById('d1');
+        i1.value = "asdf";
+        let finalSource = "<div><div id='d1'>Bar</div><input id='i1'></div>";
+        Idiomorph.morph(getWorkArea(), finalSource, {morphStyle:'innerHTML', ignoreActive:true});
+        d1.innerText.should.equal("Bar")
+        i1.value.should.equal("asdf")
     });
 
 })

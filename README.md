@@ -65,6 +65,17 @@ in a third config argument:
 
 This will replace the _inner_ content of the existing node with the new content.
 
+### Options
+
+Idiomorph supports the following options:
+
+| option         | meaning                                                                                                     | example                                                                 |
+|----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| `morphstyle`   | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                        |
+| `ignoreActive` | If set to `true`, idiomorph will skip the active element                                                    | `Idiomorph.morph(..., {ignoreActive:true})`                             |
+| `head`         | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                            |
+| `callbacks`    | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callback:{beforeNodeAdded:function(node){...}})` |
+
 ### The `head` tag
 
 The head tag is treated specially by idiomorph because:
@@ -106,7 +117,7 @@ You can set `head.stategy` to:
 For example, if you wanted to merge a whole page using the `morph` algorithm for the head tag, you would do this:
 
 ```js
-Idiomorph.morph(document.documentElement, newPageSource, {head:{strategy: 'morph'}})
+Idiomorph.morph(document.documentElement, newPageSource, {head:{style: 'morph'}})
 ```
 
 The `head` object also offers callbacks for configuring head merging specifics.

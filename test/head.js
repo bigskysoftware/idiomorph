@@ -53,7 +53,7 @@ describe("Tests to ensure that the head tag merging works correctly", function()
         let parser = new DOMParser();
         let document = parser.parseFromString("<html><head><title>Foo</title><meta name='foo' content='bar'></head></html>", "text/html");
         let originalHead = document.head;
-        Idiomorph.morph(document, "<html><head><meta name='foo' content='bar'><title>Foo</title></head></html>", {head:{strategy:'morph'}});
+        Idiomorph.morph(document, "<html><head><meta name='foo' content='bar'><title>Foo</title></head></html>", {head:{style:'morph'}});
 
         originalHead.should.equal(document.head);
         originalHead.childNodes.length.should.equal(2);
@@ -65,7 +65,7 @@ describe("Tests to ensure that the head tag merging works correctly", function()
         let parser = new DOMParser();
         let document = parser.parseFromString("<html><head><title>Foo</title></head></html>", "text/html");
         let originalHead = document.head;
-        Idiomorph.morph(document, "<html><head><meta name='foo' content='bar'></head></html>", {head:{strategy:'append'}});
+        Idiomorph.morph(document, "<html><head><meta name='foo' content='bar'></head></html>", {head:{style:'append'}});
 
         originalHead.should.equal(document.head);
         originalHead.childNodes.length.should.equal(2);
