@@ -416,6 +416,7 @@
                     target:oldNode,
                     newContent: newContent,
                     config: config,
+                    morphStyle : config.morphStyle,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
