@@ -24,10 +24,13 @@
             let EMPTY_SET = new Set();
 
             //=============================================================================
-            // Core Morphing Algorithm - morph, morphOldNodeTo, morphChildren
+            // Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
             //=============================================================================
-
             function morph(oldNode, newContent, config = {}) {
+
+                if (oldNode instanceof Document) {
+                    oldNode = oldNode.documentElement;
+                }
 
                 if (typeof newContent === 'string') {
                     newContent = parseContent(newContent);
@@ -37,16 +40,38 @@
 
                 let ctx = createMorphContext(oldNode, normalizedContent, config);
 
-                if (config.morphStyle === "innerHTML") {
+                return morphNormalizedContent(oldNode, normalizedContent, ctx);
+            }
+
+            function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
+                if (ctx.head.block) {
+                    let oldHead = oldNode.querySelector('head');
+                    let newHead = normalizedNewContent.querySelector('head');
+                    if (oldHead && newHead) {
+                        let promises = handleHeadElement(newHead, oldHead, ctx);
+                        // when head promises resolve, call morph again, ignoring the head tag
+                        Promise.all(promises).then(function () {
+                            morphNormalizedContent(oldNode, normalizedNewContent, Object.assign(ctx, {
+                                head: {
+                                    block: false,
+                                    ignore: true
+                                }
+                            }));
+                        });
+                        return;
+                    }
+                }
+
+                if (ctx.morphStyle === "innerHTML") {
 
                     // innerHTML, so we are only updating the children
-                    morphChildren(normalizedContent, oldNode, ctx);
+                    morphChildren(normalizedNewContent, oldNode, ctx);
                     return oldNode.children;
 
-                } else if(config.morphStyle === "outerHTML" || config.morphStyle == null) {
+                } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
                     // otherwise find the best element match in the new content, morph that, and merge its siblings
                     // into either side of the best match
-                    let bestMatch = findBestNodeMatch(normalizedContent, oldNode, ctx);
+                    let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
 
                     // stash the siblings that will need to be inserted on either side of the best match
                     let previousSibling = bestMatch?.previousSibling;
@@ -64,9 +89,11 @@
                         return []
                     }
                 } else {
-                    throw "Do not understand how to morph style " + config.morphStyle;
+                    throw "Do not understand how to morph style " + ctx.morphStyle;
                 }
             }
+
+
 
             /**
              * @param oldNode root node to merge content into
@@ -75,9 +102,11 @@
              * @returns {Element} the element that ended up in the DOM
              */
             function morphOldNodeTo(oldNode, newContent, ctx) {
-                if (newContent == null) {
+                if (ctx.ignoreActive && oldNode === document.activeElement) {
+                    // don't morph focused element
+                } else if (newContent == null) {
                     ctx.callbacks.beforeNodeRemoved(oldNode);
-                    oldNode.remove()
+                    oldNode.remove();
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
@@ -88,14 +117,16 @@
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
-                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent)
-                    if (oldNode instanceof HTMLHeadElement && ctx.head.strategy !== "morph") {
+                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent);
+                    if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+                        // ignore the head element
+                    } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                         handleHeadElement(newContent, oldNode, ctx);
                     } else {
                         syncNodeFrom(newContent, oldNode);
                         morphChildren(newContent, oldNode, ctx);
                     }
-                    ctx.callbacks.afterNodeMorphed(oldNode, newContent)
+                    ctx.callbacks.afterNodeMorphed(oldNode, newContent);
                     return oldNode;
                 }
             }
@@ -281,7 +312,7 @@
             }
 
             //=============================================================================
-            // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' strategy
+            // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
             //=============================================================================
             function handleHeadElement(newHeadTag, currentHead, ctx) {
 
@@ -290,7 +321,7 @@
                 let preserved = []
                 let nodesToAppend = []
 
-                let headMergeStrategy = ctx.head.strategy;
+                let headMergeStyle = ctx.head.style;
 
                 // put all new head elements into a Map, by their outerHTML
                 let srcToNewHeadNodes = new Map();
@@ -316,7 +347,7 @@
                             preserved.push(currentHeadElt);
                         }
                     } else {
-                        if (headMergeStrategy === "append") {
+                        if (headMergeStyle === "append") {
                             // we are appending and this existing element is not new content
                             // so if and only if it is marked for re-append do we do anything
                             if (isReAppended) {
@@ -337,11 +368,22 @@
                 nodesToAppend.push(...srcToNewHeadNodes.values());
                 log("to append: ", nodesToAppend);
 
+                let promises = [];
                 for (const newNode of nodesToAppend) {
                     log("adding: ", newNode);
-                    let newElt = document.createRange().createContextualFragment(newNode.outerHTML);
+                    let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
                     log(newElt);
                     if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+                        if (newElt.href || newElt.src) {
+                            let resolve = null;
+                            let promise = new Promise(function (_resolve) {
+                                resolve = _resolve;
+                            });
+                            newElt.addEventListener('load',function() {
+                                resolve();
+                            });
+                            promises.push(promise);
+                        }
                         currentHead.appendChild(newElt);
                         ctx.callbacks.afterNodeAdded(newElt);
                         added.push(newElt);
@@ -357,7 +399,8 @@
                     }
                 }
 
-                ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed})
+                ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed});
+                return promises;
             }
 
             //=============================================================================
@@ -372,6 +415,11 @@
 
             function createMorphContext(oldNode, newContent, config) {
                 return {
+                    target:oldNode,
+                    newContent: newContent,
+                    config: config,
+                    morphStyle : config.morphStyle,
+                    ignoreActive : config.ignoreActive,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
@@ -384,9 +432,13 @@
 
                     }, config.callbacks),
                     head: Object.assign({
-                        strategy: 'merge',
-                        shouldPreserve : noOp,
-                        shouldReAppend : noOp,
+                        style: 'merge',
+                        shouldPreserve : function(elt) {
+                            return elt.getAttribute("im-preserve") === "true";
+                        },
+                        shouldReAppend : function(elt) {
+                            return elt.getAttribute("im-re-append") === "true";
+                        },
                         shouldRemove : noOp,
                         afterHeadMorphed : noOp,
                     }, config.head),
@@ -521,8 +573,20 @@
                 // if the newContent contains a html, head or body tag, we can simply parse it w/o wrapping
                 if (contentWithSvgsRemoved.match(/<\/html>/) || contentWithSvgsRemoved.match(/<\/head>/) || contentWithSvgsRemoved.match(/<\/body>/)) {
                     let content = parser.parseFromString(newContent, "text/html");
-                    content.generatedByIdiomorph = true;
-                    return content;
+                    // if it is a full HTML document, return the document itself as the parent container
+                    if (contentWithSvgsRemoved.match(/<\/html>/)) {
+                        content.generatedByIdiomorph = true;
+                        return content;
+                    } else {
+                        // otherwise return the html element as the parent container
+                        let htmlElement = content.firstChild;
+                        if (htmlElement) {
+                            htmlElement.generatedByIdiomorph = true;
+                            return htmlElement;
+                        } else {
+                            return null;
+                        }
+                    }
                 } else {
                     // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help
                     // deal with touchy tags like tr, tbody, etc.
