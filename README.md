@@ -119,11 +119,12 @@ in this case to retain the element.
 
 You are also able to override these behaviors, see the `head` config object in the source code.
 
-You can set `head.stategy` to:
+You can set `head.style` to:
 
 * `merge` - the default algorithm outlined above
 * `append` - simply append all content in `new` to `old`
 * `morph` - adopt the normal idiomorph morphing algorithm for the head
+* `none` - ignore the head tag entirely
 
 For example, if you wanted to merge a whole page using the `morph` algorithm for the head tag, you would do this:
 
