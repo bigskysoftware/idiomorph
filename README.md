@@ -76,6 +76,17 @@ Idiomorph supports the following options:
 | `head`         | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                            |
 | `callbacks`    | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callback:{beforeNodeAdded:function(node){...}})` |
 
+#### Callbacks
+
+| callback          | description                                  |
+|-------------------|----------------------------------------------|
+| beforeNodeAdded   | Called before a new node is added to the DOM |
+| afterNodeAdded    | Called after a new node is added to the DOM  |
+| beforeNodeMorphed | Called before a node is morphed in the DOM   |
+| afterNodeMorphed  | Called after a node is morphed in the DOM    |
+| beforeNodeRemoved | Called before a node is removed from the DOM |
+| afterNodeRemoved  | Called after a node is removed from the DOM  |
+
 ### The `head` tag
 
 The head tag is treated specially by idiomorph because:
