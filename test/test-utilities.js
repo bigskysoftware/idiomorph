@@ -30,6 +30,11 @@ function makeElements(htmlStr) {
     return fragment.children;
 }
 
+function parseHTML(src) {
+    let parser = new DOMParser();
+    return parser.parseFromString(src, "text/html");
+}
+
 function getWorkArea() {
     return document.getElementById("work-area");
 }

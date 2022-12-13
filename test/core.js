@@ -199,4 +199,22 @@ describe("Core morphing tests", function(){
         i1.value.should.equal("asdf")
     });
 
+    it('can morph a body tag properly', function()
+    {
+        let initial = parseHTML("<body>Foo</body>");
+        let finalSrc = '<body foo="bar">Foo</body>';
+        let final = parseHTML(finalSrc);
+        Idiomorph.morph(initial.body, final.body);
+        initial.body.outerHTML.should.equal(finalSrc);
+
+    });
+
+    it('can morph a full document properly', function()
+    {
+        let initial = parseHTML("<html><body>Foo</body></html>");
+        let finalSrc = '<html foo="bar"><head></head><body foo="bar">Foo</body></html>';
+        Idiomorph.morph(initial, finalSrc);
+        initial.documentElement.outerHTML.should.equal(finalSrc);
+    });
+
 })
