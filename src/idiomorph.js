@@ -157,61 +157,58 @@
 
                 let nextNewChild = newParent.firstChild;
                 let insertionPoint = oldParent.firstChild;
+                let newChild;
 
                 // run through all the new content
                 while (nextNewChild) {
 
-                    let newChild = nextNewChild;
+                    newChild = nextNewChild;
                     nextNewChild = newChild.nextSibling;
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
-
                         ctx.callbacks.beforeNodeAdded(newChild);
                         oldParent.appendChild(newChild);
                         ctx.callbacks.afterNodeAdded(newChild);
-
-                        // if the current node has an id set match then morph
-                    } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-
-                        morphOldNodeTo(insertionPoint, newChild, ctx);
-                        insertionPoint = insertionPoint.nextSibling;
-
-                    } else {
-
-                        // otherwise search forward in the existing old children for an id set match
-                        let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                        // if we found a potential match, remove the nodes until that point and morph
-                        if (idSetMatch) {
-
-                            insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-                            morphOldNodeTo(idSetMatch, newChild, ctx);
-
-                        } else {
-
-                            // no id set match found, so scan forward for a soft match for the current node
-                            let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                            // if we found a soft match for the current node, morph
-                            if (softMatch) {
-
-                                insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                                morphOldNodeTo(softMatch, newChild, ctx);
-
-                            } else {
-
-                                // abandon all hope of morphing, just insert the new child before the insertion point
-                                // and move on
-                                ctx.callbacks.beforeNodeAdded(newChild);
-                                oldParent.insertBefore(newChild, insertionPoint);
-                                ctx.callbacks.afterNodeAdded(newChild);
-
-                            }
-                        }
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
                     }
 
-                    // remove the processed new contents ids from consideration in future merge decisions
+                    // if the current node has an id set match then morph
+                    if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+                        morphOldNodeTo(insertionPoint, newChild, ctx);
+                        insertionPoint = insertionPoint.nextSibling;
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // otherwise search forward in the existing old children for an id set match
+                    let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a potential match, remove the nodes until that point and morph
+                    if (idSetMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+                        morphOldNodeTo(idSetMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // no id set match found, so scan forward for a soft match for the current node
+                    let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a soft match for the current node, morph
+                    if (softMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+                        morphOldNodeTo(softMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // abandon all hope of morphing, just insert the new child before the insertion point
+                    // and move on
+                    ctx.callbacks.beforeNodeAdded(newChild);
+                    oldParent.insertBefore(newChild, insertionPoint);
+                    ctx.callbacks.afterNodeAdded(newChild);
                     removeIdsFromConsideration(ctx, newChild);
                 }
 
