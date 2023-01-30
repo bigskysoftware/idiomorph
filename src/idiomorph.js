@@ -269,22 +269,14 @@
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
 
-                    let fromValue = from.value;
-                    let toValue = to.value;
+                    to.value = from.value || '';
+                    syncAttribute(from, to, 'value');
 
                     // sync boolean attributes
-                    syncBooleanAttribute(from, to, 'checked');
-                    syncBooleanAttribute(from, to, 'disabled');
-
-                    if (!from.hasAttribute('value')) {
-                        to.value = '';
-                        to.removeAttribute('value');
-                    } else if (fromValue !== toValue) {
-                        to.setAttribute('value', fromValue);
-                        to.value = fromValue;
-                    }
+                    syncAttribute(from, to, 'checked');
+                    syncAttribute(from, to, 'disabled');
                 } else if (from instanceof HTMLOptionElement) {
-                    syncBooleanAttribute(from, to, 'selected')
+                    syncAttribute(from, to, 'selected')
                 } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                     let fromValue = from.value;
                     let toValue = to.value;
@@ -297,11 +289,10 @@
                 }
             }
 
-            function syncBooleanAttribute(from, to, attributeName) {
+            function syncAttribute(from, to, attributeName) {
                 if (from[attributeName] !== to[attributeName]) {
-                    to[attributeName] = from[attributeName];
                     if (from[attributeName]) {
-                        to.setAttribute(attributeName, '');
+                        to.setAttribute(attributeName, from[attributeName]);
                     } else {
                         to.removeAttribute(attributeName);
                     }
