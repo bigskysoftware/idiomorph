@@ -157,61 +157,58 @@
 
                 let nextNewChild = newParent.firstChild;
                 let insertionPoint = oldParent.firstChild;
+                let newChild;
 
                 // run through all the new content
                 while (nextNewChild) {
 
-                    let newChild = nextNewChild;
+                    newChild = nextNewChild;
                     nextNewChild = newChild.nextSibling;
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
-
                         ctx.callbacks.beforeNodeAdded(newChild);
                         oldParent.appendChild(newChild);
                         ctx.callbacks.afterNodeAdded(newChild);
-
-                        // if the current node has an id set match then morph
-                    } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-
-                        morphOldNodeTo(insertionPoint, newChild, ctx);
-                        insertionPoint = insertionPoint.nextSibling;
-
-                    } else {
-
-                        // otherwise search forward in the existing old children for an id set match
-                        let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                        // if we found a potential match, remove the nodes until that point and morph
-                        if (idSetMatch) {
-
-                            insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-                            morphOldNodeTo(idSetMatch, newChild, ctx);
-
-                        } else {
-
-                            // no id set match found, so scan forward for a soft match for the current node
-                            let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                            // if we found a soft match for the current node, morph
-                            if (softMatch) {
-
-                                insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                                morphOldNodeTo(softMatch, newChild, ctx);
-
-                            } else {
-
-                                // abandon all hope of morphing, just insert the new child before the insertion point
-                                // and move on
-                                ctx.callbacks.beforeNodeAdded(newChild);
-                                oldParent.insertBefore(newChild, insertionPoint);
-                                ctx.callbacks.afterNodeAdded(newChild);
-
-                            }
-                        }
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
                     }
 
-                    // remove the processed new contents ids from consideration in future merge decisions
+                    // if the current node has an id set match then morph
+                    if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+                        morphOldNodeTo(insertionPoint, newChild, ctx);
+                        insertionPoint = insertionPoint.nextSibling;
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // otherwise search forward in the existing old children for an id set match
+                    let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a potential match, remove the nodes until that point and morph
+                    if (idSetMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+                        morphOldNodeTo(idSetMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // no id set match found, so scan forward for a soft match for the current node
+                    let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a soft match for the current node, morph
+                    if (softMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+                        morphOldNodeTo(softMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // abandon all hope of morphing, just insert the new child before the insertion point
+                    // and move on
+                    ctx.callbacks.beforeNodeAdded(newChild);
+                    oldParent.insertBefore(newChild, insertionPoint);
+                    ctx.callbacks.afterNodeAdded(newChild);
                     removeIdsFromConsideration(ctx, newChild);
                 }
 
@@ -272,22 +269,14 @@
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
 
-                    let fromValue = from.value;
-                    let toValue = to.value;
+                    to.value = from.value || '';
+                    syncAttribute(from, to, 'value');
 
                     // sync boolean attributes
-                    syncBooleanAttribute(from, to, 'checked');
-                    syncBooleanAttribute(from, to, 'disabled');
-
-                    if (!from.hasAttribute('value')) {
-                        to.value = '';
-                        to.removeAttribute('value');
-                    } else if (fromValue !== toValue) {
-                        to.setAttribute('value', fromValue);
-                        to.value = fromValue;
-                    }
+                    syncAttribute(from, to, 'checked');
+                    syncAttribute(from, to, 'disabled');
                 } else if (from instanceof HTMLOptionElement) {
-                    syncBooleanAttribute(from, to, 'selected')
+                    syncAttribute(from, to, 'selected')
                 } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                     let fromValue = from.value;
                     let toValue = to.value;
@@ -300,11 +289,10 @@
                 }
             }
 
-            function syncBooleanAttribute(from, to, attributeName) {
+            function syncAttribute(from, to, attributeName) {
                 if (from[attributeName] !== to[attributeName]) {
-                    to[attributeName] = from[attributeName];
                     if (from[attributeName]) {
-                        to.setAttribute(attributeName, '');
+                        to.setAttribute(attributeName, from[attributeName]);
                     } else {
                         to.removeAttribute(attributeName);
                     }
