@@ -105,19 +105,22 @@
                 if (ctx.ignoreActive && oldNode === document.activeElement) {
                     // don't morph focused element
                 } else if (newContent == null) {
-                    ctx.callbacks.beforeNodeRemoved(oldNode);
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+
                     oldNode.remove();
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
-                    ctx.callbacks.beforeNodeRemoved(oldNode);
-                    ctx.callbacks.beforeNodeAdded(newContent);
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+                    if (ctx.callbacks.beforeNodeAdded(newContent) === false) return;
+
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     ctx.callbacks.afterNodeAdded(newContent);
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
-                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent);
+                    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
+
                     if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
                         // ignore the head element
                     } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
@@ -167,7 +170,8 @@
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
-                        ctx.callbacks.beforeNodeAdded(newChild);
+                        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+
                         oldParent.appendChild(newChild);
                         ctx.callbacks.afterNodeAdded(newChild);
                         removeIdsFromConsideration(ctx, newChild);
@@ -206,7 +210,8 @@
 
                     // abandon all hope of morphing, just insert the new child before the insertion point
                     // and move on
-                    ctx.callbacks.beforeNodeAdded(newChild);
+                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+
                     oldParent.insertBefore(newChild, insertionPoint);
                     ctx.callbacks.afterNodeAdded(newChild);
                     removeIdsFromConsideration(ctx, newChild);
@@ -658,7 +663,8 @@
 
             function removeNode(tempNode, ctx) {
                 removeIdsFromConsideration(ctx, tempNode)
-                ctx.callbacks.beforeNodeRemoved(tempNode);
+                if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
+
                 tempNode.remove();
                 ctx.callbacks.afterNodeRemoved(tempNode);
             }
