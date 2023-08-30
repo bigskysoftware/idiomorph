@@ -79,9 +79,7 @@ function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
  * @returns {Element} the element that ended up in the DOM
  */
 function morphOldNodeTo(oldNode, newContent, ctx) {
-    if (ctx.ignoreActive && oldNode === document.activeElement) {
-        // don't morph focused element
-    } else if (newContent == null) {
+    if (ctx.ignoreActive && oldNode === document.activeElement) ; else if (newContent == null) {
         if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
 
         oldNode.remove();
@@ -98,9 +96,7 @@ function morphOldNodeTo(oldNode, newContent, ctx) {
     } else {
         if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
 
-        if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
-            // ignore the head element
-        } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
+        if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) ; else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
             handleHeadElement(newContent, oldNode, ctx);
         } else {
             syncNodeFrom(newContent, oldNode);
@@ -215,7 +211,7 @@ function morphChildren(newParent, oldParent, ctx) {
  * @param {Element} to the element to copy attributes & state to
  */
 function syncNodeFrom(from, to) {
-    let type = from.nodeType
+    let type = from.nodeType;
 
     // if is an element type, sync the attributes from the
     // new node into the new node
@@ -258,7 +254,7 @@ function syncNodeFrom(from, to) {
         syncAttribute(from, to, 'checked');
         syncAttribute(from, to, 'disabled');
     } else if (from instanceof HTMLOptionElement) {
-        syncAttribute(from, to, 'selected')
+        syncAttribute(from, to, 'selected');
     } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
         let fromValue = from.value;
         let toValue = to.value;
@@ -266,7 +262,7 @@ function syncNodeFrom(from, to) {
             to.value = fromValue;
         }
         if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
-            to.firstChild.nodeValue = fromValue
+            to.firstChild.nodeValue = fromValue;
         }
     }
 }
@@ -286,10 +282,10 @@ function syncAttribute(from, to, attributeName) {
 //=============================================================================
 function handleHeadElement(newHeadTag, currentHead, ctx) {
 
-    let added = []
-    let removed = []
-    let preserved = []
-    let nodesToAppend = []
+    let added = [];
+    let removed = [];
+    let preserved = [];
+    let nodesToAppend = [];
 
     let headMergeStyle = ctx.head.style;
 
@@ -336,13 +332,10 @@ function handleHeadElement(newHeadTag, currentHead, ctx) {
     // Push the remaining new head elements in the Map into the
     // nodes to append to the head tag
     nodesToAppend.push(...srcToNewHeadNodes.values());
-    log("to append: ", nodesToAppend);
 
     let promises = [];
     for (const newNode of nodesToAppend) {
-        log("adding: ", newNode);
         let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
-        log(newElt);
         if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
             if (newElt.href || newElt.src) {
                 let resolve = null;
@@ -371,14 +364,6 @@ function handleHeadElement(newHeadTag, currentHead, ctx) {
 
     ctx.head.afterHeadMorphed(currentHead, {added: added, kept: preserved, removed: removed});
     return promises;
-}
-
-//=============================================================================
-// Misc
-//=============================================================================
-
-function log() {
-    //console.log(arguments);
 }
 
 function noOp() {}
@@ -592,8 +577,8 @@ function normalizeContent(newContent) {
 }
 
 function insertSiblings(previousSibling, morphedNode, nextSibling) {
-    let stack = []
-    let added = []
+    let stack = [];
+    let added = [];
     while (previousSibling != null) {
         stack.push(previousSibling);
         previousSibling = previousSibling.previousSibling;
@@ -639,7 +624,7 @@ function scoreElement(node1, node2, ctx) {
 }
 
 function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode)
+    removeIdsFromConsideration(ctx, tempNode);
     if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
 
     tempNode.remove();
@@ -728,4 +713,6 @@ function createIdMap(oldContent, newContent) {
 //=============================================================================
 // This is what ends up becoming the Idiomorph export
 //=============================================================================
-export default { morph }
+var idiomorph = { morph };
+
+export { idiomorph as default };

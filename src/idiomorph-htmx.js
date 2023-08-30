@@ -1,3 +1,5 @@
+import Idiomorph from './idiomorph.js';
+
 htmx.defineExtension('morph', {
     isInlineSwap: function(swapStyle) {
         return swapStyle === 'morph';
@@ -10,3 +12,5 @@ htmx.defineExtension('morph', {
         }
     }
 });
+
+export default Idiomorph;
