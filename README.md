@@ -69,12 +69,13 @@ This will replace the _inner_ content of the existing node with the new content.
 
 Idiomorph supports the following options:
 
-| option         | meaning                                                                                                     | example                                                                 |
-|----------------|-------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| `morphstyle`   | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                        |
-| `ignoreActive` | If set to `true`, idiomorph will skip the active element                                                    | `Idiomorph.morph(..., {ignoreActive:true})`                             |
-| `head`         | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                            |
-| `callbacks`    | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
+| option              | meaning                                                                                                     | example                                                                  |
+|---------------------|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `morphstyle`        | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
+| `ignoreActive`      | If set to `true`, idiomorph will skip the active element                                                    | `Idiomorph.morph(..., {ignoreActive:true})`                              |
+| `ignoreActiveValue` | If set to `true`, idiomorph will not update the active element's value                                      | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
+| `head`              | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                             |
+| `callbacks`         | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
 
 #### Callbacks
 

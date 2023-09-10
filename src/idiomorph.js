@@ -94,6 +94,14 @@
             }
 
 
+            /**
+             * @param possibleActiveElement
+             * @param ctx
+             * @returns {boolean}
+             */
+            function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
+                return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement;
+            }
 
             /**
              * @param oldNode root node to merge content into
@@ -126,8 +134,10 @@
                     } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                         handleHeadElement(newContent, oldNode, ctx);
                     } else {
-                        syncNodeFrom(newContent, oldNode);
-                        morphChildren(newContent, oldNode, ctx);
+                        syncNodeFrom(newContent, oldNode, ctx);
+                        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+                            morphChildren(newContent, oldNode, ctx);
+                        }
                     }
                     ctx.callbacks.afterNodeMorphed(oldNode, newContent);
                     return oldNode;
@@ -237,7 +247,7 @@
              * @param {Element} from the element to copy attributes & state from
              * @param {Element} to the element to copy attributes & state to
              */
-            function syncNodeFrom(from, to) {
+            function syncNodeFrom(from, to, ctx) {
                 let type = from.nodeType
 
                 // if is an element type, sync the attributes from the
@@ -246,6 +256,9 @@
                     const fromAttributes = from.attributes;
                     const toAttributes = to.attributes;
                     for (const fromAttribute of fromAttributes) {
+                        if (fromAttribute.name === 'value' && ignoreValueOfActiveElement(to, ctx)) {
+                            continue;
+                        }
                         if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
                             to.setAttribute(fromAttribute.name, fromAttribute.value);
                         }
@@ -264,12 +277,27 @@
                     }
                 }
 
-                // NB: many bothans died to bring us information:
-                //
-                // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
-                // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+                if (!ignoreValueOfActiveElement(to, ctx)) {
+                    // sync input values
+                    syncInputValue(from, to);
+                }
+            }
 
-                // sync input value
+            function syncAttribute(from, to, attributeName) {
+                if (from[attributeName] !== to[attributeName]) {
+                    if (from[attributeName]) {
+                        to.setAttribute(attributeName, from[attributeName]);
+                    } else {
+                        to.removeAttribute(attributeName);
+                    }
+                }
+            }
+
+            // NB: many bothans died to bring us information:
+            //
+            // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
+            // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+            function syncInputValue(from, to) {
                 if (from instanceof HTMLInputElement &&
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
@@ -290,16 +318,6 @@
                     }
                     if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
                         to.firstChild.nodeValue = fromValue
-                    }
-                }
-            }
-
-            function syncAttribute(from, to, attributeName) {
-                if (from[attributeName] !== to[attributeName]) {
-                    if (from[attributeName]) {
-                        to.setAttribute(attributeName, from[attributeName]);
-                    } else {
-                        to.removeAttribute(attributeName);
                     }
                 }
             }
@@ -413,6 +431,7 @@
                     config: config,
                     morphStyle : config.morphStyle,
                     ignoreActive : config.ignoreActive,
+                    ignoreActiveValue : config.ignoreActiveValue,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({

@@ -217,4 +217,54 @@ describe("Core morphing tests", function(){
         initial.documentElement.outerHTML.should.equal(finalSrc);
     });
 
+    it('ignores active input value when ignoreActiveValue is true', function()
+    {
+        let parent = make("<div><input value='foo'></div>");
+        document.body.append(parent);
+
+        let initial = parent.querySelector("input");
+
+        // morph
+        let finalSrc = '<input value="bar">';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        initial.outerHTML.should.equal('<input value="bar">');
+
+        initial.focus();
+
+        document.activeElement.should.equal(initial);
+
+        let finalSrc2 = '<input class="foo" value="doh">';
+        Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', ignoreActiveValue: true});
+        initial.value.should.equal('bar');
+        initial.classList.value.should.equal('foo');
+
+        document.body.removeChild(parent);
+    });
+
+    it('ignores active textarea value when ignoreActiveValue is true', function()
+    {
+        let parent = make("<div><textarea>foo</textarea></div>");
+        document.body.append(parent);
+        let initial = parent.querySelector("textarea");
+
+        let finalSrc = '<textarea>bar</textarea>';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        if (initial.outerHTML !== '<input value="bar">') {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + finalSrc);
+        }
+        initial.outerHTML.should.equal('<textarea>bar</textarea>');
+
+        initial.focus();
+
+        document.activeElement.should.equal(initial);
+
+        let finalSrc2 = '<textarea class="foo">doh</textarea>';
+        Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', ignoreActiveValue: true});
+        initial.outerHTML.should.equal('<textarea class="foo">bar</textarea>');
+
+        document.body.removeChild(parent);
+    });
+
+
 })

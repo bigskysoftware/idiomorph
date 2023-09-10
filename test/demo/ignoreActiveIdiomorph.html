@@ -9,12 +9,15 @@
         function genNewSrc() {
             let rand = Math.random() * 255
             let newColor = `hsl(${rand} 100% 90%)`;
-            let newSrc = bodySource.replace("white", newColor)
+            let newSrc = bodySource.replaceAll("white", newColor)
+            rand = Math.random() * 255
+            newColor = `hsl(${rand} 100% 50%)`;
+            newSrc = newSrc.replaceAll("black", newColor)
             return newSrc;
         }
 
         function updateWIdiomorph(ignoreActive) {
-            Idiomorph.morph(document.body, genNewSrc(), {ignoreActive: ignoreActive, swapStyle:'outerHTML'});
+            Idiomorph.morph(document.body, genNewSrc(), {ignoreActiveValue: ignoreActive, swapStyle:'outerHTML'});
         }
 
         function updateWMorphdom() {
@@ -25,13 +28,13 @@
     <script src="../lib/morphdom.js"></script>
 </head>
 <body style="background-color: white;height:100%">
-<h1>Ignore Active Demo...</h1>
+<h1>Ignore Active Value Demo...</h1>
 
-<h2>Idiomorph w/o Ignore Active</h2>
-<input onkeyup="updateWIdiomorph(false)">
+<h2>Idiomorph w/o Ignore Active Value</h2>
+<input style="border: 10px solid black" onkeyup="updateWIdiomorph(false)">
 
-<h2>Idiomorph w Ignore Active</h2>
-<input onkeyup="updateWIdiomorph(true)">
+<h2>Idiomorph w Ignore Active Value</h2>
+<input style="border: 10px solid black" onkeyup="updateWIdiomorph(true)">
 
 </body>
 </html>
