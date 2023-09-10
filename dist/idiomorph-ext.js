@@ -94,6 +94,14 @@
             }
 
 
+            /**
+             * @param possibleActiveElement
+             * @param ctx
+             * @returns {boolean}
+             */
+            function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
+                return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement;
+            }
 
             /**
              * @param oldNode root node to merge content into
@@ -105,26 +113,31 @@
                 if (ctx.ignoreActive && oldNode === document.activeElement) {
                     // don't morph focused element
                 } else if (newContent == null) {
-                    ctx.callbacks.beforeNodeRemoved(oldNode);
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+
                     oldNode.remove();
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
-                    ctx.callbacks.beforeNodeRemoved(oldNode);
-                    ctx.callbacks.beforeNodeAdded(newContent);
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+                    if (ctx.callbacks.beforeNodeAdded(newContent) === false) return;
+
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     ctx.callbacks.afterNodeAdded(newContent);
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
-                    ctx.callbacks.beforeNodeMorphed(oldNode, newContent);
+                    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
+
                     if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
                         // ignore the head element
                     } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                         handleHeadElement(newContent, oldNode, ctx);
                     } else {
-                        syncNodeFrom(newContent, oldNode);
-                        morphChildren(newContent, oldNode, ctx);
+                        syncNodeFrom(newContent, oldNode, ctx);
+                        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+                            morphChildren(newContent, oldNode, ctx);
+                        }
                     }
                     ctx.callbacks.afterNodeMorphed(oldNode, newContent);
                     return oldNode;
@@ -157,61 +170,60 @@
 
                 let nextNewChild = newParent.firstChild;
                 let insertionPoint = oldParent.firstChild;
+                let newChild;
 
                 // run through all the new content
                 while (nextNewChild) {
 
-                    let newChild = nextNewChild;
+                    newChild = nextNewChild;
                     nextNewChild = newChild.nextSibling;
 
                     // if we are at the end of the exiting parent's children, just append
                     if (insertionPoint == null) {
+                        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
 
-                        ctx.callbacks.beforeNodeAdded(newChild);
                         oldParent.appendChild(newChild);
                         ctx.callbacks.afterNodeAdded(newChild);
-
-                        // if the current node has an id set match then morph
-                    } else if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-
-                        morphOldNodeTo(insertionPoint, newChild, ctx);
-                        insertionPoint = insertionPoint.nextSibling;
-
-                    } else {
-
-                        // otherwise search forward in the existing old children for an id set match
-                        let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                        // if we found a potential match, remove the nodes until that point and morph
-                        if (idSetMatch) {
-
-                            insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-                            morphOldNodeTo(idSetMatch, newChild, ctx);
-
-                        } else {
-
-                            // no id set match found, so scan forward for a soft match for the current node
-                            let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
-
-                            // if we found a soft match for the current node, morph
-                            if (softMatch) {
-
-                                insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                                morphOldNodeTo(softMatch, newChild, ctx);
-
-                            } else {
-
-                                // abandon all hope of morphing, just insert the new child before the insertion point
-                                // and move on
-                                ctx.callbacks.beforeNodeAdded(newChild);
-                                oldParent.insertBefore(newChild, insertionPoint);
-                                ctx.callbacks.afterNodeAdded(newChild);
-
-                            }
-                        }
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
                     }
 
-                    // remove the processed new contents ids from consideration in future merge decisions
+                    // if the current node has an id set match then morph
+                    if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+                        morphOldNodeTo(insertionPoint, newChild, ctx);
+                        insertionPoint = insertionPoint.nextSibling;
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // otherwise search forward in the existing old children for an id set match
+                    let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a potential match, remove the nodes until that point and morph
+                    if (idSetMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+                        morphOldNodeTo(idSetMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // no id set match found, so scan forward for a soft match for the current node
+                    let softMatch = findSoftMatch(newParent, oldParent, newChild, insertionPoint, ctx);
+
+                    // if we found a soft match for the current node, morph
+                    if (softMatch) {
+                        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+                        morphOldNodeTo(softMatch, newChild, ctx);
+                        removeIdsFromConsideration(ctx, newChild);
+                        continue;
+                    }
+
+                    // abandon all hope of morphing, just insert the new child before the insertion point
+                    // and move on
+                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+
+                    oldParent.insertBefore(newChild, insertionPoint);
+                    ctx.callbacks.afterNodeAdded(newChild);
                     removeIdsFromConsideration(ctx, newChild);
                 }
 
@@ -235,7 +247,7 @@
              * @param {Element} from the element to copy attributes & state from
              * @param {Element} to the element to copy attributes & state to
              */
-            function syncNodeFrom(from, to) {
+            function syncNodeFrom(from, to, ctx) {
                 let type = from.nodeType
 
                 // if is an element type, sync the attributes from the
@@ -244,6 +256,9 @@
                     const fromAttributes = from.attributes;
                     const toAttributes = to.attributes;
                     for (const fromAttribute of fromAttributes) {
+                        if (fromAttribute.name === 'value' && ignoreValueOfActiveElement(to, ctx)) {
+                            continue;
+                        }
                         if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
                             to.setAttribute(fromAttribute.name, fromAttribute.value);
                         }
@@ -262,32 +277,39 @@
                     }
                 }
 
-                // NB: many bothans died to bring us information:
-                //
-                // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
-                // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+                if (!ignoreValueOfActiveElement(to, ctx)) {
+                    // sync input values
+                    syncInputValue(from, to);
+                }
+            }
 
-                // sync input value
+            function syncAttribute(from, to, attributeName) {
+                if (from[attributeName] !== to[attributeName]) {
+                    if (from[attributeName]) {
+                        to.setAttribute(attributeName, from[attributeName]);
+                    } else {
+                        to.removeAttribute(attributeName);
+                    }
+                }
+            }
+
+            // NB: many bothans died to bring us information:
+            //
+            // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
+            // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+            function syncInputValue(from, to) {
                 if (from instanceof HTMLInputElement &&
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
 
-                    let fromValue = from.value;
-                    let toValue = to.value;
+                    to.value = from.value || '';
+                    syncAttribute(from, to, 'value');
 
                     // sync boolean attributes
-                    syncBooleanAttribute(from, to, 'checked');
-                    syncBooleanAttribute(from, to, 'disabled');
-
-                    if (!from.hasAttribute('value')) {
-                        to.value = '';
-                        to.removeAttribute('value');
-                    } else if (fromValue !== toValue) {
-                        to.setAttribute('value', fromValue);
-                        to.value = fromValue;
-                    }
+                    syncAttribute(from, to, 'checked');
+                    syncAttribute(from, to, 'disabled');
                 } else if (from instanceof HTMLOptionElement) {
-                    syncBooleanAttribute(from, to, 'selected')
+                    syncAttribute(from, to, 'selected')
                 } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                     let fromValue = from.value;
                     let toValue = to.value;
@@ -296,17 +318,6 @@
                     }
                     if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
                         to.firstChild.nodeValue = fromValue
-                    }
-                }
-            }
-
-            function syncBooleanAttribute(from, to, attributeName) {
-                if (from[attributeName] !== to[attributeName]) {
-                    to[attributeName] = from[attributeName];
-                    if (from[attributeName]) {
-                        to.setAttribute(attributeName, '');
-                    } else {
-                        to.removeAttribute(attributeName);
                     }
                 }
             }
@@ -420,6 +431,7 @@
                     config: config,
                     morphStyle : config.morphStyle,
                     ignoreActive : config.ignoreActive,
+                    ignoreActiveValue : config.ignoreActiveValue,
                     idMap: createIdMap(oldNode, newContent),
                     deadIds: new Set(),
                     callbacks: Object.assign({
@@ -670,7 +682,8 @@
 
             function removeNode(tempNode, ctx) {
                 removeIdsFromConsideration(ctx, tempNode)
-                ctx.callbacks.beforeNodeRemoved(tempNode);
+                if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
+
                 tempNode.remove();
                 ctx.callbacks.afterNodeRemoved(tempNode);
             }
