@@ -253,21 +253,23 @@
                 // if is an element type, sync the attributes from the
                 // new node into the new node
                 if (type === 1 /* element type */) {
-                    const fromAttributes = from.attributes;
-                    const toAttributes = to.attributes;
-                    for (const fromAttribute of fromAttributes) {
+                    const fromAttributes = Object.values(from.attributes);
+                    const toAttributes = Object.values(to.attributes);
+
+                    fromAttributes.forEach(function (fromAttribute) {
                         if (fromAttribute.name === 'value' && ignoreValueOfActiveElement(to, ctx)) {
-                            continue;
+                            return;
                         }
                         if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
                             to.setAttribute(fromAttribute.name, fromAttribute.value);
                         }
-                    }
-                    for (const toAttribute of toAttributes) {
+                    });
+
+                    toAttributes.forEach(function (toAttribute) {
                         if (!from.hasAttribute(toAttribute.name)) {
                             to.removeAttribute(toAttribute.name);
                         }
-                    }
+                    });
                 }
 
                 // sync text nodes
