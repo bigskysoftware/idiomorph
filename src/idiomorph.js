@@ -1,5 +1,5 @@
 //=============================================================================
-// AMD insanity... i hate javascript so much
+// UMD insanity... i hate javascript so much
 //
 // IGNORE EVERYTHING FROM HERE UNTIL THE COMMENT SAYING 'AND NOW IT BEGINS..."
 //=============================================================================
@@ -9,6 +9,11 @@
         // AMD. Register as an anonymous module.
         //@ts-ignore
         define([], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
     } else {
         // Browser globals
         root.Idiomorph = root.Idiomorph || factory();
