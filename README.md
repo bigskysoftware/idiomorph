@@ -210,7 +210,7 @@ Idiomorph, on the other hand, has an _id set_ for the (id-less) children, which 
 Therefore, it is able to detect the fact that the #p2 grandchild is now a child of the first id-less child.  Because of
 this information it is able to only move/detach _one_ grandchild node, #p1.  (This is unavoidable, since they changed order)
 
-So, you can see, by computing id sets for nodes, idiomoroph is able to achieve better DOM matching, with fewer node 
+So, you can see, by computing id sets for nodes, idiomorph is able to achieve better DOM matching, with fewer node 
 detachments.
 
 ## Demo
@@ -236,7 +236,7 @@ For both algorithms, this HTML:
 </div>
 ```
 
-is moprhed into this HTML:
+is morphed into this HTML:
 
 ```html 
 <div>
@@ -257,7 +257,7 @@ that morphdom is unable to tell that the video element has moved up, and the fir
 
 Idiomorph, however, has an id-set for the top level divs, which includes the id of the embedded child, and can see that the video has moved to be a child of the first element in the top level children, so it correctly discards the first div and merges the video content with the second node.
 
-You can see visually that idiomoroph is able to keep the video running because of this, whereas morphdom is not:
+You can see visually that idiomorph is able to keep the video running because of this, whereas morphdom is not:
 
 ![Rick Roll Demo](https://github.com/bigskysoftware/Idiomorph/raw/main/test/demo/rickroll-idiomorph.gif)
 
