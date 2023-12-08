@@ -283,8 +283,9 @@
                 }
             }
 
-            function syncAttribute(from, to, attributeName) {
+            function syncBooleanAttribute(from, to, attributeName) {
                 if (from[attributeName] !== to[attributeName]) {
+                    to[attributeName] = from[attributeName];
                     if (from[attributeName]) {
                         to.setAttribute(attributeName, from[attributeName]);
                     } else {
@@ -302,14 +303,22 @@
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
 
-                    to.value = from.value || '';
-                    syncAttribute(from, to, 'value');
+                    let fromValue = from.value;
+                    let toValue = to.value;
 
                     // sync boolean attributes
-                    syncAttribute(from, to, 'checked');
-                    syncAttribute(from, to, 'disabled');
+                    syncBooleanAttribute(from, to, 'checked');
+                    syncBooleanAttribute(from, to, 'disabled');
+
+                    if (!from.hasAttribute('value')) {
+                        to.value = '';
+                        to.removeAttribute('value');
+                    } else if (fromValue !== toValue) {
+                        to.setAttribute('value', fromValue);
+                        to.value = fromValue;
+                    }
                 } else if (from instanceof HTMLOptionElement) {
-                    syncAttribute(from, to, 'selected')
+                    syncBooleanAttribute(from, to, 'selected')
                 } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                     let fromValue = from.value;
                     let toValue = to.value;
