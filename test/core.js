@@ -266,5 +266,74 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
+    it('can morph input checked properly, remove checked', function()
+    {
+        let parent = make('<div><input type="checkbox" checked></div>');
+        document.body.append(parent);
+        let initial = parent.querySelector("input");
 
+        let finalSrc = '<input type="checkbox">';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        if (initial.outerHTML !== '<input type="checkbox">') {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + finalSrc);
+        }
+        initial.outerHTML.should.equal('<input type="checkbox">');
+        initial.checked.should.equal(false);
+        document.body.removeChild(parent);
+    });
+
+    it('can morph input checked properly, add checked', function()
+    {
+        let parent = make('<div><input type="checkbox"></div>');
+        document.body.append(parent);
+        let initial = parent.querySelector("input");
+
+        let finalSrc = '<input type="checkbox" checked>';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        if (initial.outerHTML !== '<input type="checkbox" checked="">') {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + finalSrc);
+        }
+        initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+        initial.checked.should.equal(true);
+        document.body.removeChild(parent);
+    });
+
+    it('can morph input checked properly, set checked property to true', function()
+    {
+        let parent = make('<div><input type="checkbox" checked></div>');
+        document.body.append(parent);
+        let initial = parent.querySelector("input");
+        initial.checked = false;
+
+        let finalSrc = '<input type="checkbox" checked>';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        if (initial.outerHTML !== '<input type="checkbox" checked="true">') {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + finalSrc);
+        }
+        initial.outerHTML.should.equal('<input type="checkbox" checked="true">');
+        initial.checked.should.equal(true);
+        document.body.removeChild(parent);
+    });
+
+    it('can morph input checked properly, set checked property to false', function()
+    {
+        let parent = make('<div><input type="checkbox"></div>');
+        document.body.append(parent);
+        let initial = parent.querySelector("input");
+        initial.checked = true;
+
+        let finalSrc = '<input type="checkbox">';
+        initial.checked = false;
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        if (initial.outerHTML !== '<input type="checkbox">') {
+            console.log("HTML after morph: " + initial.outerHTML);
+            console.log("Expected:         " + finalSrc);
+        }
+        initial.outerHTML.should.equal('<input type="checkbox">');
+        initial.checked.should.equal(false);
+        document.body.removeChild(parent);
+    });
 })
