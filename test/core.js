@@ -326,7 +326,6 @@ describe("Core morphing tests", function(){
         initial.checked = true;
 
         let finalSrc = '<input type="checkbox">';
-        initial.checked = false;
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
         if (initial.outerHTML !== '<input type="checkbox">') {
             console.log("HTML after morph: " + initial.outerHTML);
