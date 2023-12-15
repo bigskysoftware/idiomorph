@@ -86,7 +86,32 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         testFidelity("<main></main>", "<main><p>hello you</p></main>")
     });
 
+    it('issue https://github.com/bigskysoftware/idiomorph/issues/11', function()
+    {
+        let el1 = make('<fieldset id="el"></fieldset>');
 
+        el1.classList.add('foo');
+        el1.disabled = true;
+
+        // Also fails (reorder setting class and disabling)
+        // el1.disabled = true;
+        // el1.classList.add('foo');
+
+        // Also fails (add and remove class)
+        // el1.classList.add('foo');
+        // el1.classList.remove('foo');
+        // el1.disabled = true;
+
+        let el2 = make('<fieldset id="el">hello</fieldset>')
+
+        // Act
+        Idiomorph.morph(el1, el2);
+
+        // Assert
+        should.equal('hello', el1.innerHTML);
+        should.equal(0, el1.classList.length);
+        should.equal(false, el1.disabled);
+    });
 
 
 })
