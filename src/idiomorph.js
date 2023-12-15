@@ -263,7 +263,9 @@
                             to.setAttribute(fromAttribute.name, fromAttribute.value);
                         }
                     }
-                    for (const toAttribute of toAttributes) {
+                    // iterate backwards to avoid skipping over items when a delete occurs
+                    for (let i = toAttributes.length - 1; 0 <= i; i--) {
+                        const toAttribute = toAttributes[i];
                         if (!from.hasAttribute(toAttribute.name)) {
                             to.removeAttribute(toAttribute.name);
                         }
