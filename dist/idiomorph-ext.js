@@ -1,5 +1,5 @@
 //=============================================================================
-// AMD insanity... i hate javascript so much
+// UMD insanity... i hate javascript so much
 //
 // IGNORE EVERYTHING FROM HERE UNTIL THE COMMENT SAYING 'AND NOW IT BEGINS..."
 //=============================================================================
@@ -9,6 +9,11 @@
         // AMD. Register as an anonymous module.
         //@ts-ignore
         define([], factory);
+    } else if (typeof module === 'object' && module.exports) {
+        // Node. Does not work with strict CommonJS, but
+        // only CommonJS-like environments that support module.exports,
+        // like Node.
+        module.exports = factory();
     } else {
         // Browser globals
         root.Idiomorph = root.Idiomorph || factory();
@@ -263,7 +268,9 @@
                             to.setAttribute(fromAttribute.name, fromAttribute.value);
                         }
                     }
-                    for (const toAttribute of toAttributes) {
+                    // iterate backwards to avoid skipping over items when a delete occurs
+                    for (let i = toAttributes.length - 1; 0 <= i; i--) {
+                        const toAttribute = toAttributes[i];
                         if (!from.hasAttribute(toAttribute.name)) {
                             to.removeAttribute(toAttribute.name);
                         }
