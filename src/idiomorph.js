@@ -118,21 +118,21 @@
                 if (ctx.ignoreActive && oldNode === document.activeElement) {
                     // don't morph focused element
                 } else if (newContent == null) {
-                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
 
                     oldNode.remove();
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return null;
                 } else if (!isSoftMatch(oldNode, newContent)) {
-                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
-                    if (ctx.callbacks.beforeNodeAdded(newContent) === false) return;
+                    if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
+                    if (ctx.callbacks.beforeNodeAdded(newContent) === false) return  oldNode;
 
                     oldNode.parentElement.replaceChild(newContent, oldNode);
                     ctx.callbacks.afterNodeAdded(newContent);
                     ctx.callbacks.afterNodeRemoved(oldNode);
                     return newContent;
                 } else {
-                    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
+                    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
 
                     if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
                         // ignore the head element
@@ -245,6 +245,13 @@
             // Attribute Syncing Code
             //=============================================================================
 
+            function ignoreAttribute(attr, to, updateType, ctx) {
+                if(attr === 'value' && ctx.ignoreActiveValue && to === document.activeElement){
+                    return true;
+                }
+                return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
+            }
+
             /**
              * syncs a given node with another node, copying over all attributes and
              * inner element state from the 'from' node to the 'to' node
@@ -261,7 +268,7 @@
                     const fromAttributes = from.attributes;
                     const toAttributes = to.attributes;
                     for (const fromAttribute of fromAttributes) {
-                        if (fromAttribute.name === 'value' && ignoreValueOfActiveElement(to, ctx)) {
+                        if (ignoreAttribute(fromAttribute.name, to, 'update', ctx)) {
                             continue;
                         }
                         if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
@@ -272,6 +279,9 @@
                     for (let i = toAttributes.length - 1; 0 <= i; i--) {
                         const toAttribute = toAttributes[i];
                         if (!from.hasAttribute(toAttribute.name)) {
+                            if (ignoreAttribute(toAttribute.name, to, 'remove', ctx)) {
+                                continue;
+                            }
                             to.removeAttribute(toAttribute.name);
                         }
                     }
@@ -286,17 +296,22 @@
 
                 if (!ignoreValueOfActiveElement(to, ctx)) {
                     // sync input values
-                    syncInputValue(from, to);
+                    syncInputValue(from, to, ctx);
                 }
             }
 
-            function syncBooleanAttribute(from, to, attributeName) {
+            function syncBooleanAttribute(from, to, attributeName, ctx) {
+
                 if (from[attributeName] !== to[attributeName]) {
                     to[attributeName] = from[attributeName];
                     if (from[attributeName]) {
-                        to.setAttribute(attributeName, from[attributeName]);
+                        if (!ignoreAttribute(attributeName, to, 'update', ctx)) {
+                            to.setAttribute(attributeName, from[attributeName]);
+                        }
                     } else {
-                        to.removeAttribute(attributeName);
+                        if (!ignoreAttribute(attributeName, to, 'remove', ctx)) {
+                            to.removeAttribute(attributeName);
+                        }
                     }
                 }
             }
@@ -305,7 +320,7 @@
             //
             // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
             // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
-            function syncInputValue(from, to) {
+            function syncInputValue(from, to, ctx) {
                 if (from instanceof HTMLInputElement &&
                     to instanceof HTMLInputElement &&
                     from.type !== 'file') {
@@ -314,21 +329,28 @@
                     let toValue = to.value;
 
                     // sync boolean attributes
-                    syncBooleanAttribute(from, to, 'checked');
-                    syncBooleanAttribute(from, to, 'disabled');
+                    syncBooleanAttribute(from, to, 'checked', ctx);
+                    syncBooleanAttribute(from, to, 'disabled', ctx);
 
                     if (!from.hasAttribute('value')) {
-                        to.value = '';
-                        to.removeAttribute('value');
+                        if (!ignoreAttribute('value', to, 'remove', ctx)) {
+                            to.value = '';
+                            to.removeAttribute('value');
+                        }
                     } else if (fromValue !== toValue) {
-                        to.setAttribute('value', fromValue);
-                        to.value = fromValue;
+                        if (!ignoreAttribute('value', to, 'update', ctx)) {
+                            to.setAttribute('value', fromValue);
+                            to.value = fromValue;
+                        }
                     }
                 } else if (from instanceof HTMLOptionElement) {
-                    syncBooleanAttribute(from, to, 'selected')
+                    syncBooleanAttribute(from, to, 'selected', ctx)
                 } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                     let fromValue = from.value;
                     let toValue = to.value;
+                    if (ignoreAttribute('value', to, 'update', ctx)) {
+                        return;
+                    }
                     if (fromValue !== toValue) {
                         to.value = fromValue;
                     }
@@ -457,6 +479,7 @@
                         afterNodeMorphed : noOp,
                         beforeNodeRemoved: noOp,
                         afterNodeRemoved : noOp,
+                        beforeAttributeUpdated: noOp,
 
                     }, config.callbacks),
                     head: Object.assign({
