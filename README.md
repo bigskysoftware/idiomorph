@@ -135,10 +135,15 @@ Idiomorph.morph(document.documentElement, newPageSource, {head:{style: 'morph'}}
 
 The `head` object also offers callbacks for configuring head merging specifics.
 
+### Setting Defaults
+
+All the behaviors specified above can be set to a different default by mutating the `Idimorph.defaults` object, including
+the `Idimorph.defaults.callbacks` and `Idimorph.defaults.head` objects.
+
 ### htmx
 
 Idiomorph was created to integrate with [htmx](https://htmx.org) and can be used as a swapping mechanism by including
-the `Idiomorph-ext` file in your HTML:
+the `dist/idiomorph-ext.js` file in your HTML:
 
 ```html
 <script src="https://unpkg.com/idiomorph/dist/idiomorph-ext.min.js"></script>
@@ -157,6 +162,29 @@ the `Idiomorph-ext` file in your HTML:
     </button>
     
 </div>
+```
+
+Note that this file includes both Idiomorph and the htmx extension.
+
+#### Configuring Morphing Behavior in htmx
+
+The Idiomorph extension for htmx supports three different syntaxes for specifying behavior:
+
+* `hx-swap='morph'` - This will perform a morph on the outerHTML of the target
+* `hx-swap='morph:outerHTML'` - This will perform a morph on the outerHTML of the target (explicit)
+* `hx-swap='morph:innerHTML'` - This will perform a morph on the innerHTML of the target (i.e. the children)
+* `hx-swap='morph:<expr>'` - In this form, `<expr>` can be any valid JavaScript expression.  The results of the expression
+   will be passed into the `Idiomorph.morph()` method as the configuration.
+
+The last form gives you access to all the configuration options of Idiomorph.  So, for example, if you wanted to ignore
+the input value in a given morph, you could use the following swap specification:
+
+```html
+  <button hx-get="/example" 
+          hx-swap="morph:{ignoreActiveValue:true}"
+          hx-target="closest form">
+      Morph The Closest Form But Ignore The Active Input Value
+  </button>
 ```
 
 ## Performance

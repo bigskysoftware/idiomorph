@@ -29,9 +29,12 @@
 <script src="../node_modules/chai-dom/chai-dom.js"></script>
 <script src="../node_modules/mocha/mocha.js"></script>
 <script src="../node_modules/mocha-webdriver-runner/dist/mocha-webdriver-client.js"></script>
+<script src="../node_modules/sinon/pkg/sinon.js"></script>
+<script src="../node_modules/htmx.org/dist/htmx.js"></script>
 
 <script src="../src/idiomorph.js"></script>
 <script src="./lib/morphdom.js"></script>
+<script src="../src/idiomorph-htmx.js"></script>
 
 <script class="mocha-init">
     mocha.setup('bdd');
@@ -46,6 +49,7 @@
 <script src="core.js"></script>
 <script src="perf.js"></script>
 <script src="head.js"></script>
+<script src="htmx-integration.js"></script>
 
 <div id="mocha"></div>
 
@@ -54,7 +58,7 @@
 </script>
 <em>Work Area</em>
 <hr/>
-<pre id="work-area">
+<pre id="work-area" hx-ext="morph">
   Output Here...
 </pre>
 </body>
