@@ -37,6 +37,7 @@
                 afterNodeMorphed: noOp,
                 beforeNodeRemoved: noOp,
                 afterNodeRemoved: noOp,
+                beforeAttributeUpdated: noOp,
 
             },
             head: {
@@ -270,11 +271,26 @@
         //=============================================================================
 
         /**
+         * @param attr {String} the attribute to be mutated
+         * @param to {Element} the element that is going to be updated
+         * @param updateType {("update"|"remove")}
+         * @param ctx the merge context
+         * @returns {boolean} true if the attribute should be ignored, false otherwise
+         */
+        function ignoreAttribute(attr, to, updateType, ctx) {
+            if(attr === 'value' && ctx.ignoreActiveValue && to === document.activeElement){
+                return true;
+            }
+            return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
+        }
+
+        /**
          * syncs a given node with another node, copying over all attributes and
          * inner element state from the 'from' node to the 'to' node
          *
          * @param {Element} from the element to copy attributes & state from
          * @param {Element} to the element to copy attributes & state to
+         * @param ctx the merge context
          */
         function syncNodeFrom(from, to, ctx) {
             let type = from.nodeType
@@ -285,7 +301,7 @@
                 const fromAttributes = from.attributes;
                 const toAttributes = to.attributes;
                 for (const fromAttribute of fromAttributes) {
-                    if (fromAttribute.name === 'value' && ignoreValueOfActiveElement(to, ctx)) {
+                    if (ignoreAttribute(fromAttribute.name, to, 'update', ctx)) {
                         continue;
                     }
                     if (to.getAttribute(fromAttribute.name) !== fromAttribute.value) {
@@ -295,6 +311,9 @@
                 // iterate backwards to avoid skipping over items when a delete occurs
                 for (let i = toAttributes.length - 1; 0 <= i; i--) {
                     const toAttribute = toAttributes[i];
+                    if (ignoreAttribute(toAttribute.name, to, 'remove', ctx)) {
+                        continue;
+                    }
                     if (!from.hasAttribute(toAttribute.name)) {
                         to.removeAttribute(toAttribute.name);
                     }
@@ -310,26 +329,45 @@
 
             if (!ignoreValueOfActiveElement(to, ctx)) {
                 // sync input values
-                syncInputValue(from, to);
+                syncInputValue(from, to, ctx);
             }
         }
 
-        function syncBooleanAttribute(from, to, attributeName) {
+        /**
+         * @param from {Element} element to sync the value from
+         * @param to {Element} element to sync the value to
+         * @param attributeName {String} the attribute name
+         * @param ctx the merge context
+         */
+        function syncBooleanAttribute(from, to, attributeName, ctx) {
             if (from[attributeName] !== to[attributeName]) {
-                to[attributeName] = from[attributeName];
+                let ignoreUpdate = ignoreAttribute(attributeName, to, 'update', ctx);
+                if (!ignoreUpdate) {
+                    to[attributeName] = from[attributeName];
+                }
                 if (from[attributeName]) {
-                    to.setAttribute(attributeName, from[attributeName]);
+                    if (!ignoreUpdate) {
+                        to.setAttribute(attributeName, from[attributeName]);
+                    }
                 } else {
-                    to.removeAttribute(attributeName);
+                    if (!ignoreAttribute(attributeName, to, 'remove', ctx)) {
+                        to.removeAttribute(attributeName);
+                    }
                 }
             }
         }
 
-        // NB: many bothans died to bring us information:
-        //
-        // https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
-        // https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
-        function syncInputValue(from, to) {
+        /**
+         * NB: many bothans died to bring us information:
+         *
+         *  https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
+         *  https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+         *
+         * @param from {Element} the element to sync the input value from
+         * @param to {Element} the element to sync the input value to
+         * @param ctx the merge context
+         */
+        function syncInputValue(from, to, ctx) {
             if (from instanceof HTMLInputElement &&
                 to instanceof HTMLInputElement &&
                 from.type !== 'file') {
@@ -338,21 +376,28 @@
                 let toValue = to.value;
 
                 // sync boolean attributes
-                syncBooleanAttribute(from, to, 'checked');
-                syncBooleanAttribute(from, to, 'disabled');
+                syncBooleanAttribute(from, to, 'checked', ctx);
+                syncBooleanAttribute(from, to, 'disabled', ctx);
 
                 if (!from.hasAttribute('value')) {
-                    to.value = '';
-                    to.removeAttribute('value');
+                    if (!ignoreAttribute('value', to, 'remove', ctx)) {
+                        to.value = '';
+                        to.removeAttribute('value');
+                    }
                 } else if (fromValue !== toValue) {
-                    to.setAttribute('value', fromValue);
-                    to.value = fromValue;
+                    if (!ignoreAttribute('value', to, 'update', ctx)) {
+                        to.setAttribute('value', fromValue);
+                        to.value = fromValue;
+                    }
                 }
             } else if (from instanceof HTMLOptionElement) {
-                syncBooleanAttribute(from, to, 'selected')
+                syncBooleanAttribute(from, to, 'selected', ctx)
             } else if (from instanceof HTMLTextAreaElement && to instanceof HTMLTextAreaElement) {
                 let fromValue = from.value;
                 let toValue = to.value;
+                if (ignoreAttribute('value', to, 'update', ctx)) {
+                    return;
+                }
                 if (fromValue !== toValue) {
                     to.value = fromValue;
                 }
