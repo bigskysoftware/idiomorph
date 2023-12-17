@@ -142,21 +142,21 @@
             if (ctx.ignoreActive && oldNode === document.activeElement) {
                 // don't morph focused element
             } else if (newContent == null) {
-                if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
+                if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
 
                 oldNode.remove();
                 ctx.callbacks.afterNodeRemoved(oldNode);
                 return null;
             } else if (!isSoftMatch(oldNode, newContent)) {
-                if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return;
-                if (ctx.callbacks.beforeNodeAdded(newContent) === false) return;
+                if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
+                if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
 
                 oldNode.parentElement.replaceChild(newContent, oldNode);
                 ctx.callbacks.afterNodeAdded(newContent);
                 ctx.callbacks.afterNodeRemoved(oldNode);
                 return newContent;
             } else {
-                if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return;
+                if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
 
                 if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
                     // ignore the head element
