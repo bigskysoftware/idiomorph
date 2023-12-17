@@ -27,6 +27,31 @@
         //=============================================================================
         let EMPTY_SET = new Set();
 
+        // default configuration values, updatable by users now
+        let defaults = {
+            morphStyle: "outerHTML",
+            callbacks : {
+                beforeNodeAdded: noOp,
+                afterNodeAdded: noOp,
+                beforeNodeMorphed: noOp,
+                afterNodeMorphed: noOp,
+                beforeNodeRemoved: noOp,
+                afterNodeRemoved: noOp,
+
+            },
+            head: {
+                style: 'merge',
+                shouldPreserve: function (elt) {
+                    return elt.getAttribute("im-preserve") === "true";
+                },
+                shouldReAppend: function (elt) {
+                    return elt.getAttribute("im-re-append") === "true";
+                },
+                shouldRemove: noOp,
+                afterHeadMorphed: noOp,
+            }
+        };
+
         //=============================================================================
         // Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
         //=============================================================================
@@ -440,7 +465,30 @@
         function noOp() {
         }
 
+        /*
+          Deep merges the config object and the Idiomoroph.defaults object to
+          produce a final configuration object
+         */
+        function mergeDefaults(config) {
+            let finalConfig = {};
+            // copy top level stuff into final config
+            Object.assign(finalConfig, defaults);
+            Object.assign(finalConfig, config);
+
+            // copy callbacks into final config (do this to deep merge the callbacks)
+            finalConfig.callbacks = {};
+            Object.assign(finalConfig.callbacks, defaults.callbacks);
+            Object.assign(finalConfig.callbacks, config.callbacks);
+
+            // copy head config into final config  (do this to deep merge the head)
+            finalConfig.head = {};
+            Object.assign(finalConfig.head, defaults.head);
+            Object.assign(finalConfig.head, config.head);
+            return finalConfig;
+        }
+
         function createMorphContext(oldNode, newContent, config) {
+            config = mergeDefaults(config);
             return {
                 target: oldNode,
                 newContent: newContent,
@@ -450,26 +498,8 @@
                 ignoreActiveValue: config.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
                 deadIds: new Set(),
-                callbacks: Object.assign({
-                    beforeNodeAdded: noOp,
-                    afterNodeAdded: noOp,
-                    beforeNodeMorphed: noOp,
-                    afterNodeMorphed: noOp,
-                    beforeNodeRemoved: noOp,
-                    afterNodeRemoved: noOp,
-
-                }, config.callbacks),
-                head: Object.assign({
-                    style: 'merge',
-                    shouldPreserve: function (elt) {
-                        return elt.getAttribute("im-preserve") === "true";
-                    },
-                    shouldReAppend: function (elt) {
-                        return elt.getAttribute("im-re-append") === "true";
-                    },
-                    shouldRemove: noOp,
-                    afterHeadMorphed: noOp,
-                }, config.head),
+                callbacks: config.callbacks,
+                head: config.head
             }
         }
 
@@ -787,7 +817,8 @@
         // This is what ends up becoming the Idiomorph global object
         //=============================================================================
         return {
-            morph
+            morph,
+            defaults
         }
     }));
 

@@ -335,4 +335,48 @@ describe("Core morphing tests", function(){
         initial.checked.should.equal(false);
         document.body.removeChild(parent);
     });
+
+    it('can override defaults w/ global set', function()
+    {
+        try {
+            // set default to inner HTML
+            Idiomorph.defaults.morphStyle = 'innerHTML';
+            let initial = make("<button>Foo</button>");
+            let finalSrc = "<button>Bar</button>";
+
+            // should more inner HTML despite no config
+            Idiomorph.morph(initial, finalSrc);
+
+            if (initial.outerHTML !== "<button>Bar</button>") {
+                console.log("HTML after morph: " + initial.outerHTML);
+                console.log("Expected:         " + finalSrc);
+            }
+            initial.outerHTML.should.equal("<button><button>Bar</button></button>");
+        } finally {
+            Idiomorph.defaults.morphStyle = 'outerHTML';
+        }
+    });
+
+    it('can override globally set default w/ local value', function()
+    {
+        try {
+            // set default to inner HTML
+            Idiomorph.defaults.morphStyle = 'innerHTML';
+            let initial = make("<button>Foo</button>");
+            let finalSrc = "<button>Bar</button>";
+
+            // should morph outer HTML despite default setting
+            Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+
+            if (initial.outerHTML !== "<button>Bar</button>") {
+                console.log("HTML after morph: " + initial.outerHTML);
+                console.log("Expected:         " + finalSrc);
+            }
+            initial.outerHTML.should.equal("<button>Bar</button>");
+        } finally {
+            Idiomorph.defaults.morphStyle = 'outerHTML';
+        }
+    });
+
+
 })
