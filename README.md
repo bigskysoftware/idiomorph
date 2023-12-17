@@ -1,4 +1,4 @@
-# Idiomorph
+<h1 style="font-family: Verdana,sans-serif;">♻️ Idiomorph</h1>
 
 Idiomorph is a javascript library for morphing one DOM tree to another.  It is inspired by other libraries that 
 pioneered this functionality:
