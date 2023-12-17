@@ -241,6 +241,58 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
+    it('can ignore attributes w/ the beforeAttributeUpdated callback', function()
+    {
+        let parent = make("<div><input value='foo'></div>");
+        document.body.append(parent);
+
+        let initial = parent.querySelector("input");
+
+        // morph
+        let finalSrc = '<input value="bar">';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        initial.outerHTML.should.equal('<input value="bar">');
+
+        let finalSrc2 = '<input class="foo" value="doh">';
+        Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', callbacks : {
+            beforeAttributeUpdated: function(attr){
+                if (attr === 'value') {
+                    return false;
+                }
+            }
+        }});
+        initial.value.should.equal('bar');
+        initial.classList.value.should.equal('foo');
+
+        document.body.removeChild(parent);
+    });
+
+    it('can ignore attributes w/ the beforeAttributeUpdated callback 2', function()
+    {
+        let parent = make("<div><input value='foo'></div>");
+        document.body.append(parent);
+
+        let initial = parent.querySelector("input");
+
+        // morph
+        let finalSrc = '<input value="bar">';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        initial.outerHTML.should.equal('<input value="bar">');
+
+        let finalSrc2 = '<input class="foo" value="doh">';
+        Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', callbacks : {
+            beforeAttributeUpdated: function(attr){
+                if (attr === 'class') {
+                    return false;
+                }
+            }
+        }});
+        initial.value.should.equal('doh');
+        initial.classList.value.should.equal('');
+
+        document.body.removeChild(parent);
+    });
+
     it('ignores active textarea value when ignoreActiveValue is true', function()
     {
         let parent = make("<div><textarea>foo</textarea></div>");
