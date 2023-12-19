@@ -19,7 +19,7 @@
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
     "test": "mocha-chrome test/index.html",
-    "amd" : "(cat src/idiomorph.js && echo \"\ndefine([], Idiomorph);\") > dist/idiomorph.amd.js",
+    "amd" : "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs" : "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm" : "(cat src/idiomorph.js && echo \"\nexport default {Idiomorph};\") > dist/idiomorph.esm.js",
     "gen-modules" : "npm run-script amd && npm run-script cjs && npm run-script esm",

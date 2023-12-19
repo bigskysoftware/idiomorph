@@ -1,5 +1,7 @@
+define(() => {
+
 // base IIFE to define idiomorph
-var Idiomoprh = (function () {
+var Idiomorph = (function () {
         'use strict';
 
         //=============================================================================
@@ -847,4 +849,4 @@ var Idiomoprh = (function () {
         }
     })();
 
-define([], Idiomorph);
+return Idiomorph});
