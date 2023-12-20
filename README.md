@@ -27,6 +27,15 @@ the id sets of element 1 and element 2 is non-empty, they match.  This allows Id
 based on structural information from children, who contribute to a parent's id set, which allows for better overall matching
 when compared with simple id-based matching.
 
+A testimonial:
+
+> We are indeed using idiomorph and we'll include it officially as part of [Turbo 8](https://turbo.hotwired.dev/). We 
+> started with morphdom, but eventually switched to idiomorph as we found it way more suitable. It just worked great 
+> with all the tests we threw at it, while morphdom was incredibly picky about "ids" to match nodes. Also, we noticed 
+> it's at least as fast.
+> 
+> -- [Jorge Marubia](https://www.jorgemanrubia.com/) / [37Signals](https://37signals.com/)
+
 ## Installing
 
 Idiomorph is a small (2.1k min/gz'd), dependency free JavaScript library.  The `/dist/idiomorph.js` file can be included
