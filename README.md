@@ -99,7 +99,9 @@ Idiomorph supports the following options:
 
 #### Callbacks
 
-| callback                                                     | description                                                                              | return value meaning                               |
+Idiomorph provides the following callbacks, which can be used to intercept and, for some callbacks, modify the swapping behavior
+of the algorithm.
+
 | callback                                                     | description                                                                              | return value meaning                               |
 |--------------------------------------------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------|
 | beforeNodeAdded(node)                                        | Called before a new node is added to the DOM                                             | return false to not add the node                   |
@@ -123,7 +125,7 @@ The head tag is treated specially by idiomorph because:
 Because of this, by default, idiomorph adopts a `merge` algorithm between two head tags, `old` and `new`:
 
 * Elements that are in both `old` and `new` are ignored
-* Elements that are in `new` but not in `old` are added to the `old`
+* Elements that are in `new` but not in `old` are added to `old`
 * Elements that are in `old` but not in `new` are removed from `old`
 
 Thus the content of the two head tags will be the same, but the order of those elements will not be.
