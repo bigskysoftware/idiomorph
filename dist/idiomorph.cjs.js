@@ -846,3 +846,5 @@ var Idiomorph = (function () {
             defaults
         }
     })();
+
+module.exports = Idiomorph;

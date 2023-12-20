@@ -1,3 +1,5 @@
+define(() => {
+
 // base IIFE to define idiomorph
 var Idiomorph = (function () {
         'use strict';
@@ -846,3 +848,5 @@ var Idiomorph = (function () {
             defaults
         }
     })();
+
+return Idiomorph});
