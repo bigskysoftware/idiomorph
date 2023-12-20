@@ -27,19 +27,30 @@ the id sets of element 1 and element 2 is non-empty, they match.  This allows Id
 based on structural information from children, who contribute to a parent's id set, which allows for better overall matching
 when compared with simple id-based matching.
 
-## Usage
+## Installing
 
-Idiomorph is a small (1.7k min/gz'd), dependency free JavaScript library, and can be installed via NPM or your favorite 
-dependency management system under the `Idiomorph` dependency name.  You can also include it via a CDN like unpkg to
-load it directly in a browser:
+Idiomorph is a small (2.1k min/gz'd), dependency free JavaScript library.  The `/dist/idiomorph.js` file can be included
+directly in a browser:
 
 ```html
-<script src="https://unpkg.com/idiomorph"></script>
+<script src="https://unpkg.com/idiomorph@0.3.0"></script>
 ```
 
-Or you can download the source to your local project.
+For production systems we recommend downloading and vendoring the library.
 
-Idiomorph has a very simple usage:
+If you are using [JavaScript Modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules), we provide 
+three additional files:
+
+* `dist/idiomorph.amd.js` - for [AMD-style modules](https://github.com/amdjs/amdjs-api/wiki/AMD)
+* `dist/idiomorph.cjs.js` - for [CommonJS-style modules](https://wiki.commonjs.org/wiki/Modules)
+* `dist/idiomorph.esm.js` - for [ESM-style modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)
+
+Idimorph can be installed via NPM or your favorite dependency management system under the `idiomorph` dependency 
+name.
+
+## Usage
+
+Idiomorph has a very simple API:
 
 ```js
   Idiomorph.morph(existingNode, newNode);
@@ -48,7 +59,7 @@ Idiomorph has a very simple usage:
 This will morph the existingNode to have the same structure as the newNode.  Note that this is a destructive operation
 with respect to both the existingNode and the newNode.
 
-You can also pass string content in:
+You can also pass string content in as the second argument, and Idiomorph will parse the string into nodes:
 
 ```js
   Idiomorph.morph(existingNode, "<div>New Content</div>");
