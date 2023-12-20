@@ -45,7 +45,7 @@ three additional files:
 * `dist/idiomorph.cjs.js` - for [CommonJS-style modules](https://wiki.commonjs.org/wiki/Modules)
 * `dist/idiomorph.esm.js` - for [ESM-style modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)
 
-Idimorph can be installed via NPM or your favorite dependency management system under the `idiomorph` dependency 
+Idiomorph can be installed via NPM or your favorite dependency management system under the `idiomorph` dependency 
 name.
 
 ## Usage
