@@ -1,5 +1,5 @@
 // base IIFE to define idiomorph
-var Idiomoprh = (function () {
+var Idiomorph = (function () {
         'use strict';
 
         //=============================================================================
