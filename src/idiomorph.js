@@ -454,6 +454,7 @@ var Idiomorph = (function () {
          * @param {MorphContext} ctx the merge context
          */
         function syncBooleanAttribute(from, to, attributeName, ctx) {
+            // TODO: prefer set/getAttribute here
             if (from[attributeName] !== to[attributeName]) {
                 let ignoreUpdate = ignoreAttribute(attributeName, to, 'update', ctx);
                 if (!ignoreUpdate) {
@@ -818,7 +819,13 @@ var Idiomorph = (function () {
          */
         function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
 
+            /**
+             * @type {Node | null}
+             */
             let potentialSoftMatch = insertionPoint;
+            /**
+             * @type {Node | null}
+             */
             let nextSibling = newChild.nextSibling;
             let siblingSoftMatchCount = 0;
 
@@ -931,16 +938,25 @@ var Idiomorph = (function () {
          * @returns {Node[]}
          */
         function insertSiblings(previousSibling, morphedNode, nextSibling) {
+            /**
+             * @type {Node[]}
+             */
             let stack = []
+            /**
+             * @type {Node[]}
+             */
             let added = []
             while (previousSibling != null) {
                 stack.push(previousSibling);
                 previousSibling = previousSibling.previousSibling;
             }
-            while (stack.length > 0) {
-                let node = stack.pop();
+            // Base the loop on the node variable, so that you do not need runtime checks for
+            // undefined value inside the loop
+            let node = stack.pop();
+            while (node !== undefined) {
                 added.push(node); // push added preceding siblings on in order and insert
                 morphedNode.parentElement.insertBefore(node, morphedNode);
+                node = stack.pop();
             }
             added.push(morphedNode);
             while (nextSibling != null) {
@@ -967,6 +983,9 @@ var Idiomorph = (function () {
              */
             let currentElement;
             currentElement = newContent.firstChild;
+            /**
+             * @type {Node | null}
+             */
             let bestElement = currentElement;
             let score = 0;
             while (currentElement) {
@@ -1083,6 +1102,9 @@ var Idiomorph = (function () {
             // find all elements with an id property
             let idElements = node.querySelectorAll('[id]');
             for (const elt of idElements) {
+                /**
+                 * @type {Element|null}
+                 */
                 let current = elt;
                 // walk up the parent hierarchy of that element, adding the id
                 // of element to the parent's id set
@@ -1110,6 +1132,10 @@ var Idiomorph = (function () {
          * @returns {Map<Node, Set<string>>} a map of nodes to id sets for the
          */
         function createIdMap(oldContent, newContent) {
+            /**
+             *
+             * @type {Map<Node, Set<string>>}
+             */
             let idMap = new Map();
             populateIdMapForNode(oldContent, idMap);
             populateIdMapForNode(newContent, idMap);
