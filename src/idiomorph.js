@@ -4,21 +4,21 @@
  * @property {'merge' | 'append' | 'morph' | 'none'} [style]
  * @property {boolean} [block]
  * @property {boolean} [ignore]
- * @property {(Element) => boolean} [shouldPreserve]
- * @property {(Element) => boolean} [shouldReAppend]
- * @property {(Element) => boolean} [shouldRemove]
+ * @property {function(Element): boolean} [shouldPreserve]
+ * @property {function(Element): boolean} [shouldReAppend]
+ * @property {function(Element): boolean} [shouldRemove]
  * @property {function(Element, {added: Node[], kept: Element[], removed: Element[]}): void} [afterHeadMorphed]
  */
 
 /**
  * @typedef {object} ConfigCallbacks
  *
- * @property {(Node) => boolean} [beforeNodeAdded]
- * @property {(Node) => void} [afterNodeAdded]
+ * @property {function(Node): boolean} [beforeNodeAdded]
+ * @property {function(Node): void} [afterNodeAdded]
  * @property {function(Element, Node): boolean} [beforeNodeMorphed]
  * @property {function(Element, Node): void} [afterNodeMorphed]
- * @property {(Element) => boolean} [beforeNodeRemoved]
- * @property {(Element) => void} [afterNodeRemoved]
+ * @property {function(Element): boolean} [beforeNodeRemoved]
+ * @property {function(Element): void} [afterNodeRemoved]
  * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
  */
 
@@ -32,26 +32,77 @@
  * @property {ConfigHead} [head]
  */
 
+/**
+ * @typedef {function} NoOp
+ *
+ * @returns {void}
+ */
 
 /**
- * @typedef {object} MorphContext
+ * @typedef {object} ConfigHeadInternal
  *
- * @property {Node} target
- * @property {Node} newContent
- * @property {Config} config
- * @property {Config['morphStyle']} morphStyle
- * @property {Config['ignoreActive']} ignoreActive
- * @property {Config['ignoreActiveValue']} ignoreActiveValue
- * @property {Map<Node, Set<string>>} idMap
- * @property {Set<string>} deadIds
- * @property {Config['callbacks']} callbacks
- * @property {Config['head']} head
+ * @property {'merge' | 'append' | 'morph' | 'none'} style
+ * @property {boolean} [block]
+ * @property {boolean} [ignore]
+ * @property {(function(Element): boolean) | NoOp} shouldPreserve
+ * @property {(function(Element): boolean) | NoOp} shouldReAppend
+ * @property {(function(Element): boolean) | NoOp} shouldRemove
+ * @property {(function(Element, {added: Node[], kept: Element[], removed: Element[]}): void) | NoOp} afterHeadMorphed
+ */
+
+/**
+ * @typedef {object} ConfigCallbacksInternal
  *
+ * @property {(function(Node): boolean) | NoOp} beforeNodeAdded
+ * @property {(function(Node): void) | NoOp} afterNodeAdded
+ * @property {(function(Element, Node): boolean) | NoOp} beforeNodeMorphed
+ * @property {(function(Element, Node): void) | NoOp} afterNodeMorphed
+ * @property {(function(Element): boolean) | NoOp} beforeNodeRemoved
+ * @property {(function(Element): void) | NoOp} afterNodeRemoved
+ * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
+ */
+
+/**
+ * @typedef {object} ConfigInternal
+ *
+ * @property {'outerHTML' | 'innerHTML'} morphStyle
+ * @property {boolean} [ignoreActive]
+ * @property {boolean} [ignoreActiveValue]
+ * @property {ConfigCallbacksInternal} callbacks
+ * @property {ConfigHeadInternal} head
+ */
+
+/**
+ * @typedef {Function} Morph
+ *
+ * @param {Element | Document} oldNode
+ * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
+ * @param {Config} [config]
+ * @returns {undefined | HTMLCollection | Node[]}
  */
 
 // base IIFE to define idiomorph
+/**
+ *
+ * @type {{defaults: ConfigInternal, morph: Morph}}
+ */
 var Idiomorph = (function () {
         'use strict';
+
+        /**
+         * @typedef {object} MorphContext
+         *
+         * @property {Node} target
+         * @property {Node} newContent
+         * @property {ConfigInternal} config
+         * @property {ConfigInternal['morphStyle']} morphStyle
+         * @property {ConfigInternal['ignoreActive']} ignoreActive
+         * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+         * @property {Map<Node, Set<string>>} idMap
+         * @property {Set<string>} deadIds
+         * @property {ConfigInternal['callbacks']} callbacks
+         * @property {ConfigInternal['head']} head
+         */
 
         //=============================================================================
         // AND NOW IT BEGINS...
@@ -65,7 +116,7 @@ var Idiomorph = (function () {
 
         /**
          * Default configuration values, updatable by users now
-         * @type {Config}
+         * @type {ConfigInternal}
          */
         let defaults = {
             morphStyle: "outerHTML",
@@ -97,9 +148,10 @@ var Idiomorph = (function () {
          * =============================================================================
          * Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
          * =============================================================================
+         *
          * @param {Element | Document} oldNode
-         * @param {Element | Node | HTMLCollection | Node[] | string} newContent
-         * @param {Config} [config={}]
+         * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
+         * @param {Config} [config]
          * @returns {undefined | HTMLCollection | Node[]}
          */
         function morph(oldNode, newContent, config = {}) {
@@ -190,7 +242,7 @@ var Idiomorph = (function () {
          * @param {Element} oldNode root node to merge content into
          * @param {Node | null} newContent new content to merge
          * @param {MorphContext} ctx the merge context
-         * @returns {Element | Node | null} the element that ended up in the DOM
+         * @returns {Element | Node | null | undefined} the element that ended up in the DOM
          */
         function morphOldNodeTo(oldNode, newContent, ctx) {
             if (ctx.ignoreActive && oldNode === document.activeElement) {
@@ -474,7 +526,7 @@ var Idiomorph = (function () {
          * =============================================================================
          *  The HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
          * =============================================================================
-         * @param {Node} newHeadTag
+         * @param {Element} newHeadTag
          * @param {Element} currentHead
          * @param {MorphContext} ctx
          * @returns {Promise<void>[]}
@@ -547,7 +599,7 @@ var Idiomorph = (function () {
             let promises = [];
             for (const newNode of nodesToAppend) {
                 log("adding: ", newNode);
-                // This could theoretically be null
+                // TODO: This could theoretically be null, based on type
                 let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
                 log(newElt);
                 if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
@@ -584,7 +636,10 @@ var Idiomorph = (function () {
         // Misc
         //=============================================================================
 
-        function log() {
+        /**
+         * @param {...any} [args]
+         */
+        function log(args) {
             //console.log(arguments);
         }
 
@@ -596,23 +651,23 @@ var Idiomorph = (function () {
          * Deep merges the config object and the Idiomoroph.defaults object to
          * produce a final configuration object
          * @param {Config} config
-         * @returns {Config}
+         * @returns {ConfigInternal}
          */
         function mergeDefaults(config) {
-            let finalConfig = {};
+            /**
+             * @type {ConfigInternal}
+             */
+            let finalConfig= Object.assign({}, defaults);
+
             // copy top level stuff into final config
-            Object.assign(finalConfig, defaults);
             Object.assign(finalConfig, config);
 
             // copy callbacks into final config (do this to deep merge the callbacks)
-            finalConfig.callbacks = {};
-            Object.assign(finalConfig.callbacks, defaults.callbacks);
             Object.assign(finalConfig.callbacks, config.callbacks);
 
             // copy head config into final config  (do this to deep merge the head)
-            finalConfig.head = {};
-            Object.assign(finalConfig.head, defaults.head);
             Object.assign(finalConfig.head, config.head);
+
             return finalConfig;
         }
 
@@ -624,18 +679,18 @@ var Idiomorph = (function () {
          * @returns {MorphContext}
          */
         function createMorphContext(oldNode, newContent, config) {
-            config = mergeDefaults(config);
+            const mergedConfig = mergeDefaults(config);
             return {
                 target: oldNode,
                 newContent: newContent,
-                config: config,
-                morphStyle: config.morphStyle,
-                ignoreActive: config.ignoreActive,
-                ignoreActiveValue: config.ignoreActiveValue,
+                config: mergedConfig,
+                morphStyle: mergedConfig.morphStyle,
+                ignoreActive: mergedConfig.ignoreActive,
+                ignoreActiveValue: mergedConfig.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
                 deadIds: new Set(),
-                callbacks: config.callbacks,
-                head: config.head
+                callbacks: mergedConfig.callbacks,
+                head: mergedConfig.head
             }
         }
 
@@ -680,9 +735,9 @@ var Idiomorph = (function () {
         /**
          *
          * @param {Node} startInclusive
-         * @param endExclusive
+         * @param {Node} endExclusive
          * @param {MorphContext} ctx
-         * @returns {ChildNode | ActiveX.IXMLDOMNode | Node | (() => (Node | null))}
+         * @returns {Node | null}
          */
         function removeNodesBetween(startInclusive, endExclusive, ctx) {
             while (startInclusive !== endExclusive) {
@@ -816,6 +871,7 @@ var Idiomorph = (function () {
                 let content = parser.parseFromString(newContent, "text/html");
                 // if it is a full HTML document, return the document itself as the parent container
                 if (contentWithSvgsRemoved.match(/<\/html>/)) {
+                    // TODO: prefer using set/getAttribute
                     content.generatedByIdiomorph = true;
                     return content;
                 } else {
