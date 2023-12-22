@@ -234,6 +234,10 @@ var Idiomorph = (function () {
          * @param {MorphContext} ctx
          * @returns {boolean}
          */
+        // TODO: ignoreActive and ignoreActiveValue are marked as optional since they are not
+        //   initialised in the default config object. As a result the && in the function body may
+        //   return undefined instead of boolean. Either expand the type of the return value to
+        //   include undefined or wrap the ctx.ignoreActiveValue into a Boolean()
         function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
             return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement;
         }
@@ -743,6 +747,8 @@ var Idiomorph = (function () {
         function removeNodesBetween(startInclusive, endExclusive, ctx) {
             while (startInclusive !== endExclusive) {
                 let tempNode = startInclusive;
+                // TODO: Prefer assigning to a new variable here or expand the type of startInclusive
+                //  to be Node | null
                 startInclusive = startInclusive.nextSibling;
                 removeNode(tempNode, ctx);
             }
@@ -770,10 +776,17 @@ var Idiomorph = (function () {
             // max id matches we are willing to discard in our search
             let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
 
+            /**
+             *
+             * @type {Node | null}
+             */
             let potentialMatch = null;
 
             // only search forward if there is a possibility of an id match
             if (newChildPotentialIdCount > 0) {
+
+                // TODO: This is ghosting the potentialMatch variable outside of this block.
+                //   Probably an error
                 let potentialMatch = insertionPoint;
                 // if there is a possibility of an id match, scan forward
                 // keep track of the potential id match count we are discarding (the
