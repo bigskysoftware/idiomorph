@@ -91,7 +91,7 @@ Idiomorph supports the following options:
 
 | option              | meaning                                                                                                     | example                                                                  |
 |---------------------|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| `morphstyle`        | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
+| `morphStyle`        | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
 | `ignoreActive`      | If set to `true`, idiomorph will skip the active element                                                    | `Idiomorph.morph(..., {ignoreActive:true})`                              |
 | `ignoreActiveValue` | If set to `true`, idiomorph will not update the active element's value                                      | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
 | `head`              | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                             |
