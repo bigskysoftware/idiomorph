@@ -241,6 +241,28 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
+    it('does not ignore body when ignoreActiveValue is true and no element has focus', function()
+    {
+        let parent = make("<div><input value='foo'></div>");
+        document.body.append(parent);
+
+        let initial = parent.querySelector("input");
+
+        // morph
+        let finalSrc = '<input value="bar">';
+        Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
+        initial.outerHTML.should.equal('<input value="bar">');
+
+        document.activeElement.should.equal(initial);
+
+        let finalSrc2 = '<input class="foo" value="doh">';
+        Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', ignoreActiveValue: true});
+        initial.value.should.equal('doh');
+        initial.classList.value.should.equal('foo');
+
+        document.body.removeChild(parent);
+    });
+
     it('can ignore attributes w/ the beforeAttributeUpdated callback', function()
     {
         let parent = make("<div><input value='foo'></div>");
