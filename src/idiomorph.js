@@ -144,7 +144,7 @@ var Idiomorph = (function () {
                 } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                     handleHeadElement(newContent, oldNode, ctx);
                 } else {
-                    syncNodeFrom(newContent, oldNode, ctx);
+                    syncNodeFrom(oldNode, newContent, ctx);
                     if (!ignoreValueOfActiveElement(oldNode, ctx)) {
                         morphChildren(newContent, oldNode, ctx);
                     }
