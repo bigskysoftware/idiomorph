@@ -16,6 +16,7 @@
     "dist/*.js"
   ],
   "main": "dist/idiomorph.js",
+  "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
     "test": "mocha-chrome test/index.html",
