@@ -161,8 +161,8 @@ The `head` object also offers callbacks for configuring head merging specifics.
 
 ### Setting Defaults
 
-All the behaviors specified above can be set to a different default by mutating the `Idimorph.defaults` object, including
-the `Idimorph.defaults.callbacks` and `Idimorph.defaults.head` objects.
+All the behaviors specified above can be set to a different default by mutating the `Idiomorph.defaults` object, including
+the `Idiomorph.defaults.callbacks` and `Idiomorph.defaults.head` objects.
 
 ### htmx
 
