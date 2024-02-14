@@ -9,7 +9,7 @@
   "bugs": {
     "url": "https://github.com/bigskysoftware/idiomorph/issues"
   },
-  "license": "BSD 2-Clause",
+  "license": "BSD-2-Clause",
   "files": [
     "LICENSE",
     "README.md",
