@@ -37,20 +37,29 @@ var Idiomorph = (function () {
         // Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
         //=============================================================================
         function morph(oldNode, newContent, config = {}) {
-
             if (oldNode instanceof Document) {
                 oldNode = oldNode.documentElement;
             }
-
+        
             if (typeof newContent === 'string') {
                 newContent = parseContent(newContent);
             }
-
+        
             let normalizedContent = normalizeContent(newContent);
-
             let ctx = createMorphContext(oldNode, normalizedContent, config);
-
-            return morphNormalizedContent(oldNode, normalizedContent, ctx);
+        
+            // Save scroll positions before starting the morphing process
+            const scrollPositions = saveScrollPositions('selector-for-overflowing-containers');
+        
+            // Perform the morphing
+            const result = morphNormalizedContent(oldNode, normalizedContent, ctx);
+        
+            // Ensure scroll positions are restored after all morphing and asynchronous operations are complete
+            Promise.resolve(result).then(() => {
+                restoreScrollPositions('selector-for-overflowing-containers', scrollPositions);
+            });
+        
+            return result;
         }
 
         function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
@@ -557,6 +566,26 @@ var Idiomorph = (function () {
             }
             removeIdsFromConsideration(ctx, endExclusive);
             return endExclusive.nextSibling;
+        }
+
+        function saveScrollPositions(containerSelector) {
+            const containers = document.querySelectorAll(containerSelector);
+            const scrollPositions = [];
+            containers.forEach((container, index) => {
+                scrollPositions[index] = { top: container.scrollTop, left: container.scrollLeft };
+            });
+            return scrollPositions;
+        }
+        
+        function restoreScrollPositions(containerSelector, savedScrollPositions) {
+            const containers = document.querySelectorAll(containerSelector);
+            containers.forEach((container, index) => {
+                const pos = savedScrollPositions[index];
+                if (pos) {
+                    container.scrollTop = pos.top;
+                    container.scrollLeft = pos.left;
+                }
+            });
         }
 
         //=============================================================================
