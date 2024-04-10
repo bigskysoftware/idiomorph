@@ -1,13 +1,123 @@
+/**
+ * @typedef {object} ConfigHead
+ *
+ * @property {'merge' | 'append' | 'morph' | 'none'} [style]
+ * @property {boolean} [block]
+ * @property {boolean} [ignore]
+ * @property {function(Element): boolean} [shouldPreserve]
+ * @property {function(Element): boolean} [shouldReAppend]
+ * @property {function(Element): boolean} [shouldRemove]
+ * @property {function(Element, {added: Node[], kept: Element[], removed: Element[]}): void} [afterHeadMorphed]
+ */
+
+/**
+ * @typedef {object} ConfigCallbacks
+ *
+ * @property {function(Node): boolean} [beforeNodeAdded]
+ * @property {function(Node): void} [afterNodeAdded]
+ * @property {function(Element, Node): boolean} [beforeNodeMorphed]
+ * @property {function(Element, Node): void} [afterNodeMorphed]
+ * @property {function(Element): boolean} [beforeNodeRemoved]
+ * @property {function(Element): void} [afterNodeRemoved]
+ * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
+ */
+
+/**
+ * @typedef {object} Config
+ *
+ * @property {'outerHTML' | 'innerHTML'} [morphStyle]
+ * @property {boolean} [ignoreActive]
+ * @property {boolean} [ignoreActiveValue]
+ * @property {ConfigCallbacks} [callbacks]
+ * @property {ConfigHead} [head]
+ */
+
+/**
+ * @typedef {function} NoOp
+ *
+ * @returns {void}
+ */
+
+/**
+ * @typedef {object} ConfigHeadInternal
+ *
+ * @property {'merge' | 'append' | 'morph' | 'none'} style
+ * @property {boolean} [block]
+ * @property {boolean} [ignore]
+ * @property {(function(Element): boolean) | NoOp} shouldPreserve
+ * @property {(function(Element): boolean) | NoOp} shouldReAppend
+ * @property {(function(Element): boolean) | NoOp} shouldRemove
+ * @property {(function(Element, {added: Node[], kept: Element[], removed: Element[]}): void) | NoOp} afterHeadMorphed
+ */
+
+/**
+ * @typedef {object} ConfigCallbacksInternal
+ *
+ * @property {(function(Node): boolean) | NoOp} beforeNodeAdded
+ * @property {(function(Node): void) | NoOp} afterNodeAdded
+ * @property {(function(Element, Node): boolean) | NoOp} beforeNodeMorphed
+ * @property {(function(Element, Node): void) | NoOp} afterNodeMorphed
+ * @property {(function(Element): boolean) | NoOp} beforeNodeRemoved
+ * @property {(function(Element): void) | NoOp} afterNodeRemoved
+ * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
+ */
+
+/**
+ * @typedef {object} ConfigInternal
+ *
+ * @property {'outerHTML' | 'innerHTML'} morphStyle
+ * @property {boolean} [ignoreActive]
+ * @property {boolean} [ignoreActiveValue]
+ * @property {ConfigCallbacksInternal} callbacks
+ * @property {ConfigHeadInternal} head
+ */
+
+/**
+ * @typedef {Function} Morph
+ *
+ * @param {Element | Document} oldNode
+ * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
+ * @param {Config} [config]
+ * @returns {undefined | HTMLCollection | Node[]}
+ */
+
 // base IIFE to define idiomorph
+/**
+ *
+ * @type {{defaults: ConfigInternal, morph: Morph}}
+ */
 var Idiomorph = (function () {
         'use strict';
+
+        /**
+         * @typedef {object} MorphContext
+         *
+         * @property {Node} target
+         * @property {Node} newContent
+         * @property {ConfigInternal} config
+         * @property {ConfigInternal['morphStyle']} morphStyle
+         * @property {ConfigInternal['ignoreActive']} ignoreActive
+         * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+         * @property {Map<Node, Set<string>>} idMap
+         * @property {Set<string>} deadIds
+         * @property {ConfigInternal['callbacks']} callbacks
+         * @property {ConfigInternal['head']} head
+         */
 
         //=============================================================================
         // AND NOW IT BEGINS...
         //=============================================================================
+
+        /**
+         *
+         * @type {Set<string>}
+         */
         let EMPTY_SET = new Set();
 
-        // default configuration values, updatable by users now
+        /**
+         * Default configuration values, updatable by users now
+         * @type {ConfigInternal}
+         */
         let defaults = {
             morphStyle: "outerHTML",
             callbacks : {
@@ -33,9 +143,17 @@ var Idiomorph = (function () {
             }
         };
 
-        //=============================================================================
-        // Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
-        //=============================================================================
+
+        /**
+         * =============================================================================
+         * Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
+         * =============================================================================
+         *
+         * @param {Element | Document} oldNode
+         * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
+         * @param {Config} [config]
+         * @returns {undefined | HTMLCollection | Node[]}
+         */
         function morph(oldNode, newContent, config = {}) {
 
             if (oldNode instanceof Document) {
@@ -53,6 +171,13 @@ var Idiomorph = (function () {
             return morphNormalizedContent(oldNode, normalizedContent, ctx);
         }
 
+        /**
+         *
+         * @param {Element} oldNode
+         * @param {HTMLDivElement} normalizedNewContent
+         * @param {MorphContext} ctx
+         * @returns {undefined | HTMLCollection| Node[]}
+         */
         function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
             if (ctx.head.block) {
                 let oldHead = oldNode.querySelector('head');
@@ -105,19 +230,23 @@ var Idiomorph = (function () {
 
 
         /**
-         * @param possibleActiveElement
-         * @param ctx
+         * @param {Element} possibleActiveElement
+         * @param {MorphContext} ctx
          * @returns {boolean}
          */
+        // TODO: ignoreActive and ignoreActiveValue are marked as optional since they are not
+        //   initialised in the default config object. As a result the && in the function body may
+        //   return undefined instead of boolean. Either expand the type of the return value to
+        //   include undefined or wrap the ctx.ignoreActiveValue into a Boolean()
         function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
             return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
         }
 
         /**
-         * @param oldNode root node to merge content into
-         * @param newContent new content to merge
-         * @param ctx the merge context
-         * @returns {Element} the element that ended up in the DOM
+         * @param {Element} oldNode root node to merge content into
+         * @param {Node | null} newContent new content to merge
+         * @param {MorphContext} ctx the merge context
+         * @returns {Element | Node | null | undefined} the element that ended up in the DOM
          */
         function morphOldNodeTo(oldNode, newContent, ctx) {
             if (ctx.ignoreActive && oldNode === document.activeElement) {
@@ -172,13 +301,22 @@ var Idiomorph = (function () {
          * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
          * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
          *
-         * @param {Element} newParent the parent element of the new content
-         * @param {Element } oldParent the old content that we are merging the new content into
-         * @param ctx the merge context
+         * @param {Node} newParent the parent element of the new content
+         * @param {Element} oldParent the old content that we are merging the new content into
+         * @param {MorphContext} ctx the merge context
+         * @returns {void}
          */
         function morphChildren(newParent, oldParent, ctx) {
 
+            /**
+             *
+             * @type {Node | null}
+             */
             let nextNewChild = newParent.firstChild;
+            /**
+             *
+             * @type {Node | null}
+             */
             let insertionPoint = oldParent.firstChild;
             let newChild;
 
@@ -251,10 +389,10 @@ var Idiomorph = (function () {
         //=============================================================================
 
         /**
-         * @param attr {String} the attribute to be mutated
-         * @param to {Element} the element that is going to be updated
-         * @param updateType {("update"|"remove")}
-         * @param ctx the merge context
+         * @param {string} attr the attribute to be mutated
+         * @param {Element} to the element that is going to be updated
+         * @param {"update" | "remove"} updateType
+         * @param {MorphContext} ctx the merge context
          * @returns {boolean} true if the attribute should be ignored, false otherwise
          */
         function ignoreAttribute(attr, to, updateType, ctx) {
@@ -270,7 +408,7 @@ var Idiomorph = (function () {
          *
          * @param {Element} from the element to copy attributes & state from
          * @param {Element} to the element to copy attributes & state to
-         * @param ctx the merge context
+         * @param {MorphContext} ctx the merge context
          */
         function syncNodeFrom(from, to, ctx) {
             let type = from.nodeType
@@ -314,12 +452,13 @@ var Idiomorph = (function () {
         }
 
         /**
-         * @param from {Element} element to sync the value from
-         * @param to {Element} element to sync the value to
-         * @param attributeName {String} the attribute name
-         * @param ctx the merge context
+         * @param {Element} from element to sync the value from
+         * @param {Element} to element to sync the value to
+         * @param {string} attributeName the attribute name
+         * @param {MorphContext} ctx the merge context
          */
         function syncBooleanAttribute(from, to, attributeName, ctx) {
+            // TODO: prefer set/getAttribute here
             if (from[attributeName] !== to[attributeName]) {
                 let ignoreUpdate = ignoreAttribute(attributeName, to, 'update', ctx);
                 if (!ignoreUpdate) {
@@ -343,9 +482,9 @@ var Idiomorph = (function () {
          *  https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
          *  https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
          *
-         * @param from {Element} the element to sync the input value from
-         * @param to {Element} the element to sync the input value to
-         * @param ctx the merge context
+         * @param {Element} from the element to sync the input value from
+         * @param {Element} to the element to sync the input value to
+         * @param {MorphContext} ctx the merge context
          */
         function syncInputValue(from, to, ctx) {
             if (from instanceof HTMLInputElement &&
@@ -387,14 +526,32 @@ var Idiomorph = (function () {
             }
         }
 
-        //=============================================================================
-        // the HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
-        //=============================================================================
-        function handleHeadElement(newHeadTag, currentHead, ctx) {
 
+        /**
+         * =============================================================================
+         *  The HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
+         * =============================================================================
+         * @param {Element} newHeadTag
+         * @param {Element} currentHead
+         * @param {MorphContext} ctx
+         * @returns {Promise<void>[]}
+         */
+        function handleHeadElement(newHeadTag, currentHead, ctx) {
+            /**
+             * @type {Node[]}
+             */
             let added = []
+            /**
+             * @type {Element[]}
+             */
             let removed = []
+            /**
+             * @type {Element[]}
+             */
             let preserved = []
+            /**
+             * @type {Element[]}
+             */
             let nodesToAppend = []
 
             let headMergeStyle = ctx.head.style;
@@ -447,6 +604,7 @@ var Idiomorph = (function () {
             let promises = [];
             for (const newNode of nodesToAppend) {
                 log("adding: ", newNode);
+                // TODO: This could theoretically be null, based on type
                 let newElt = document.createRange().createContextualFragment(newNode.outerHTML).firstChild;
                 log(newElt);
                 if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
@@ -483,51 +641,73 @@ var Idiomorph = (function () {
         // Misc
         //=============================================================================
 
-        function log() {
+        /**
+         * @param {...any} [args]
+         */
+        function log(args) {
             //console.log(arguments);
         }
 
         function noOp() {
         }
 
-        /*
-          Deep merges the config object and the Idiomoroph.defaults object to
-          produce a final configuration object
+
+        /**
+         * Deep merges the config object and the Idiomoroph.defaults object to
+         * produce a final configuration object
+         * @param {Config} config
+         * @returns {ConfigInternal}
          */
         function mergeDefaults(config) {
-            let finalConfig = {};
+            /**
+             * @type {ConfigInternal}
+             */
+            let finalConfig= Object.assign({}, defaults);
+
             // copy top level stuff into final config
-            Object.assign(finalConfig, defaults);
             Object.assign(finalConfig, config);
 
             // copy callbacks into final config (do this to deep merge the callbacks)
-            finalConfig.callbacks = {};
-            Object.assign(finalConfig.callbacks, defaults.callbacks);
             Object.assign(finalConfig.callbacks, config.callbacks);
 
             // copy head config into final config  (do this to deep merge the head)
-            finalConfig.head = {};
-            Object.assign(finalConfig.head, defaults.head);
             Object.assign(finalConfig.head, config.head);
+
             return finalConfig;
         }
 
+        /**
+         *
+         * @param {Element} oldNode
+         * @param {HTMLDivElement} newContent
+         * @param {Config} config
+         * @returns {MorphContext}
+         */
         function createMorphContext(oldNode, newContent, config) {
-            config = mergeDefaults(config);
+            const mergedConfig = mergeDefaults(config);
             return {
                 target: oldNode,
                 newContent: newContent,
-                config: config,
-                morphStyle: config.morphStyle,
-                ignoreActive: config.ignoreActive,
-                ignoreActiveValue: config.ignoreActiveValue,
+                config: mergedConfig,
+                morphStyle: mergedConfig.morphStyle,
+                ignoreActive: mergedConfig.ignoreActive,
+                ignoreActiveValue: mergedConfig.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
                 deadIds: new Set(),
-                callbacks: config.callbacks,
-                head: config.head
+                callbacks: mergedConfig.callbacks,
+                head: mergedConfig.head
             }
         }
 
+        /**
+         *
+         * @param {Element | null} node1
+         * @param {Element | null} node2
+         * @param {MorphContext} ctx
+         * @returns {boolean}
+         */
+        // TODO: The function handles this as if it's Element or null, but the function is called in
+        //   places where the arguments may be just a Node, not an Element
         function isIdSetMatch(node1, node2, ctx) {
             if (node1 == null || node2 == null) {
                 return false;
@@ -542,6 +722,14 @@ var Idiomorph = (function () {
             return false;
         }
 
+        /**
+         *
+         * @param {Element | null} node1
+         * @param {Element | null} node2
+         * @returns {boolean}
+         */
+        // TODO: The function handles this as if it's Element or null, but the function is called in
+        //   places where the arguments may be just a Node, not an Element
         function isSoftMatch(node1, node2) {
             if (node1 == null || node2 == null) {
                 return false;
@@ -549,9 +737,18 @@ var Idiomorph = (function () {
             return node1.nodeType === node2.nodeType && node1.tagName === node2.tagName
         }
 
+        /**
+         *
+         * @param {Node} startInclusive
+         * @param {Node} endExclusive
+         * @param {MorphContext} ctx
+         * @returns {Node | null}
+         */
         function removeNodesBetween(startInclusive, endExclusive, ctx) {
             while (startInclusive !== endExclusive) {
                 let tempNode = startInclusive;
+                // TODO: Prefer assigning to a new variable here or expand the type of startInclusive
+                //  to be Node | null
                 startInclusive = startInclusive.nextSibling;
                 removeNode(tempNode, ctx);
             }
@@ -559,21 +756,37 @@ var Idiomorph = (function () {
             return endExclusive.nextSibling;
         }
 
-        //=============================================================================
-        // Scans forward from the insertionPoint in the old parent looking for a potential id match
-        // for the newChild.  We stop if we find a potential id match for the new child OR
-        // if the number of potential id matches we are discarding is greater than the
-        // potential id matches for the new child
-        //=============================================================================
+
+        /**
+         * =============================================================================
+         *  Scans forward from the insertionPoint in the old parent looking for a potential id match
+         *  for the newChild.  We stop if we find a potential id match for the new child OR
+         *  if the number of potential id matches we are discarding is greater than the
+         *  potential id matches for the new child
+         * =============================================================================
+         * @param {Node} newContent
+         * @param {Element} oldParent
+         * @param {Node} newChild
+         * @param {Node} insertionPoint
+         * @param {MorphContext} ctx
+         * @returns {null | Node}
+         */
         function findIdSetMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
 
             // max id matches we are willing to discard in our search
             let newChildPotentialIdCount = getIdIntersectionCount(ctx, newChild, oldParent);
 
+            /**
+             *
+             * @type {Node | null}
+             */
             let potentialMatch = null;
 
             // only search forward if there is a possibility of an id match
             if (newChildPotentialIdCount > 0) {
+
+                // TODO: This is ghosting the potentialMatch variable outside of this block.
+                //   Probably an error
                 let potentialMatch = insertionPoint;
                 // if there is a possibility of an id match, scan forward
                 // keep track of the potential id match count we are discarding (the
@@ -602,15 +815,30 @@ var Idiomorph = (function () {
             return potentialMatch;
         }
 
-        //=============================================================================
-        // Scans forward from the insertionPoint in the old parent looking for a potential soft match
-        // for the newChild.  We stop if we find a potential soft match for the new child OR
-        // if we find a potential id match in the old parents children OR if we find two
-        // potential soft matches for the next two pieces of new content
-        //=============================================================================
+
+        /**
+         * =============================================================================
+         *  Scans forward from the insertionPoint in the old parent looking for a potential soft match
+         *  for the newChild.  We stop if we find a potential soft match for the new child OR
+         *  if we find a potential id match in the old parents children OR if we find two
+         *  potential soft matches for the next two pieces of new content
+         * =============================================================================
+         * @param {Node} newContent
+         * @param {Element} oldParent
+         * @param {Node} newChild
+         * @param {Node} insertionPoint
+         * @param {MorphContext} ctx
+         * @returns {null | Node}
+         */
         function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
 
+            /**
+             * @type {Node | null}
+             */
             let potentialSoftMatch = insertionPoint;
+            /**
+             * @type {Node | null}
+             */
             let nextSibling = newChild.nextSibling;
             let siblingSoftMatchCount = 0;
 
@@ -647,6 +875,11 @@ var Idiomorph = (function () {
             return potentialSoftMatch;
         }
 
+        /**
+         *
+         * @param {string} newContent
+         * @returns {Node | null | DocumentFragment}
+         */
         function parseContent(newContent) {
             let parser = new DOMParser();
 
@@ -658,6 +891,7 @@ var Idiomorph = (function () {
                 let content = parser.parseFromString(newContent, "text/html");
                 // if it is a full HTML document, return the document itself as the parent container
                 if (contentWithSvgsRemoved.match(/<\/html>/)) {
+                    // TODO: prefer using set/getAttribute
                     content.generatedByIdiomorph = true;
                     return content;
                 } else {
@@ -680,6 +914,11 @@ var Idiomorph = (function () {
             }
         }
 
+        /**
+         *
+         * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
+         * @returns {HTMLDivElement}
+         */
         function normalizeContent(newContent) {
             if (newContent == null) {
                 // noinspection UnnecessaryLocalVariableJS
@@ -704,17 +943,33 @@ var Idiomorph = (function () {
             }
         }
 
+        /**
+         *
+         * @param {Node | null} previousSibling
+         * @param {Element | Node | null} morphedNode
+         * @param {Node | null} nextSibling
+         * @returns {Node[]}
+         */
         function insertSiblings(previousSibling, morphedNode, nextSibling) {
+            /**
+             * @type {Node[]}
+             */
             let stack = []
+            /**
+             * @type {Node[]}
+             */
             let added = []
             while (previousSibling != null) {
                 stack.push(previousSibling);
                 previousSibling = previousSibling.previousSibling;
             }
-            while (stack.length > 0) {
-                let node = stack.pop();
+            // Base the loop on the node variable, so that you do not need runtime checks for
+            // undefined value inside the loop
+            let node = stack.pop();
+            while (node !== undefined) {
                 added.push(node); // push added preceding siblings on in order and insert
                 morphedNode.parentElement.insertBefore(node, morphedNode);
+                node = stack.pop();
             }
             added.push(morphedNode);
             while (nextSibling != null) {
@@ -728,9 +983,22 @@ var Idiomorph = (function () {
             return added;
         }
 
+        /**
+         *
+         * @param {HTMLDivElement} newContent
+         * @param {Element} oldNode
+         * @param {MorphContext} ctx
+         * @returns {Node | null}
+         */
         function findBestNodeMatch(newContent, oldNode, ctx) {
+            /**
+             * @type {Node | null}
+             */
             let currentElement;
             currentElement = newContent.firstChild;
+            /**
+             * @type {Node | null}
+             */
             let bestElement = currentElement;
             let score = 0;
             while (currentElement) {
@@ -744,6 +1012,15 @@ var Idiomorph = (function () {
             return bestElement;
         }
 
+        /**
+         *
+         * @param {Node | null} node1
+         * @param {Element} node2
+         * @param {MorphContext} ctx
+         * @returns {number}
+         */
+        // TODO: The function handles node1 and node2 as if they are Elements but the function is
+        //   called in places where node1 and node2 may be just Nodes, not Elements
         function scoreElement(node1, node2, ctx) {
             if (isSoftMatch(node1, node2)) {
                 return .5 + getIdIntersectionCount(ctx, node1, node2);
@@ -751,6 +1028,13 @@ var Idiomorph = (function () {
             return 0;
         }
 
+        /**
+         *
+         * @param {Element} tempNode
+         * @param {MorphContext} ctx
+         */
+        // TODO: The function handles tempNode as if it's Element but the function is called in
+        //   places where tempNode may be just a Node, not an Element
         function removeNode(tempNode, ctx) {
             removeIdsFromConsideration(ctx, tempNode)
             if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
@@ -763,15 +1047,34 @@ var Idiomorph = (function () {
         // ID Set Functions
         //=============================================================================
 
+        /**
+         *
+         * @param {MorphContext} ctx
+         * @param {string} id
+         * @returns {boolean}
+         */
         function isIdInConsideration(ctx, id) {
             return !ctx.deadIds.has(id);
         }
 
+        /**
+         *
+         * @param {MorphContext} ctx
+         * @param {string} id
+         * @param {Node} targetNode
+         * @returns {boolean}
+         */
         function idIsWithinNode(ctx, id, targetNode) {
             let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
             return idSet.has(id);
         }
 
+        /**
+         *
+         * @param {MorphContext} ctx
+         * @param {Node} node
+         * @returns {void}
+         */
         function removeIdsFromConsideration(ctx, node) {
             let idSet = ctx.idMap.get(node) || EMPTY_SET;
             for (const id of idSet) {
@@ -779,6 +1082,13 @@ var Idiomorph = (function () {
             }
         }
 
+        /**
+         *
+         * @param {MorphContext} ctx
+         * @param {Node} node1
+         * @param {Node} node2
+         * @returns {number}
+         */
         function getIdIntersectionCount(ctx, node1, node2) {
             let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
             let matchCount = 0;
@@ -797,14 +1107,17 @@ var Idiomorph = (function () {
          * argument and populates id sets for those nodes and all their parents, generating
          * a set of ids contained within all nodes for the entire hierarchy in the DOM
          *
-         * @param node {Element}
-         * @param {Map<Node, Set<String>>} idMap
+         * @param {Element} node
+         * @param {Map<Node, Set<string>>} idMap
          */
         function populateIdMapForNode(node, idMap) {
             let nodeParent = node.parentElement;
             // find all elements with an id property
             let idElements = node.querySelectorAll('[id]');
             for (const elt of idElements) {
+                /**
+                 * @type {Element|null}
+                 */
                 let current = elt;
                 // walk up the parent hierarchy of that element, adding the id
                 // of element to the parent's id set
@@ -829,9 +1142,13 @@ var Idiomorph = (function () {
          *
          * @param {Element} oldContent  the old content that will be morphed
          * @param {Element} newContent  the new content to morph to
-         * @returns {Map<Node, Set<String>>} a map of nodes to id sets for the
+         * @returns {Map<Node, Set<string>>} a map of nodes to id sets for the
          */
         function createIdMap(oldContent, newContent) {
+            /**
+             *
+             * @type {Map<Node, Set<string>>}
+             */
             let idMap = new Map();
             populateIdMapForNode(oldContent, idMap);
             populateIdMapForNode(newContent, idMap);
