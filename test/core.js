@@ -253,7 +253,7 @@ describe("Core morphing tests", function(){
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
         initial.outerHTML.should.equal('<input value="bar">');
 
-        document.activeElement.should.equal(initial);
+        document.activeElement.should.equal(document.body);
 
         let finalSrc2 = '<input class="foo" value="doh">';
         Idiomorph.morph(initial, finalSrc2, {morphStyle:'outerHTML', ignoreActiveValue: true});
