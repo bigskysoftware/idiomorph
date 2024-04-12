@@ -110,7 +110,7 @@ var Idiomorph = (function () {
          * @returns {boolean}
          */
         function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
-            return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement;
+            return ctx.ignoreActiveValue && possibleActiveElement === document.activeElement && possibleActiveElement !== document.body;
         }
 
         /**
@@ -177,6 +177,10 @@ var Idiomorph = (function () {
          * @param ctx the merge context
          */
         function morphChildren(newParent, oldParent, ctx) {
+            if (newParent instanceof HTMLTemplateElement && oldParent instanceof HTMLTemplateElement) {
+              newParent = newParent.content;
+              oldParent = oldParent.content;
+            }
 
             let nextNewChild = newParent.firstChild;
             let insertionPoint = oldParent.firstChild;
@@ -860,7 +864,7 @@ var Idiomorph = (function () {
     htmx.defineExtension('morph', {
         isInlineSwap: function(swapStyle) {
             let config = createMorphConfig(swapStyle);
-            return config.swapStyle === "outerHTML" || config.swapStyle == null;
+            return config?.morphStyle === "outerHTML" || config?.morphStyle == null;
         },
         handleSwap: function (swapStyle, target, fragment) {
             let config = createMorphConfig(swapStyle);

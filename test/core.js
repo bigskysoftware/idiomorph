@@ -185,6 +185,14 @@ describe("Core morphing tests", function(){
         initial.outerHTML.should.equal("<div></div>");
     });
 
+    it('can morph a template tag properly', function()
+    {
+      let initial = make("<template data-old>Foo</template>");
+      let final = make("<template data-new>Bar</template>");
+      Idiomorph.morph(initial, final);
+      initial.outerHTML.should.equal(final.outerHTML);
+    });
+
     it('ignores active element when ignoreActive set to true', function()
     {
         let initialSource = "<div><div id='d1'>Foo</div><input id='i1'></div>";
