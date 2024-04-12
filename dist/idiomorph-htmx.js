@@ -12,7 +12,7 @@
     htmx.defineExtension('morph', {
         isInlineSwap: function(swapStyle) {
             let config = createMorphConfig(swapStyle);
-            return config.swapStyle === "outerHTML" || config.swapStyle == null;
+            return config?.morphStyle === "outerHTML" || config?.morphStyle == null;
         },
         handleSwap: function (swapStyle, target, fragment) {
             let config = createMorphConfig(swapStyle);
