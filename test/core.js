@@ -452,5 +452,20 @@ describe("Core morphing tests", function(){
         }
     });
 
+    it('can handle document fragments', function()
+    {
+        let tpl = document.createElement("template");
+        tpl.innerHTML = "<div><button>Foo</button><div>";
+        let initial = document.adoptNode(tpl.content);
+        let initialFirstChild = initial.firstChild;
+
+        tpl = document.createElement("template");
+        tpl.innerHTML = "<p>x</p><p>y</p>"
+        let replaceWith =  document.adoptNode(tpl.content);
+        Idiomorph.morph(initialFirstChild, replaceWith, {});
+        initial.outerHTML.should.equal(`<p>x</p><p>y</p>`);
+    });
+
+
 
 })
