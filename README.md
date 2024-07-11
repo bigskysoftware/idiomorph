@@ -161,8 +161,8 @@ The `head` object also offers callbacks for configuring head merging specifics.
 
 ### Setting Defaults
 
-All the behaviors specified above can be set to a different default by mutating the `Idimorph.defaults` object, including
-the `Idimorph.defaults.callbacks` and `Idimorph.defaults.head` objects.
+All the behaviors specified above can be set to a different default by mutating the `Idiomorph.defaults` object, including
+the `Idiomorph.defaults.callbacks` and `Idiomorph.defaults.head` objects.
 
 ### htmx
 
@@ -318,3 +318,7 @@ To keep things stable with morphdom, you would need to add ids to at least one o
 Here is a diagram explaining how the two algorithms differ in this case:
 
 ![Comparison Diagram](https://github.com/bigskysoftware/Idiomorph/raw/main/img/comparison.png)
+
+## Usage in the wild
+
+* [Datastar](https://data-star.dev) - uses idiomorph as its default merging strategy and embeds a Typescript port as part of its backend integration layer.
