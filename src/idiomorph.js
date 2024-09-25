@@ -190,7 +190,7 @@ var Idiomorph = (function () {
 
                 // if we are at the end of the exiting parent's children, just append
                 if (insertionPoint == null) {
-                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
 
                     oldParent.appendChild(newChild);
                     ctx.callbacks.afterNodeAdded(newChild);
@@ -230,7 +230,7 @@ var Idiomorph = (function () {
 
                 // abandon all hope of morphing, just insert the new child before the insertion point
                 // and move on
-                if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+                if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
 
                 oldParent.insertBefore(newChild, insertionPoint);
                 ctx.callbacks.afterNodeAdded(newChild);
