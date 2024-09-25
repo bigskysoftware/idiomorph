@@ -209,9 +209,9 @@ var Idiomorph = (function () {
                 // otherwise search forward in the existing old children for an id set match
                 let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
 
-                // if we found a potential match, remove the nodes until that point and morph
+                // if we found a match, move it to just before the insertion point and morph it
                 if (idSetMatch) {
-                    insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+                    insertionPoint.before(idSetMatch);
                     morphOldNodeTo(idSetMatch, newChild, ctx);
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
@@ -575,24 +575,11 @@ var Idiomorph = (function () {
             // only search forward if there is a possibility of an id match
             if (newChildPotentialIdCount > 0) {
                 let potentialMatch = insertionPoint;
-                // if there is a possibility of an id match, scan forward
-                // keep track of the potential id match count we are discarding (the
-                // newChildPotentialIdCount must be greater than this to make it likely
-                // worth it)
-                let otherMatchCount = 0;
                 while (potentialMatch != null) {
 
                     // If we have an id match, return the current potential match
                     if (isIdSetMatch(newChild, potentialMatch, ctx)) {
                         return potentialMatch;
-                    }
-
-                    // computer the other potential matches of this new content
-                    otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
-                    if (otherMatchCount > newChildPotentialIdCount) {
-                        // if we have more potential id matches in _other_ content, we
-                        // do not have a good candidate for an id match, so return null
-                        return null;
                     }
 
                     // advanced to the next old content child

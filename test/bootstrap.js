@@ -55,8 +55,8 @@ describe("Bootstrap test", function(){
         Idiomorph.morph(div1, div2);
         print(div1);
 
-        // first paragraph should have been discarded in favor of later matches
-        d1.innerHTML.should.equal("A");
+        // first paragraph should have been moved and morphed
+        d1.innerHTML.should.equal("D");
 
         // second and third paragraph should have morphed
         d2.innerHTML.should.equal("E");
