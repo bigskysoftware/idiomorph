@@ -585,6 +585,10 @@ var Idiomorph = (function () {
 
                     // If we have an id match, return the current potential match
                     if (isIdSetMatch(newChild, potentialMatch, ctx)) {
+                        // If the potential match isn't a perfect fit, but one of its descendants is, return that instead
+                        if (newChild.id !== potentialMatch.id && ctx.idMap.get(potentialMatch).has(newChild.id)) {
+                            return potentialMatch.querySelector("#"+newChild.id);
+                        }
                         return potentialMatch;
                     }
 
