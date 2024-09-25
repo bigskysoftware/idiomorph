@@ -119,7 +119,7 @@ var Idiomorph = (function () {
          * @param ctx the merge context
          * @returns {Element} the element that ended up in the DOM
          */
-        function morphOldNodeTo(oldNode, newContent, ctx) {
+        function morphOldNodeTo(oldNode, newContent, ctx, { insertBefore } = {}) {
             if (ctx.ignoreActive && oldNode === document.activeElement) {
                 // don't morph focused element
             } else if (newContent == null) {
@@ -144,6 +144,7 @@ var Idiomorph = (function () {
                 } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                     handleHeadElement(newContent, oldNode, ctx);
                 } else {
+                    if (insertBefore) insertBefore.before(oldNode)
                     syncNodeFrom(newContent, oldNode, ctx);
                     if (!ignoreValueOfActiveElement(oldNode, ctx)) {
                         morphChildren(newContent, oldNode, ctx);
@@ -209,10 +210,9 @@ var Idiomorph = (function () {
                 // otherwise search forward in the existing old children for an id set match
                 let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
 
-                // if we found a match, move it to just before the insertion point and morph it
+                // if we found a match, morph it and move it to just before the insertion point
                 if (idSetMatch) {
-                    insertionPoint.before(idSetMatch);
-                    morphOldNodeTo(idSetMatch, newChild, ctx);
+                    morphOldNodeTo(idSetMatch, newChild, ctx, { insertBefore: insertionPoint });
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
                 }
