@@ -222,8 +222,14 @@ var Idiomorph = (function () {
 
                 // if we found a soft match for the current node, morph
                 if (softMatch) {
-                    insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                    morphOldNodeTo(softMatch, newChild, ctx);
+                    // if the current node is a soft match then morph
+                    if (insertionPoint === softMatch) {
+                      morphOldNodeTo(softMatch, newChild, ctx);
+                      insertionPoint = insertionPoint.nextSibling;
+                    // otherwise, morph it and move it to just before the insertion point
+                    } else {
+                      morphOldNodeTo(softMatch, newChild, ctx, { insertBefore: insertionPoint });
+                    }
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
                 }
