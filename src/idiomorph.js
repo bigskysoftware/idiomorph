@@ -307,6 +307,10 @@ var Idiomorph = (function () {
          * @returns {void}
          */
         function morphChildren(newParent, oldParent, ctx) {
+            if (newParent instanceof HTMLTemplateElement && oldParent instanceof HTMLTemplateElement) {
+              newParent = newParent.content;
+              oldParent = oldParent.content;
+            }
 
             /**
              *
