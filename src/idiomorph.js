@@ -248,7 +248,7 @@ var Idiomorph = (function () {
          * @param {MorphContext} ctx the merge context
          * @returns {Element | Node | null | undefined} the element that ended up in the DOM
          */
-        function morphOldNodeTo(oldNode, newContent, ctx) {
+        function morphOldNodeTo(oldNode, newContent, ctx, { insertBefore } = {}) {
             if (ctx.ignoreActive && oldNode === document.activeElement) {
                 // don't morph focused element
             } else if (newContent == null) {
@@ -273,6 +273,7 @@ var Idiomorph = (function () {
                 } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                     handleHeadElement(newContent, oldNode, ctx);
                 } else {
+                    if (insertBefore) insertBefore.before(oldNode)
                     syncNodeFrom(newContent, oldNode, ctx);
                     if (!ignoreValueOfActiveElement(oldNode, ctx)) {
                         morphChildren(newContent, oldNode, ctx);
@@ -332,7 +333,7 @@ var Idiomorph = (function () {
 
                 // if we are at the end of the exiting parent's children, just append
                 if (insertionPoint == null) {
-                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
 
                     oldParent.appendChild(newChild);
                     ctx.callbacks.afterNodeAdded(newChild);
@@ -351,10 +352,9 @@ var Idiomorph = (function () {
                 // otherwise search forward in the existing old children for an id set match
                 let idSetMatch = findIdSetMatch(newParent, oldParent, newChild, insertionPoint, ctx);
 
-                // if we found a potential match, remove the nodes until that point and morph
+                // if we found a match, morph it and move it to just before the insertion point
                 if (idSetMatch) {
-                    insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-                    morphOldNodeTo(idSetMatch, newChild, ctx);
+                    morphOldNodeTo(idSetMatch, newChild, ctx, { insertBefore: insertionPoint });
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
                 }
@@ -364,15 +364,21 @@ var Idiomorph = (function () {
 
                 // if we found a soft match for the current node, morph
                 if (softMatch) {
-                    insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-                    morphOldNodeTo(softMatch, newChild, ctx);
+                    // if the current node is a soft match then morph
+                    if (insertionPoint === softMatch) {
+                      morphOldNodeTo(softMatch, newChild, ctx);
+                      insertionPoint = insertionPoint.nextSibling;
+                    // otherwise, morph it and move it to just before the insertion point
+                    } else {
+                      morphOldNodeTo(softMatch, newChild, ctx, { insertBefore: insertionPoint });
+                    }
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
                 }
 
                 // abandon all hope of morphing, just insert the new child before the insertion point
                 // and move on
-                if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+                if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
 
                 oldParent.insertBefore(newChild, insertionPoint);
                 ctx.callbacks.afterNodeAdded(newChild);
@@ -792,24 +798,15 @@ var Idiomorph = (function () {
                 // TODO: This is ghosting the potentialMatch variable outside of this block.
                 //   Probably an error
                 let potentialMatch = insertionPoint;
-                // if there is a possibility of an id match, scan forward
-                // keep track of the potential id match count we are discarding (the
-                // newChildPotentialIdCount must be greater than this to make it likely
-                // worth it)
-                let otherMatchCount = 0;
                 while (potentialMatch != null) {
 
                     // If we have an id match, return the current potential match
                     if (isIdSetMatch(newChild, potentialMatch, ctx)) {
+                        // If the potential match isn't a perfect fit, but one of its descendants is, return that instead
+                        if (newChild.id !== potentialMatch.id && ctx.idMap.get(potentialMatch).has(newChild.id)) {
+                            return potentialMatch.querySelector("#"+newChild.id);
+                        }
                         return potentialMatch;
-                    }
-
-                    // computer the other potential matches of this new content
-                    otherMatchCount += getIdIntersectionCount(ctx, potentialMatch, newContent);
-                    if (otherMatchCount > newChildPotentialIdCount) {
-                        // if we have more potential id matches in _other_ content, we
-                        // do not have a good candidate for an id match, so return null
-                        return null;
                     }
 
                     // advanced to the next old content child
