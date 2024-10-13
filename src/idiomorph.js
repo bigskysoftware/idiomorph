@@ -137,6 +137,8 @@ var Idiomorph = (function () {
                 ctx.callbacks.afterNodeRemoved(oldNode);
                 return newContent;
             } else {
+                if (insertBefore) insertBefore.before(oldNode)
+
                 if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) return oldNode;
 
                 if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
@@ -144,7 +146,6 @@ var Idiomorph = (function () {
                 } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
                     handleHeadElement(newContent, oldNode, ctx);
                 } else {
-                    if (insertBefore) insertBefore.before(oldNode)
                     syncNodeFrom(newContent, oldNode, ctx);
                     if (!ignoreValueOfActiveElement(oldNode, ctx)) {
                         morphChildren(newContent, oldNode, ctx);
