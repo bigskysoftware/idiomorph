@@ -322,3 +322,4 @@ Here is a diagram explaining how the two algorithms differ in this case:
 ## Usage in the wild
 
 * [Datastar](https://data-star.dev) - uses idiomorph as its default merging strategy and embeds a Typescript port as part of its backend integration layer.
+* [Turbo](https://turbo.hotwired.dev/handbook/page_refreshes#morphing) - uses idiomorph to perform full page refreshing. 
