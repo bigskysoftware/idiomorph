@@ -15,6 +15,10 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
+      - name: Start test server
+        run: |
+          npx http-server . -p 8000 &
+          sleep 2 # Wait a moment for the server to start
       - name: Run tests
-        run: npm test
+        run: npm run ci
 

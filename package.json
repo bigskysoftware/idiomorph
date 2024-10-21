@@ -20,6 +20,7 @@
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
     "test": "mocha-chrome test/index.html",
+    "ci": "mocha-chrome http://localhost:8000/test/index.html",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
@@ -37,6 +38,7 @@
     "chai-dom": "^1.11.0",
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
+    "http-server": "^14.1.1",
     "mocha": "^7.2.0",
     "mocha-chrome": "^2.2.0",
     "mocha-webdriver-runner": "^0.6.3",
