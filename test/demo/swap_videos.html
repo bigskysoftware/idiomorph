@@ -1,0 +1,63 @@
+<html>
+<head>
+    <script src="../../src/idiomorph.js"></script>
+    <style>
+        div, button {
+            margin:16px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="idiomorph">
+    <div id="flower-header">
+        <h3>Flower</h3>
+    </div>
+    <div id="flower-video">
+        <video width="640" height="360" controls>
+            <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+        </video>
+    </div>
+    <div id="bunny-header">
+        <h3>Bunny</h3>
+    </div>
+    <div id="bunny-video">
+        <video width="640" height="360" controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        </video>
+    </div>
+</div>
+
+<button onclick="playVideosAndMorph()">
+    Play and Swap Videos
+</button>
+<script>
+    function playVideosAndMorph() {
+        document.querySelectorAll('video').forEach(e => e.play())
+        Idiomorph.morph(
+            document.getElementById('idiomorph'),
+            document.getElementById('idiomorph-after').content.cloneNode(true),
+            { morphStyle: 'innerHTML' },
+        )
+    }
+</script>
+
+<template id="idiomorph-after">
+    <div id="bunny-header">
+        <h3>Bunny</h3>
+    </div>
+    <div id="bunny-video">
+        <video width="640" height="360" controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        </video>
+    </div>
+    <div id="flower-header">
+        <h3>Flower</h3>
+    </div>
+    <div id="flower-video">
+        <video width="640" height="360" controls>
+            <source src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" type="video/mp4">
+        </video>
+    </div>
+</template>
+
