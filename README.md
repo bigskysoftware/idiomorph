@@ -117,7 +117,7 @@ of the algorithm.
 The head tag is treated specially by idiomorph because:
 
 * It typically only has one level of children within it
-* Those children often to not have `id` attributes associated with them
+* Those children often do not have `id` attributes associated with them
 * It is important to remove as few elements as possible from the head, in order to minimize network requests for things
   like style sheets
 * The order of elements in the head tag is (usually) not meaningful
