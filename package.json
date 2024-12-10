@@ -19,7 +19,7 @@
   "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
-    "test": "mocha-chrome test/index.html",
+    "test": "mocha-chrome test/index.html --chrome-flags '[\"--allow-file-access-from-files\"]'",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",

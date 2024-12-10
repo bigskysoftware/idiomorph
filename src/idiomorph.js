@@ -672,10 +672,10 @@ var Idiomorph = (function () {
             Object.assign(finalConfig, config);
 
             // copy callbacks into final config (do this to deep merge the callbacks)
-            Object.assign(finalConfig.callbacks, config.callbacks);
+            finalConfig.callbacks = Object.assign({}, defaults.callbacks, config.callbacks);
 
             // copy head config into final config  (do this to deep merge the head)
-            Object.assign(finalConfig.head, config.head);
+            finalConfig.head = Object.assign({}, defaults.head, config.head);
 
             return finalConfig;
         }
