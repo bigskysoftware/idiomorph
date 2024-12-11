@@ -201,7 +201,7 @@ var Idiomorph = (function () {
 
                 // innerHTML, so we are only updating the children
                 morphChildren(normalizedNewContent, oldNode, ctx);
-                return oldNode.children;
+                return Array.from(oldNode.children);
 
             } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
                 // otherwise find the best element match in the new content, morph that, and merge its siblings
