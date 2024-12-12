@@ -1,4 +1,7 @@
 export default {
+  nodeResolve: true,
+  coverage: true,
+  files: "test/*.js",
   testRunnerHtml: (testFramework) => `
     <!DOCTYPE html>
     <html>

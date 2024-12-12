@@ -19,9 +19,9 @@
   "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
-    "test": "web-test-runner test/*.js --node-resolve --coverage",
-    "debug": "web-test-runner test/*.js --node-resolve --manual --open",
-    "ci": "web-test-runner test/*.js --node-resolve --coverage --playwright --browsers chromium firefox webkit",
+    "test": "web-test-runner",
+    "debug": "web-test-runner --manual --open",
+    "ci": "web-test-runner --playwright --browsers chromium firefox webkit",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
