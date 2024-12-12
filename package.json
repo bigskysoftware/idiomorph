@@ -19,7 +19,9 @@
   "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
-    "test": "mocha-chrome test/index.html --chrome-flags '[\"--allow-file-access-from-files\"]'",
+    "test": "web-test-runner test/*.js --node-resolve --coverage",
+    "debug": "web-test-runner test/*.js --node-resolve --manual --open",
+    "ci": "web-test-runner test/*.js --node-resolve --coverage --playwright --browsers chromium firefox webkit",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
@@ -33,13 +35,12 @@
     "url": "git+https://github.com/bigskysoftware/idiomorph.git"
   },
   "devDependencies": {
+    "@web/test-runner": "^0.19.0",
+    "@web/test-runner-playwright": "^0.11.0",
     "chai": "^4.3.6",
     "chai-dom": "^1.11.0",
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
-    "mocha": "^7.2.0",
-    "mocha-chrome": "^2.2.0",
-    "mocha-webdriver-runner": "^0.6.3",
     "sinon": "^9.2.4",
     "typescript": "^5.3.3",
     "uglify-js": "^3.15.0"
