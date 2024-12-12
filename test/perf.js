@@ -7,17 +7,17 @@ describe("Tests to compare perf with morphdom", function(){
 
     it('HTML5 Elements Sample Page', function(done)
     {
-        runPerfTest("HTML5 Demo", "./perf/perf1.start", "./perf/perf1.end", done);
+        runPerfTest("HTML5 Demo", "/test/perf/perf1.start", "/test/perf/perf1.end", done);
     });
 
     it('Large Table performance', function(done)
     {
-        runPerfTest("Large Table Perf", "./perf/table.start", "./perf/table.end", done);
+        runPerfTest("Large Table Perf", "/test/perf/table.start", "/test/perf/table.end", done);
     });
 
     it('Checkboxes Performance', function(done)
     {
-        runPerfTest("Checkboxes Performance", "./perf/checkboxes.start", "./perf/checkboxes.start", done);
+        runPerfTest("Checkboxes Performance", "/test/perf/checkboxes.start", "/test/perf/checkboxes.start", done);
     });
 
     function runPerfTest(testName, startUrl, endUrl, done) {
