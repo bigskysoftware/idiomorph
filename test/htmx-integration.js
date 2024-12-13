@@ -1,5 +1,4 @@
 describe("Tests for the htmx integration", function() {
-
     function makeServer(){
         var server = sinon.fakeServer.create();
         htmx.config.defaultSettleDelay = 0;

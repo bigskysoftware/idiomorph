@@ -1,6 +1,10 @@
 /* Test Utilities */
+
 function setup() {
-    beforeEach(function() {
+    beforeEach(() => {
+        if (window.useMoveBefore && !Element.prototype.moveBefore) {
+            throw new Error('Element.prototype.moveBefore is not available.');
+        }
         clearWorkArea();
     });
 }
