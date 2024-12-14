@@ -1126,12 +1126,12 @@ var Idiomorph = (function () {
 
         /**
          *
-         * @param {Element} root
+         * @param {Node | null} root
          * @param {MorphContext} ctx
          */
         function restoreFromPantry(root, ctx) {
-            if (ctx.pantry instanceof HTMLDivElement) {
-                Array.from(ctx.pantry.children).forEach(element => {
+            if (ctx.pantry instanceof HTMLDivElement && root instanceof Element) {
+                Array.from(ctx.pantry.children).reverse().forEach(element => {
                     const matchElement = root.querySelector(`#${element.id}`);
                     if (matchElement) {
                         // @ts-ignore - use proposed moveBefore feature
