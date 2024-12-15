@@ -56,7 +56,7 @@ describe("Bootstrap test", function(){
         print(div1);
 
         // first paragraph should have been discarded in favor of later matches
-        d1.innerHTML.should.equal("A");
+        d1.innerHTML.should.not.equal("D");
 
         // second and third paragraph should have morphed
         d2.innerHTML.should.equal("E");

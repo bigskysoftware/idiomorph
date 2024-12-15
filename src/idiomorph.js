@@ -1135,13 +1135,19 @@ var Idiomorph = (function () {
                     const matchElement = root.querySelector(`#${element.id}`);
                     if (matchElement) {
                         // @ts-ignore - use proposed moveBefore feature
-                        if (matchElement.moveBefore) {
+                        if (matchElement.parentElement?.moveBefore) {
                             // @ts-ignore - use proposed moveBefore feature
                             matchElement.parentElement.moveBefore(element, matchElement);
+                            while (matchElement.hasChildNodes()) {
+                                // @ts-ignore - use proposed moveBefore feature
+                                element.moveBefore(matchElement.firstChild,null);
+                            }
                         } else {
                             matchElement.before(element);
+                            while (matchElement.firstChild) {
+                                element.insertBefore(matchElement.firstChild,null)
+                            }
                         }
-                        element.replaceChildren(...matchElement.childNodes);
                         syncNodeFrom(matchElement, element, ctx);
                         matchElement.remove();
                     }
