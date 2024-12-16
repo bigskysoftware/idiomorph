@@ -769,6 +769,9 @@ var Idiomorph = (function () {
             if (node1 == null || node2 == null) {
                 return false;
             }
+            if (node1.id !== node2.id) {
+                return false;
+            }
             return node1.nodeType === node2.nodeType &&
               // ok to cast: if one is not element, `tagName` will be undefined and we'll compare that
               /** @type {Element} */ (node1).tagName === /** @type {Element} */ (node2).tagName

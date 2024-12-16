@@ -224,7 +224,7 @@ describe("Two-pass option for retaining more state", function(){
         }
     });
 
-    it.skip('preserves focus state when elements are moved between different containers', function()
+    it('preserves focus state when elements are moved between different containers', function()
     {
         getWorkArea().append(make(`
             <div>
