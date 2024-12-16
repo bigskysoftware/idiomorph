@@ -105,4 +105,59 @@ describe("Tests for the htmx integration", function() {
         initialBtn.classList.contains('bar').should.equal(true);
     });
 
+    it('plays nice with hx-preserve', function() {
+        this.server.respondWith("GET", "/test", "<div><input id='input' hx-preserve><button id='b1' hx-swap='morph' hx-get='/test'>Foo</button><div>");
+        let html = makeForHtmxTest("<div><input id='input' hx-preserve value='preserve-me!'><button id='b1' hx-swap='morph' hx-get='/test'>Foo</button><div>");
+        let button = document.getElementById('b1');
+        button.click();
+        this.server.respond();
+        let input = document.getElementById('input');
+        input.value.should.equal('preserve-me!');
+    });
+
+    it('plays nice with swapping preserved inputs', function() {
+        this.server.respondWith("GET", "/test", `
+          <div>
+            <input id='second' hx-preserve>
+            <input id='first' hx-preserve>
+            <button id='b1' hx-swap='morph' hx-get='/test'>Swap</button>
+          <div>
+        `);
+        let html = makeForHtmxTest(`
+          <div>
+            <input id='first' hx-preserve>
+            <input id='second' hx-preserve>
+            <button id='b1' hx-swap='morph' hx-get='/test'>Swap</button>
+          <div>
+        `);
+        document.getElementById('first').value = 'preserve first!';
+        document.getElementById('second').value = 'preserve second!';
+        let button = document.getElementById('b1');
+        button.click();
+        this.server.respond();
+        Array.from(html.querySelectorAll("input")).map(e => e.value).should.eql(['preserve second!', 'preserve first!']);
+    });
+
+    it('plays nice with swapping preserved textareas', function() {
+        this.server.respondWith("GET", "/test", `
+          <div>
+            <textarea id='second' hx-preserve></textarea>
+            <textarea id='first' hx-preserve></textarea>
+            <button id='b1' hx-swap='morph' hx-get='/test'>Swap</button>
+          <div>
+        `);
+        let html = makeForHtmxTest(`
+          <div>
+            <textarea id='first' hx-preserve></textarea>
+            <textarea id='second' hx-preserve></textarea>
+            <button id='b1' hx-swap='morph' hx-get='/test'>Swap</button>
+          <div>
+        `);
+        document.getElementById('first').innerHTML = 'preserve first!';
+        document.getElementById('second').innerHTML = 'preserve second!';
+        let button = document.getElementById('b1');
+        button.click();
+        this.server.respond();
+        Array.from(html.querySelectorAll("textarea")).map(e => e.value).should.eql(['preserve second!', 'preserve first!']);
+    });
 })
