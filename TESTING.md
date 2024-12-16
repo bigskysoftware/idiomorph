@@ -25,6 +25,12 @@ npm run ci
 ```
 This will run the tests using Playwright’s headless browser setup across Chrome, Firefox, and WebKit (Safari-adjacent). This is ultimately what gets run in Github Actions to verify PRs.
 
+To run all tests against Chrome with experimental `moveBefore` support added, execute:
+```bash
+npm run test-move-before
+```
+This will start headless Chrome in a new profile with the `atomic-move` experimental flag set. This runs in a separate job in CI.
+
 ## Running Individual Tests
 
 ### Headless Mode

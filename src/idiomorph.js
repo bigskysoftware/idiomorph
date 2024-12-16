@@ -70,6 +70,7 @@
  * @property {boolean} [ignoreActiveValue]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
+ * @property {boolean} [twoPass]
  */
 
 /**
@@ -78,7 +79,7 @@
  * @param {Element | Document} oldNode
  * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
  * @param {Config} [config]
- * @returns {undefined | HTMLCollection | Node[]}
+ * @returns {undefined | Node[]}
  */
 
 // base IIFE to define idiomorph
@@ -102,6 +103,7 @@ var Idiomorph = (function () {
          * @property {Set<string>} deadIds
          * @property {ConfigInternal['callbacks']} callbacks
          * @property {ConfigInternal['head']} head
+         * @property {boolean|HTMLDivElement} [pantry]
          */
 
         //=============================================================================
@@ -152,7 +154,7 @@ var Idiomorph = (function () {
          * @param {Element | Document} oldNode
          * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
          * @param {Config} [config]
-         * @returns {undefined | HTMLCollection | Node[]}
+         * @returns {undefined | Node[]}
          */
         function morph(oldNode, newContent, config = {}) {
 
@@ -176,7 +178,7 @@ var Idiomorph = (function () {
          * @param {Element} oldNode
          * @param {Element} normalizedNewContent
          * @param {MorphContext} ctx
-         * @returns {undefined | HTMLCollection| Node[]}
+         * @returns {undefined | Node[]}
          */
         function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
             if (ctx.head.block) {
@@ -201,6 +203,9 @@ var Idiomorph = (function () {
 
                 // innerHTML, so we are only updating the children
                 morphChildren(normalizedNewContent, oldNode, ctx);
+                if (ctx.pantry) {
+                    restoreFromPantry(oldNode, ctx);
+                }
                 return Array.from(oldNode.children);
 
             } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
@@ -219,7 +224,11 @@ var Idiomorph = (function () {
                     // if there was a best match, merge the siblings in too and return the
                     // whole bunch
                     if (morphedNode) {
-                        return insertSiblings(previousSibling, morphedNode, nextSibling);
+                        const elements = insertSiblings(previousSibling, morphedNode, nextSibling);
+                        if (ctx.pantry) {
+                            restoreFromPantry(morphedNode.parentNode, ctx);
+                        }
+                        return elements
                     }
                 } else {
                     // otherwise nothing was added to the DOM
@@ -713,9 +722,17 @@ var Idiomorph = (function () {
                 ignoreActiveValue: mergedConfig.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
                 deadIds: new Set(),
+                pantry: mergedConfig.twoPass && createPantry(),
                 callbacks: mergedConfig.callbacks,
                 head: mergedConfig.head
             }
+        }
+
+        function createPantry() {
+            const pantry = document.createElement("div");
+            pantry.hidden = true;
+            document.body.insertAdjacentElement("afterend", pantry);
+            return pantry;
         }
 
         /**
@@ -750,6 +767,9 @@ var Idiomorph = (function () {
          */
         function isSoftMatch(node1, node2) {
             if (node1 == null || node2 == null) {
+                return false;
+            }
+            if (node1.id !== node2.id) {
                 return false;
             }
             return node1.nodeType === node2.nodeType &&
@@ -1063,9 +1083,80 @@ var Idiomorph = (function () {
         function removeNode(tempNode, ctx) {
             removeIdsFromConsideration(ctx, tempNode)
             if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-
-            tempNode.parentNode?.removeChild(tempNode);
+            if (ctx.pantry && tempNode instanceof Element) {
+                moveToPantry(tempNode, ctx);
+            } else {
+                tempNode.parentNode?.removeChild(tempNode);
+            }
             ctx.callbacks.afterNodeRemoved(tempNode);
+        }
+
+        /**
+         *
+         * @param {Element} node
+         * @param {MorphContext} ctx
+         */
+        function moveToPantry(node, ctx) {
+            if (ctx.pantry instanceof HTMLDivElement) {
+                // If the node is a leaf (no children), process it, and then we're done
+                if (!node.hasChildNodes()) {
+                    if (node.id) {
+                        // @ts-ignore - use proposed moveBefore feature
+                        if (ctx.pantry.moveBefore) {
+                            // @ts-ignore - use proposed moveBefore feature
+                            ctx.pantry.moveBefore(node, null);
+                        } else {
+                            ctx.pantry.insertBefore(node, null);
+                        }
+                    }
+
+                // otherwise we need to process the children first
+                } else {
+                    Array.from(node.children).forEach(child => {
+                        moveToPantry(child, ctx);
+                    });
+
+                    // After processing children, process the current node
+                    if (node.id) {
+                        node.innerHTML = '';
+                        ctx.pantry.appendChild(node);
+                    } else {
+                        node.parentNode?.removeChild(node);
+                    }
+                }
+            }
+        }
+
+        /**
+         *
+         * @param {Node | null} root
+         * @param {MorphContext} ctx
+         */
+        function restoreFromPantry(root, ctx) {
+            if (ctx.pantry instanceof HTMLDivElement && root instanceof Element) {
+                Array.from(ctx.pantry.children).reverse().forEach(element => {
+                    const matchElement = root.querySelector(`#${element.id}`);
+                    if (matchElement) {
+                        // @ts-ignore - use proposed moveBefore feature
+                        if (matchElement.parentElement?.moveBefore) {
+                            // @ts-ignore - use proposed moveBefore feature
+                            matchElement.parentElement.moveBefore(element, matchElement);
+                            while (matchElement.hasChildNodes()) {
+                                // @ts-ignore - use proposed moveBefore feature
+                                element.moveBefore(matchElement.firstChild,null);
+                            }
+                        } else {
+                            matchElement.before(element);
+                            while (matchElement.firstChild) {
+                                element.insertBefore(matchElement.firstChild,null)
+                            }
+                        }
+                        syncNodeFrom(matchElement, element, ctx);
+                        matchElement.remove();
+                    }
+                });
+                ctx.pantry.remove();
+            }
         }
 
         //=============================================================================

@@ -1,7 +1,7 @@
-export default {
-  nodeResolve: true,
-  coverage: true,
-  files: "test/*.js",
+import { chromeLauncher } from "@web/test-runner";
+import { exec } from "child_process";
+
+let config = {
   testRunnerHtml: (testFramework) => `
     <!DOCTYPE html>
     <html>
@@ -29,5 +29,22 @@ export default {
     </body>
     </html>
   `,
+
+  nodeResolve: true,
+  coverage: true,
+  files: "test/*.js",
 };
 
+if (process.env.USE_MOVE_BEFORE) {
+  // configure chrome to use a custom profile directory we control
+  config.browsers = [
+    chromeLauncher({ launchOptions: { args: ['--user-data-dir=test/chrome-profile'] } })
+  ]
+  exec([
+    'rm -rf test/chrome-profile', // clear profile out from last run
+    'mkdir -p test/chrome-profile', // create from scratch
+    `echo '{"browser":{"enabled_labs_experiments":["atomic-move@1"]}}' > test/chrome-profile/Local\\ State`, // enable experiment
+  ].join(" && "));
+}
+
+export default config;

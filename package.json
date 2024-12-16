@@ -21,6 +21,7 @@
   "scripts": {
     "test": "web-test-runner",
     "debug": "web-test-runner --manual --open",
+    "test-move-before": "USE_MOVE_BEFORE=1 web-test-runner",
     "ci": "web-test-runner --playwright --browsers chromium firefox webkit",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",

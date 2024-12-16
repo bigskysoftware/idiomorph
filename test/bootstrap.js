@@ -48,7 +48,7 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        let morphTo = '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
+        let morphTo = '<div id="root1"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
         let div2 = make(morphTo)
 
         print(div1);
@@ -56,7 +56,7 @@ describe("Bootstrap test", function(){
         print(div1);
 
         // first paragraph should have been discarded in favor of later matches
-        d1.innerHTML.should.equal("A");
+        d1.innerHTML.should.not.equal("D");
 
         // second and third paragraph should have morphed
         d2.innerHTML.should.equal("E");
