@@ -323,6 +323,23 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
+    it.only('can prevent element addition w/ the beforeNodeAdded callback', function() {
+        let parent = make("<div><p>1</p><p>2</p></div>");
+        document.body.append(parent);
+
+        // morph
+        let finalSrc = "<p>1</p><p>2</p><p>3</p><p>4</p>";
+
+        Idiomorph.morph(parent, finalSrc, {morphStyle:'innerHTML', callbacks : {
+            beforeNodeAdded(node) {
+              if(node.outerHTML === "<p>3</p>") return false
+            }
+        }});
+        parent.innerHTML.should.equal("<p>1</p><p>2</p><p>4</p>");
+
+        document.body.removeChild(parent);
+    });
+
     it('ignores active textarea value when ignoreActiveValue is true', function()
     {
         let parent = make("<div><textarea>foo</textarea></div>");
