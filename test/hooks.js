@@ -64,7 +64,7 @@ describe("lifecycle hooks", function(){
         initial.outerHTML.should.equal(`<ul name="b"><li name="b" id="a">A</li></ul>`);
     });
 
-    it.skip('calls afterNodeMorphed before a node is morphed', function(){
+    it('calls afterNodeMorphed before a node is morphed', function(){
         let calls = [];
         let initial = make(`<ul><li id="a">A</li></ul>`);
         Idiomorph.morph(initial, `<ul><li id="a">B</li></ul>`, { callbacks: {
@@ -77,9 +77,9 @@ describe("lifecycle hooks", function(){
         } });
         initial.outerHTML.should.equal(`<ul><li id="a">B</li></ul>`);
         calls.should.eql([
-          [`A`, `B`],
-          [`<li id="a">A</li>`, `<li id="a">B</li>`],
-          [`<ul><li id="a">A</li></ul>`, `<ul><li id="a">B</li></ul>`],
+          [`B`, `B`],
+          [`<li id="a">B</li>`, `<li id="a">B</li>`],
+          [`<ul><li id="a">B</li></ul>`, `<ul><li id="a">B</li></ul>`],
         ]);
     });
 
