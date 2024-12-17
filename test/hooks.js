@@ -115,7 +115,7 @@ describe("lifecycle hooks", function(){
         calls.should.eql(["<li>B</li>"]);
     });
 
-    it.skip('calls beforeAttributeUpdated when an attribute is added', function(){
+    it('calls beforeAttributeUpdated when an attribute is added', function(){
         let calls = [];
         let initial = make("<a></a>");
         Idiomorph.morph(initial, `<a href="#"></a>`, { callbacks: {
@@ -127,7 +127,7 @@ describe("lifecycle hooks", function(){
         calls.should.eql([["href", `<a></a>`, "update"]]);
     });
 
-    it.skip('calls beforeAttributeUpdated when an attribute is updated', function(){
+    it('calls beforeAttributeUpdated when an attribute is updated', function(){
         let calls = [];
         let initial = make(`<a href="a"></a>`);
         Idiomorph.morph(initial, `<a href="b"></a>`, { callbacks: {
