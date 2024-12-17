@@ -1,6 +1,9 @@
 export default {
   nodeResolve: true,
   coverage: true,
+  coverageConfig: {
+    include: ['src/**/*'],
+  },
   files: "test/*.js",
   testRunnerHtml: (testFramework) => `
     <!DOCTYPE html>
