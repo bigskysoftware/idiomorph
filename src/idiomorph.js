@@ -439,10 +439,10 @@ var Idiomorph = (function () {
                 // iterate backwards to avoid skipping over items when a delete occurs
                 for (let i = toAttributes.length - 1; 0 <= i; i--) {
                     const toAttribute = toAttributes[i];
-                    if (ignoreAttribute(toAttribute.name, toEl, 'remove', ctx)) {
-                        continue;
-                    }
                     if (!fromEl.hasAttribute(toAttribute.name)) {
+                        if (ignoreAttribute(toAttribute.name, toEl, 'remove', ctx)) {
+                            continue;
+                        }
                         toEl.removeAttribute(toAttribute.name);
                     }
                 }
