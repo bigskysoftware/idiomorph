@@ -1,8 +1,5 @@
 describe("Tests to ensure that idiomorph merges properly", function(){
-
-    beforeEach(function() {
-        clearWorkArea();
-    });
+    setup();
 
     function expectFidelity(actual, expected) {
         if (actual.outerHTML !== expected) {

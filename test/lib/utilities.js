@@ -1,4 +1,9 @@
 /* Test Utilities */
+function setup() {
+    beforeEach(function() {
+        clearWorkArea();
+    });
+}
 
 function make(htmlStr) {
     let range = document.createRange();

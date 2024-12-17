@@ -1,10 +1,6 @@
 describe("Bootstrap test", function(){
+    setup();
 
-    beforeEach(function() {
-        clearWorkArea();
-    });
-
-    // bootstrap test
     it('can morph content to content', function()
     {
         let btn1 = make('<button>Foo</button>')
