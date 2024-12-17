@@ -1,8 +1,5 @@
 describe("Core morphing tests", function(){
-
-    beforeEach(function() {
-        clearWorkArea();
-    });
+    setup();
 
     it('morphs outerHTML as content properly when argument is null', function()
     {
@@ -476,6 +473,5 @@ describe("Core morphing tests", function(){
             Idiomorph.defaults.morphStyle = 'outerHTML';
         }
     });
-
 
 })

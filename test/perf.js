@@ -1,9 +1,5 @@
 describe("Tests to compare perf with morphdom", function(){
-
-    beforeEach(function() {
-        clearWorkArea();
-    });
-
+    setup();
 
     it('HTML5 Elements Sample Page', function(done)
     {

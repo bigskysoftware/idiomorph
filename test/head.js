@@ -1,8 +1,5 @@
 describe("Tests to ensure that the head tag merging works correctly", function() {
-
-    beforeEach(function () {
-        clearWorkArea();
-    });
+    setup();
 
     it('adds a new element correctly', function () {
         let parser = new DOMParser();

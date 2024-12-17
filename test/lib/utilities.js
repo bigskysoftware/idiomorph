@@ -1,5 +1,14 @@
 /* Test Utilities */
 
+function setup() {
+    beforeEach(() => {
+        if (window.useMoveBefore && !Element.prototype.moveBefore) {
+            throw new Error('Element.prototype.moveBefore is not available.');
+        }
+        clearWorkArea();
+    });
+}
+
 function make(htmlStr) {
     let range = document.createRange();
     let fragment = range.createContextualFragment(htmlStr);
