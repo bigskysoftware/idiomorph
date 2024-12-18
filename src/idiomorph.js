@@ -99,6 +99,7 @@ var Idiomorph = (function () {
          * @property {ConfigInternal['ignoreActive']} ignoreActive
          * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
          * @property {Map<Node, Set<string>>} idMap
+         * @property {Set<string>} persistentIds
          * @property {Set<string>} deadIds
          * @property {ConfigInternal['callbacks']} callbacks
          * @property {ConfigInternal['head']} head
@@ -259,7 +260,7 @@ var Idiomorph = (function () {
                 oldNode.parentNode?.removeChild(oldNode);
                 ctx.callbacks.afterNodeRemoved(oldNode);
                 return null;
-            } else if (!isSoftMatch(oldNode, newContent)) {
+            } else if (!isSoftMatch(oldNode, newContent, ctx)) {
                 if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
                 if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
 
@@ -712,6 +713,7 @@ var Idiomorph = (function () {
                 ignoreActive: mergedConfig.ignoreActive,
                 ignoreActiveValue: mergedConfig.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
+                persistentIds: persistentIdSet(oldNode, newContent),
                 deadIds: new Set(),
                 callbacks: mergedConfig.callbacks,
                 head: mergedConfig.head
@@ -746,10 +748,16 @@ var Idiomorph = (function () {
          *
          * @param {Node | null} node1
          * @param {Node | null} node2
+         * @param {MorphContext} ctx
          * @returns {boolean}
          */
-        function isSoftMatch(node1, node2) {
+        function isSoftMatch(node1, node2, ctx) {
             if (node1 == null || node2 == null) {
+                return false;
+            }
+            // If the id's do not match and either of the id's are persisted through the morph then they can't be soft matches
+            if ( /** @type {Element} */ (node1).id !== /** @type {Element} */ (node2).id 
+                && (ctx.persistentIds.has(/** @type {Element} */ (node1).id) || ctx.persistentIds.has(/** @type {Element} */ (node2).id))) {
                 return false;
             }
             return node1.nodeType === node2.nodeType &&
@@ -871,11 +879,11 @@ var Idiomorph = (function () {
                 }
 
                 // if we have a soft match with the current node, return it
-                if (isSoftMatch(newChild, potentialSoftMatch)) {
+                if (isSoftMatch(newChild, potentialSoftMatch, ctx)) {
                     return potentialSoftMatch;
                 }
 
-                if (isSoftMatch(nextSibling, potentialSoftMatch)) {
+                if (isSoftMatch(nextSibling, potentialSoftMatch, ctx)) {
                     // the next new node has a soft match with this node, so
                     // increment the count of future soft matches
                     siblingSoftMatchCount++;
@@ -1046,7 +1054,7 @@ var Idiomorph = (function () {
         // TODO: The function handles node1 and node2 as if they are Elements but the function is
         //   called in places where node1 and node2 may be just Nodes, not Elements
         function scoreElement(node1, node2, ctx) {
-            if (isSoftMatch(node1, node2)) {
+            if (isSoftMatch(node1, node2, ctx)) {
                 // ok to cast: isSoftMatch performs a null check
                 return .5 + getIdIntersectionCount(ctx, /** @type {Node} */ (node1), node2);
             }
@@ -1128,7 +1136,7 @@ var Idiomorph = (function () {
         }
 
         /**
-         * A bottom up algorithm that finds all elements with ids inside of the node
+         * A bottom up algorithm that finds all elements with ids in the node
          * argument and populates id sets for those nodes and all their parents, generating
          * a set of ids contained within all nodes for the entire hierarchy in the DOM
          *
@@ -1137,8 +1145,11 @@ var Idiomorph = (function () {
          */
         function populateIdMapForNode(node, idMap) {
             let nodeParent = node.parentElement;
-            // find all elements with an id property
-            let idElements = node.querySelectorAll('[id]');
+            // find all inside elements with an id property
+            let idElements = Array.from(node.querySelectorAll('[id]'));
+            if (node.id) {
+                idElements.push(node) // also include the node itself
+            }
             for (const elt of idElements) {
                 /**
                  * @type {Element|null}
@@ -1178,6 +1189,23 @@ var Idiomorph = (function () {
             populateIdMapForNode(oldContent, idMap);
             populateIdMapForNode(newContent, idMap);
             return idMap;
+        }
+
+        /**
+         * @param {Element} oldContent  the old content that will be morphed
+         * @param {Element} newContent  the new content to morph to
+         * @returns {Set<string>} the set of all persistent nodes that exist in both old and new content
+         */
+        function persistentIdSet(oldContent, newContent) {
+            let idSet = new Set();
+            for (const oldNode of oldContent.querySelectorAll('[id]')) {
+                for (const newNode of newContent.querySelectorAll('[id]')) {
+                    if (oldNode.id === newNode.id) {
+                        idSet.add(oldNode.id);
+                    }
+                }
+            }
+            return idSet;
         }
 
         //=============================================================================
