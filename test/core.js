@@ -320,7 +320,7 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
-    it.only('can prevent element addition w/ the beforeNodeAdded callback', function() {
+    it('can prevent element addition w/ the beforeNodeAdded callback', function() {
         let parent = make("<div><p>1</p><p>2</p></div>");
         document.body.append(parent);
 
