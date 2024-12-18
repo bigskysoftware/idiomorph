@@ -1136,6 +1136,18 @@ var Idiomorph = (function () {
         }
 
         /**
+         * @param {Element} Content Content containing id's
+         * @returns {Node[]} all nodes that have id's
+         */
+        function nodesWithIds(Content) {
+            let Nodes = Array.from(Content.querySelectorAll('[id]'));
+            if(Content.id) {
+               Nodes.push(Content);
+            }
+            return Nodes;
+        }
+
+        /**
          * A bottom up algorithm that finds all elements with ids in the node
          * argument and populates id sets for those nodes and all their parents, generating
          * a set of ids contained within all nodes for the entire hierarchy in the DOM
@@ -1145,12 +1157,7 @@ var Idiomorph = (function () {
          */
         function populateIdMapForNode(node, idMap) {
             let nodeParent = node.parentElement;
-            // find all inside elements with an id property
-            let idElements = Array.from(node.querySelectorAll('[id]'));
-            if (node.id) {
-                idElements.push(node) // also include the node itself
-            }
-            for (const elt of idElements) {
+            for (const elt of nodesWithIds(node)) {
                 /**
                  * @type {Element|null}
                  */
@@ -1194,12 +1201,12 @@ var Idiomorph = (function () {
         /**
          * @param {Element} oldContent  the old content that will be morphed
          * @param {Element} newContent  the new content to morph to
-         * @returns {Set<string>} the set of all persistent nodes that exist in both old and new content
+         * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
          */
         function persistentIdSet(oldContent, newContent) {
             let idSet = new Set();
-            for (const oldNode of oldContent.querySelectorAll('[id]')) {
-                for (const newNode of newContent.querySelectorAll('[id]')) {
+            for (const oldNode of nodesWithIds(oldContent)) {
+                for (const newNode of nodesWithIds(newContent)) {
                     if (oldNode.id === newNode.id) {
                         idSet.add(oldNode.id);
                     }
