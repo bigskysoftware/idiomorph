@@ -1136,8 +1136,8 @@ var Idiomorph = (function () {
         }
 
         /**
-         * @param {Element} Content Content containing id's
-         * @returns {Element[]} all nodes that have id's
+         * @param {Element} Content
+         * @returns {Element[]}
          */
         function nodesWithIds(Content) {
             let Nodes = Array.from(Content.querySelectorAll('[id]'));
