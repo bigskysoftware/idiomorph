@@ -23,7 +23,7 @@ To run all tests against all browsers in headless mode, execute:
 ```bash
 npm run ci
 ```
-This will run the tests using Playwright’s headless browser setup across Chrome, Firefox, and WebKit (Safari-adjacent). This is ultimately what gets run in Github Actions to verify PRs.
+This will run the tests using Playwright’s headless browser setup across Chrome, Firefox, and WebKit (Safari-adjacent). This is ultimately what gets run in Github Actions to verify PRs. This build will fail if there is an `it.only` left in the codebase, thanks to a custom `--fail-only` command line argument.
 
 To run all tests against Chrome with experimental `moveBefore` support added, execute:
 ```bash

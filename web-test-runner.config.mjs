@@ -1,5 +1,6 @@
 import { chromeLauncher } from "@web/test-runner";
 import { exec } from "child_process";
+import failOnly from "./test/lib/fail-only.mjs";
 
 let config = {
   testRunnerHtml: (testFramework) => `
@@ -39,6 +40,7 @@ let config = {
     include: ['src/**/*'],
   },
   files: "test/*.js",
+  plugins: [failOnly],
 };
 
 if (process.env.USE_MOVE_BEFORE) {
