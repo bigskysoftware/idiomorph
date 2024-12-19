@@ -1204,15 +1204,17 @@ var Idiomorph = (function () {
          * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
          */
         function persistentIdSet(oldContent, newContent) {
-            let idSet = new Set();
+            let matchIdSet = new Set();
+            let oldIdSet = new Set();
             for (const oldNode of nodesWithIds(oldContent)) {
-                for (const newNode of nodesWithIds(newContent)) {
-                    if (oldNode.id === newNode.id) {
-                        idSet.add(oldNode.id);
-                    }
+                oldIdSet.add(oldNode.id);
+            }
+            for (const newNode of nodesWithIds(newContent)) {
+                if (oldIdSet.has(newNode.id)) {
+                    matchIdSet.add(newNode.id);
                 }
             }
-            return idSet;
+            return matchIdSet;
         }
 
         //=============================================================================
