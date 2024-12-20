@@ -25,9 +25,10 @@ describe("Tests to compare perf with morphdom", function(){
 
             let startElt = make(start);
             let endElt = make(end);
-            console.log("Content Size");
-            console.log("  Start: " + start.length + " characters");
-            console.log("  End  : " + end.length + " characters");
+            // // debugging output
+            // console.log("Content Size");
+            // console.log("  Start: " + start.length + " characters");
+            // console.log("  End  : " + end.length + " characters");
             console.time('idiomorph timing')
             Idiomorph.morph(startElt, endElt);
             // startElt.outerHTML.should.equal(end);

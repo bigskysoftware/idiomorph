@@ -58,14 +58,16 @@ describe("Bootstrap test", function(){
         d2.innerHTML.should.equal("E");
         d3.innerHTML.should.equal("F");
 
-        console.log(morphTo);
-        console.log(div1.outerHTML);
         div1.outerHTML.should.equal(morphTo)
 
-        setTimeout(()=> {
-            console.log("idiomorph mutations : ", div1.mutations);
-            done();
-        }, 0)
+        // // debugging output
+        // console.log(morphTo);
+        // console.log(div1.outerHTML);
+
+        // setTimeout(()=> {
+        //     console.log("idiomorph mutations : ", div1.mutations);
+               done();
+        // }, 0)
     });
 
     it('deep morphdom does not work ideally', function(done)
@@ -78,11 +80,12 @@ describe("Bootstrap test", function(){
 
         morphdom(div1, '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>', {});
 
-        setTimeout(()=> {
-            console.log("morphdom mutations : ", div1.mutations);
-            done();
-        }, 0)
-        print(div1);
+        // // debugging output
+        // setTimeout(()=> {
+        //     console.log("morphdom mutations : ", div1.mutations);
+               done();
+        // }, 0)
+        // print(div1);
     });
 
 })

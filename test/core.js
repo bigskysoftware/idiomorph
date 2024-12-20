@@ -14,10 +14,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<button>Bar</button>";
         let final = make(finalSrc);
         Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
     });
 
@@ -26,10 +22,6 @@ describe("Core morphing tests", function(){
         let initial = make("<button>Foo</button>");
         let finalSrc = "<button>Bar</button>";
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
     });
 
@@ -39,10 +31,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<div><button>Bar</button></div>";
         let final = make(finalSrc).children;
         Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
     });
 
@@ -52,10 +40,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<div><button>Bar</button></div>";
         let final = [...make(finalSrc).children];
         Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
     });
 
@@ -66,10 +50,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<p>Foo</p><button>Bar</button><p>Bar</p>";
         let final = makeElements(finalSrc);
         Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
         initial.parentElement.innerHTML.should.equal("<p>Foo</p><button>Bar</button><p>Bar</p>");
     });
@@ -81,10 +61,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<p>Foo</p><button>Bar</button><p>Bar</p>";
         let final = [...makeElements(finalSrc)];
         Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
         initial.parentElement.innerHTML.should.equal("<p>Foo</p><button>Bar</button><p>Bar</p>");
     });
@@ -95,10 +71,6 @@ describe("Core morphing tests", function(){
         let initial = parent.querySelector("button");
         let finalSrc = "<p>Foo</p><button>Bar</button><p>Bar</p>";
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
         initial.parentElement.innerHTML.should.equal("<p>Foo</p><button>Bar</button><p>Bar</p>");
     });
@@ -109,10 +81,6 @@ describe("Core morphing tests", function(){
         let initial = parent.querySelector("button");
         let finalSrc = "<p>Doh</p><p>Foo</p><button>Bar</button><p>Bar</p><p>Ray</p>";
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button>Bar</button>");
         initial.parentElement.innerHTML.should.equal("<p>Doh</p><p>Foo</p><button>Bar</button><p>Bar</p><p>Ray</p>");
     });
@@ -130,10 +98,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<button>Bar</button>";
         let final = make(finalSrc);
         Idiomorph.morph(initial, final, {morphStyle:'innerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<div><button>Bar</button></div>");
     });
 
@@ -142,10 +106,6 @@ describe("Core morphing tests", function(){
         let initial = make("<button>Foo</button>");
         let finalSrc = "<button>Bar</button>";
         Idiomorph.morph(initial, finalSrc, {morphStyle:'innerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button><button>Bar</button></button>");
     });
 
@@ -155,10 +115,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<div><button>Bar</button></div>";
         let final = make(finalSrc).children;
         Idiomorph.morph(initial, final, {morphStyle:'innerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button><button>Bar</button></button>");
     });
 
@@ -168,10 +124,6 @@ describe("Core morphing tests", function(){
         let finalSrc = "<div><button>Bar</button></div>";
         let final = [...make(finalSrc).children];
         Idiomorph.morph(initial, final, {morphStyle:'innerHTML'});
-        if (initial.outerHTML !== "<button>Bar</button>") {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal("<button><button>Bar</button></button>");
     });
 
@@ -180,6 +132,13 @@ describe("Core morphing tests", function(){
         let initial = make("<div>Foo</div>");
         Idiomorph.morph(initial, [], {morphStyle:'innerHTML'});
         initial.outerHTML.should.equal("<div></div>");
+    });
+
+    it('errors on bad morphStyle', function()
+    {
+        (() => {
+            Idiomorph.morph(make("<p>"), [], {morphStyle:'magic'});
+        }).should.throw("Do not understand how to morph style magic");
     });
 
     it('can morph a template tag properly', function()
@@ -345,10 +304,6 @@ describe("Core morphing tests", function(){
 
         let finalSrc = '<textarea>bar</textarea>';
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== '<input value="bar">') {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal('<textarea>bar</textarea>');
 
         initial.focus();
@@ -362,6 +317,35 @@ describe("Core morphing tests", function(){
         document.body.removeChild(parent);
     });
 
+    it('can morph input value properly because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<div><input value="foo"></div>');
+        let final = make('<input value="foo">');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'innerHTML'});
+        initial.innerHTML.should.equal('<input value="bar">');
+    });
+
+    it('can morph textarea value properly because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<textarea>foo</textarea>');
+        let final = make('<textarea>foo</textarea>');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
+        initial.value.should.equal('bar');
+    });
+
+    it('specially considers textarea value property in beforeAttributeUpdated hook because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<div><textarea>foo</textarea></div>');
+        let final = make('<textarea>foo</textarea>');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'innerHTML',callbacks:{
+            beforeAttributeUpdated: (attr, to, updatetype) => false,
+        }});
+        initial.innerHTML.should.equal('<textarea>foo</textarea>');
+    });
+
     it('can morph input checked properly, remove checked', function()
     {
         let parent = make('<div><input type="checkbox" checked></div>');
@@ -370,10 +354,6 @@ describe("Core morphing tests", function(){
 
         let finalSrc = '<input type="checkbox">';
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== '<input type="checkbox">') {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal('<input type="checkbox">');
         initial.checked.should.equal(false);
         document.body.removeChild(parent);
@@ -387,10 +367,6 @@ describe("Core morphing tests", function(){
 
         let finalSrc = '<input type="checkbox" checked>';
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== '<input type="checkbox" checked="">') {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal('<input type="checkbox" checked="">');
         initial.checked.should.equal(true);
         document.body.removeChild(parent);
@@ -405,10 +381,6 @@ describe("Core morphing tests", function(){
 
         let finalSrc = '<input type="checkbox" checked>';
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== '<input type="checkbox" checked="true">') {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal('<input type="checkbox" checked="true">');
         initial.checked.should.equal(true);
         document.body.removeChild(parent);
@@ -423,10 +395,6 @@ describe("Core morphing tests", function(){
 
         let finalSrc = '<input type="checkbox">';
         Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
-        if (initial.outerHTML !== '<input type="checkbox">') {
-            console.log("HTML after morph: " + initial.outerHTML);
-            console.log("Expected:         " + finalSrc);
-        }
         initial.outerHTML.should.equal('<input type="checkbox">');
         initial.checked.should.equal(false);
         document.body.removeChild(parent);
@@ -443,10 +411,6 @@ describe("Core morphing tests", function(){
             // should more inner HTML despite no config
             Idiomorph.morph(initial, finalSrc);
 
-            if (initial.outerHTML !== "<button>Bar</button>") {
-                console.log("HTML after morph: " + initial.outerHTML);
-                console.log("Expected:         " + finalSrc);
-            }
             initial.outerHTML.should.equal("<button><button>Bar</button></button>");
         } finally {
             Idiomorph.defaults.morphStyle = 'outerHTML';
@@ -464,10 +428,6 @@ describe("Core morphing tests", function(){
             // should morph outer HTML despite default setting
             Idiomorph.morph(initial, finalSrc, {morphStyle:'outerHTML'});
 
-            if (initial.outerHTML !== "<button>Bar</button>") {
-                console.log("HTML after morph: " + initial.outerHTML);
-                console.log("Expected:         " + finalSrc);
-            }
             initial.outerHTML.should.equal("<button>Bar</button>");
         } finally {
             Idiomorph.defaults.morphStyle = 'outerHTML';
