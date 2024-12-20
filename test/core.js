@@ -182,6 +182,13 @@ describe("Core morphing tests", function(){
         initial.outerHTML.should.equal("<div></div>");
     });
 
+    it('errors on bad morphStyle', function()
+    {
+        (() => {
+            Idiomorph.morph(make("<p>"), [], {morphStyle:'magic'});
+        }).should.throw("Do not understand how to morph style magic");
+    });
+
     it('can morph a template tag properly', function()
     {
       let initial = make("<template data-old>Foo</template>");
@@ -360,6 +367,35 @@ describe("Core morphing tests", function(){
         initial.outerHTML.should.equal('<textarea class="foo">bar</textarea>');
 
         document.body.removeChild(parent);
+    });
+
+    it('can morph input value properly because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<div><input value="foo"></div>');
+        let final = make('<input value="foo">');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'innerHTML'});
+        initial.innerHTML.should.equal('<input value="bar">');
+    });
+
+    it('can morph textarea value properly because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<textarea>foo</textarea>');
+        let final = make('<textarea>foo</textarea>');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'outerHTML'});
+        initial.value.should.equal('bar');
+    });
+
+    it('specially considers textarea value property in beforeAttributeUpdated hook because value property is special and doesnt reflect', function()
+    {
+        let initial = make('<div><textarea>foo</textarea></div>');
+        let final = make('<textarea>foo</textarea>');
+        final.value = "bar";
+        Idiomorph.morph(initial, final, {morphStyle:'innerHTML',callbacks:{
+            beforeAttributeUpdated: (attr, to, updatetype) => false,
+        }});
+        initial.innerHTML.should.equal('<textarea>foo</textarea>');
     });
 
     it('can morph input checked properly, remove checked', function()
