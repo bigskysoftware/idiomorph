@@ -426,8 +426,11 @@ var Idiomorph = (function () {
             if (type === 1 /* element type */) {
                 const fromEl = /** @type {Element} */ (from);
                 const toEl = /** @type {Element} */ (to);
-                const fromAttributes = fromEl.attributes;
-                const toAttributes = toEl.attributes;
+                // Element.prototype.attributes returns a live NamedNodeMap, which is
+                // vulnerable to race conditions, and therefore cannot be safely iterated,
+                // so convert to a static array before iterating.
+                const fromAttributes = Array.from(fromEl.attributes);
+                const toAttributes = Array.from(toEl.attributes);
                 for (const fromAttribute of fromAttributes) {
                     if (ignoreAttribute(fromAttribute.name, toEl, 'update', ctx)) {
                         continue;
@@ -436,9 +439,7 @@ var Idiomorph = (function () {
                         toEl.setAttribute(fromAttribute.name, fromAttribute.value);
                     }
                 }
-                // iterate backwards to avoid skipping over items when a delete occurs
-                for (let i = toAttributes.length - 1; 0 <= i; i--) {
-                    const toAttribute = toAttributes[i];
+                for (const toAttribute of toAttributes) {
                     if (!fromEl.hasAttribute(toAttribute.name)) {
                         if (ignoreAttribute(toAttribute.name, toEl, 'remove', ctx)) {
                             continue;
