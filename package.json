@@ -29,6 +29,8 @@
     "gen-modules": "npm run-script amd && npm run-script cjs && npm run-script esm",
     "dist": "cp -r src/* dist/ && cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js && npm run-script gen-modules && npm run-script uglify && gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz && exit",
     "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
+    "format": "prettier --write .",
+    "format-check": "prettier --check .",
     "typecheck": "tsc"
   },
   "repository": {
@@ -43,6 +45,7 @@
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
     "p-wait-for": "^5.0.2",
+    "prettier": "^3.4.2",
     "sinon": "^9.2.4",
     "typescript": "^5.3.3",
     "uglify-js": "^3.15.0"
