@@ -439,6 +439,11 @@ var Idiomorph = (function () {
                 // iterate backwards to avoid skipping over items when a delete occurs
                 for (let i = toAttributes.length - 1; 0 <= i; i--) {
                     const toAttribute = toAttributes[i];
+
+                    // toAttributes is a live NamedNodeMap, so iteration+mutation is unsafe
+                    // e.g. custom element attribute callbacks can remove other attributes
+                    if (!toAttribute) continue;
+
                     if (!fromEl.hasAttribute(toAttribute.name)) {
                         if (ignoreAttribute(toAttribute.name, toEl, 'remove', ctx)) {
                             continue;

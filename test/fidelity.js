@@ -110,5 +110,23 @@ describe("Tests to ensure that idiomorph merges properly", function(){
         should.equal(false, el1.disabled);
     });
 
+    it('issue https://github.com/bigskysoftware/idiomorph/issues/41', function()
+    {
+        window.customElements.define('fake-turbo-frame', class extends HTMLElement {
+            static observedAttributes = ['src'];
+            attributeChangedCallback(name, oldValue, newValue) {
+                if (name === 'src' && oldValue && oldValue !== newValue) {
+                    this.removeAttribute('complete');
+                }
+            }
+        });
+
+        let element = make('<fake-turbo-frame id="frame" complete="complete" src="https://example.com"></fake-turbo-frame>');
+        let finalSrc = '<fake-turbo-frame id="frame"></fake-turbo-frame>';
+
+        Idiomorph.morph(element, finalSrc);
+
+        element.outerHTML.should.equal(finalSrc);
+    });
 
 })
