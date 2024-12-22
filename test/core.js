@@ -474,4 +474,36 @@ describe("Core morphing tests", function(){
         }
     });
 
+    it('non-attribute state of element with id is not transfered to other elements when moved between different containers', function()
+    {
+        getWorkArea().append(make(`
+            <div>
+              <div id="left">
+                <input type="checkbox" id="first">
+              </div>
+              <div id="right">
+                <input type="checkbox" id="second">
+              </div>
+            </div>
+        `));
+        document.getElementById("first").indeterminate = true
+
+        let finalSrc = `
+            <div>
+              <div id="left">
+                <input type="checkbox" id="second">
+              </div>
+              <div id="right">
+                <input type="checkbox" id="first">
+              </div>
+            </div>
+        `;
+        Idiomorph.morph(getWorkArea(), finalSrc, {morphStyle:'innerHTML'});
+
+        getWorkArea().innerHTML.should.equal(finalSrc);
+        // second checkbox is now in firsts place and we don't want firsts indeterminate state to be retained
+        // on what is now the second element so we need to prevent softMatch mroph from matching persistent id's
+        document.getElementById("second").indeterminate.should.eql(false)
+    });
+
 })

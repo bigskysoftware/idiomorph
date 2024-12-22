@@ -38,7 +38,7 @@ describe("Bootstrap test", function(){
 
     it('basic deep morph works', function(done)
     {
-        let div1 = make('<div id="root1"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
+        let div1 = make('<div><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
 
         let d1 = div1.querySelector("#d1")
         let d2 = div1.querySelector("#d2")
