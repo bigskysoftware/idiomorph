@@ -1207,10 +1207,10 @@ var Idiomorph = (function () {
             let matchIdSet = new Set();
             let oldIdSet = new Set();
             for (const oldNode of nodesWithIds(oldContent)) {
-                oldIdSet.add(oldNode.id);
+                oldIdSet.add(oldNode.id+':'+oldNode.tagName);
             }
             for (const newNode of nodesWithIds(newContent)) {
-                if (oldIdSet.has(newNode.id)) {
+                if (oldIdSet.has(newNode.id+':'+newNode.tagName)) {
                     matchIdSet.add(newNode.id);
                 }
             }
