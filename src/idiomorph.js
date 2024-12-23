@@ -260,7 +260,7 @@ var Idiomorph = (function () {
                 oldNode.parentNode?.removeChild(oldNode);
                 ctx.callbacks.afterNodeRemoved(oldNode);
                 return null;
-            } else if (!isSoftMatch(oldNode, newContent, ctx)) {
+            } else if (!isSoftMatch(oldNode, newContent)) {
                 if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
                 if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
 
