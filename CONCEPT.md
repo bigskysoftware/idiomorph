@@ -87,7 +87,7 @@ Given a old node N, we can ask if it might match _any_ child of a parent node P 
 Given these two enhancements:
 
 * The ability to ask if two nodes are the same based on child information efficiently
-* The abilit to ask if a node has a match within an element efficiently
+* The ability to ask if a node has a match within an element efficiently
 
 We believe we can improve on the fidelity of DOM matching when compared with plain ID-based matching.
 
@@ -105,23 +105,30 @@ Sync the attributes of newNode onto oldNode
 Let insertionPoint be the first child of the oldNode
 while newNode has children
   let newChild be the result of shifting the first child from newNodes children
-  if the newChild is the same as the insertionPoint
+  if the newChild matches the insertionPoint
     recursively merge newChild into insertionPoint
     advance the insertionPoint to its next sibling
-  else if the newChild has a match within the oldNode
-    scan the insertionPoint forward to the match, discarding children of the old node
-    recursively merge newChild into insertionPoint
-    advance the insertionPoint to its next sibling    
-  else if the insertionPoint has a match within the newNode
-    insert the newChild before the insertionPoint
-  else if the insertionPoint and the newChild are compatible
+  else if the newChild has a match among oldNodes children
+    move the match before the insertionPoint
+    recursively merge newChild into the match
+  else if the newChild and insertionPoint are compatible
     recursively merge newChild into insertionPoint
     advance the insertionPoint to its next sibling
+  else if the newChild has a compatible match among oldNodes children
+    move the match before the insertionPoint
+    recursively merge newChild into the match
+  else if the newChild is IDed and has a match later in the oldTree or pantry
+    move the match before the insertionPoint
+    recursively merge newChild into the match
   else
-    insert the newChild before the insertionPoint
+    insert a clone of the newChild before the insertionPoint
 end
 
 while insertionPoint is not null
-  remove the insertion point and advance to the next sibling
+  if the insertionPoint is IDed and has a match later in the newTree
+    move the insertionPoint into a temporary pantry div for later reuse
+  else
+    delete the insertionPoint
+  advance the insertionPoint to its next sibling
 
 ```
