@@ -35,25 +35,44 @@ describe("Bootstrap test", function () {
 
   it("basic deep morph works", function (done) {
     let div1 = make(
-      '<div id="root1"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>',
+      `
+      <div id="root1">
+        <div>
+          <div id="d1">A</div>
+        </div>
+        <div>
+          <div id="d2">B</div>
+        </div>
+        <div>
+          <div id="d3">C</div>
+        </div>
+      </div>`.trim(),
     );
 
     let d1 = div1.querySelector("#d1");
     let d2 = div1.querySelector("#d2");
     let d3 = div1.querySelector("#d3");
 
-    let morphTo =
-      '<div id="root1"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
+    let morphTo = `
+      <div id="root1">
+        <div>
+          <div id="d2">E</div>
+        </div>
+        <div>
+          <div id="d3">F</div>
+        </div>
+        <div>
+          <div id="d1">D</div>
+        </div>
+      </div>`.trim();
     let div2 = make(morphTo);
 
     print(div1);
     Idiomorph.morph(div1, div2);
     print(div1);
 
-    // first paragraph should have been discarded in favor of later matches
-    d1.innerHTML.should.not.equal("D");
-
-    // second and third paragraph should have morphed
+    // all three paragraphs should have been morphed
+    d1.innerHTML.should.equal("D");
     d2.innerHTML.should.equal("E");
     d3.innerHTML.should.equal("F");
 

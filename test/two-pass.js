@@ -1,37 +1,5 @@
 describe("Two-pass option for retaining more state", function () {
-  beforeEach(function () {
-    clearWorkArea();
-  });
-
-  it("fails to preserve all non-attribute element state with single-pass option", function () {
-    getWorkArea().append(
-      make(`
-            <div>
-              <input type="checkbox" id="first">
-              <input type="checkbox" id="second">
-            </div>
-        `),
-    );
-    document.getElementById("first").indeterminate = true;
-    document.getElementById("second").indeterminate = true;
-
-    let finalSrc = `
-            <div>
-              <input type="checkbox" id="second">
-              <input type="checkbox" id="first">
-            </div>
-        `;
-    Idiomorph.morph(getWorkArea(), finalSrc, {
-      morphStyle: "innerHTML",
-      twoPass: false,
-    });
-
-    getWorkArea().innerHTML.should.equal(finalSrc);
-    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
-      (e) => e.indeterminate,
-    );
-    states.should.eql([true, false]);
-  });
+  setup();
 
   it("preserves all non-attribute element state with two-pass option", function () {
     getWorkArea().append(
@@ -53,7 +21,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -80,7 +47,7 @@ describe("Two-pass option for retaining more state", function () {
               <input type="checkbox" id="first">
             </div>
         `;
-    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML", twoPass: true });
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     const states = Array.from(getWorkArea().querySelectorAll("input")).map(
@@ -111,7 +78,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -149,7 +115,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -187,7 +152,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -213,18 +177,41 @@ describe("Two-pass option for retaining more state", function () {
               <input type="text" id="first">
             </div>
         `;
-    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML", twoPass: true });
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("first").outerHTML,
+    );
+  });
+
+  it("preserves focus state when previous element is replaced", function () {
+    getWorkArea().innerHTML = `
+            <div>
+              <a></a>
+              <input type="text" id="focus">
+            </div>
+        `;
+    document.getElementById("focus").focus();
+
+    let finalSrc = `
+            <div>
+              <b></b>
+              <input type="text" id="focus">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     if (document.body.moveBefore) {
       document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
+        document.getElementById("focus").outerHTML,
       );
     } else {
       document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state with two-pass option and outerHTML morphStyle test needs moveBefore enabled to work properly",
-      );
+      console.log("needs moveBefore enabled to work properly");
     }
   });
 
@@ -249,7 +236,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -265,7 +251,39 @@ describe("Two-pass option for retaining more state", function () {
     }
   });
 
-  it("preserves focus state when elements are moved between different containers", function () {
+  it("preserves focus state when focused element is moved between anonymous containers", function () {
+    getWorkArea().innerHTML = `
+            <div>
+              <input type="text" id="first">
+            </div>
+            <div>
+              <input type="text" id="second">
+            </div>
+        `;
+    document.getElementById("second").focus();
+
+    let finalSrc = `
+            <div>
+              <input type="text" id="first">
+              <input type="text" id="second">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    if (document.body.moveBefore) {
+      document.activeElement.outerHTML.should.equal(
+        document.getElementById("second").outerHTML,
+      );
+    } else {
+      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+      console.log("needs moveBefore enabled to work properly");
+    }
+  });
+
+  it("preserves focus state when elements are moved between IDed containers", function () {
     getWorkArea().append(
       make(`
             <div>
@@ -292,7 +310,6 @@ describe("Two-pass option for retaining more state", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -303,52 +320,44 @@ describe("Two-pass option for retaining more state", function () {
     } else {
       document.activeElement.outerHTML.should.equal(document.body.outerHTML);
       console.log(
-        "preserves focus state when elements are moved between different containers test needs moveBefore enabled to work properly",
+        "preserves focus state when elements are moved between IDed containers test needs moveBefore enabled to work properly",
       );
     }
   });
 
-  it("preserves focus state when parents are reorderd", function () {
+  it("preserves focus state when parents are reordered", function () {
     getWorkArea().append(
       make(`
             <div>
-              <div id="left">
-                <input type="text" id="first">
+              <div id="with-focus">
+                <input type="text" id="focus">
               </div>
-              <div id="right">
-                <input type="text" id="second">
+              <div id="with-other">
+                <input type="text" id="other">
               </div>
             </div>
         `),
     );
-    document.getElementById("first").focus();
+    document.getElementById("focus").focus();
 
     let finalSrc = `
             <div>
-              <div id="right">
-                <input type="text" id="second">
+              <div id="with-other">
+                <input type="text" id="other">
               </div>
-              <div id="left">
-                <input type="text" id="first">
+              <div id="with-focus">
+                <input type="text" id="focus">
               </div>
             </div>
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
     });
 
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("focus").outerHTML,
+    );
     getWorkArea().innerHTML.should.equal(finalSrc);
-    if (document.body.moveBefore) {
-      document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
-      );
-    } else {
-      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state when parents are reorderd test needs moveBefore enabled to work properly",
-      );
-    }
   });
 
   it("hooks work as expected", function () {
@@ -379,7 +388,6 @@ describe("Two-pass option for retaining more state", function () {
 
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      twoPass: true,
       callbacks: {
         beforeNodeAdded: wrongHookHandler("beforeNodeAdded"),
         afterNodeAdded: wrongHookHandler("afterNodeAdded"),
@@ -412,11 +420,6 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="second">`,
       ],
       [
-        "after",
-        finalSrc,
-        '<div>\n              <input type="checkbox" id="second">\n              </div>',
-      ],
-      [
         "before",
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
@@ -426,6 +429,229 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
       ],
+      [
+        "after",
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+      ],
     ]);
+  });
+
+  it("beforeNodeMorphed hook also applies to nodes restored from the pantry", function () {
+    getWorkArea().append(
+      make(`
+            <div>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+            </div>
+        `),
+    );
+    document.getElementById("first").innerHTML = "First paragraph EDITED";
+    document.getElementById("second").innerHTML = "Second paragraph EDITED";
+
+    let finalSrc = `
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+            </div>
+        `;
+
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+      callbacks: {
+        // basic implementation of a preserve-me attr
+        beforeNodePantried(node) {
+          if (node.parentNode?.dataset?.preserveMe) return false;
+        },
+        beforeNodeMorphed(oldNode, newContent) {
+          if (oldNode.dataset?.preserveMe) return false;
+        },
+      },
+    });
+
+    getWorkArea().innerHTML.should.equal(`
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph EDITED</p>
+              <p data-preserve-me="true" id="first">First paragraph EDITED</p>
+            </div>
+        `);
+  });
+
+  it("duplicate ids on elements aborts matching to avoid invalid morph state", function () {
+    // twoPass can try and reuse existing id's where possible and has to exclude matching on duplicate ids
+    // to avoid losing content
+    getWorkArea().append(
+      make(`
+            <div>
+              <div id="left">
+                <input type="text" id="first" value="first1">
+                <input type="text" id="first" value="first2">
+              </div>
+              <div id="right">
+                <input type="text" id="second" value="second1">
+                <input type="text" id="second" value="second2">
+              </div>
+            </div>
+        `),
+    );
+    document.getElementById("first").focus();
+
+    let finalSrc = `
+            <div>
+              <div id="left">
+                <input type="text" id="second" value="second1">
+                <input type="text" id="second" value="second2">
+              </div>
+              <div id="right">
+                <input type="text" id="first" value="first1">
+                <input type="text" id="first" value="first2">
+              </div>
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    // should have lost active element focus because duplicate ids can not be processed properly
+    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+  });
+
+  it("duplicate destination ids on elements aborts matching to avoid invalid morph state", function () {
+    // twoPass can try and reuse existing id's where possible and has to exclude matching on duplicate ids
+    // to avoid losing content
+    getWorkArea().append(
+      make(`
+            <div>
+              <div id="left">
+                <input type="text" id="first" value="first1">
+              </div>
+              <div id="right">
+                <input type="text" id="second" value="second1">
+              </div>
+            </div>
+        `),
+    );
+    document.getElementById("first").focus();
+
+    let finalSrc = `
+            <div>
+              <div id="left">
+                <input type="text" id="second" value="second1">
+                <input type="text" id="second" value="second2">
+              </div>
+              <div id="right">
+                <input type="text" id="first" value="first1">
+                <input type="text" id="first" value="first2">
+              </div>
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    // should have lost active element focus because duplicate ids can not be processed properly
+    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+  });
+
+  it("preserves all non-attribute element state with two-pass option and outerHTML morphStyle when morphing to two top level nodes", function () {
+    // when using outerHTML you can replace one node with two nodes with the state preserving items split and it will just
+    // pick one best node to morph and just insert the other nodes so need to check these also retain state
+    const div = make(`
+            <div>
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
+            </div>
+        `);
+    getWorkArea().append(div);
+    document.getElementById("first").indeterminate = true;
+    document.getElementById("second").indeterminate = true;
+
+    let finalSrc = `
+            <div>
+              <input type="checkbox" id="second">
+            </div>
+            <input type="checkbox" id="first">
+        `;
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
+      (e) => e.indeterminate,
+    );
+    states.should.eql([true, true]);
+  });
+
+  it("preserves all non-attribute element state with two-pass option and outerHTML morphStyle when morphing to two top level nodes with nesting", function () {
+    // when using outerHTML you can replace one node with two nodes with the state preserving items split and it will just
+    // pick one best node to morph and just insert the other nodes so need to check these also retain state
+    const div = make(`
+            <div>
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
+            </div>
+        `);
+    getWorkArea().append(div);
+    document.getElementById("first").indeterminate = true;
+    document.getElementById("second").indeterminate = true;
+
+    let finalSrc = `
+            <div>
+              <input type="checkbox" id="second">
+            </div>
+            <div>
+              <input type="checkbox" id="first">
+            </div>
+        `;
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
+      (e) => e.indeterminate,
+    );
+    states.should.eql([true, true]);
+  });
+
+  it("preserves all non-attribute element state with two-pass option when wrapping element changes tag", function () {
+    // just changing the type from div to span of the wrapper causes softmatch to fail so it abandons all hope
+    // of morphing and just inserts the node so we need to check this still handles preserving state here.
+    const div = make(`
+             <div>
+               <div><input type="checkbox" id="first"></div>
+             </div>
+         `);
+    getWorkArea().append(div);
+    document.getElementById("first").indeterminate = true;
+
+    let finalSrc = `
+             <div>
+               <span><input type="checkbox" id="first"></span>
+             </div>
+         `;
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
+      (e) => e.indeterminate,
+    );
+    states.should.eql([true]);
+  });
+
+  it("preserves all non-attribute element state with two-pass option when wrapping element changes tag at top level", function () {
+    // just changing the type from div to span of the top wrapping item with outerHTML morph will cause morphOldNodeTo function
+    // to morph the two nodes that don't softmatch that also needs to handle preserving state
+    const div = make(`<div><input type="checkbox" id="first"></div>`);
+    getWorkArea().append(div);
+    document.getElementById("first").indeterminate = true;
+
+    let finalSrc = `<span><input type="checkbox" id="first"></span>`;
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
+      (e) => e.indeterminate,
+    );
+    states.should.eql([true]);
   });
 });

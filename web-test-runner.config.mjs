@@ -26,8 +26,6 @@ let config = {
       </script>
 
       <script src="/src/idiomorph.js"></script>
-      <script>Idiomorph.defaults.twoPass = ${process.env.DEFAULT_TWO_PASS}</script>
-
       <script src="/node_modules/htmx.org/dist/htmx.js"></script>
       <script src="/src/idiomorph-htmx.js"></script>
       <script src="/test/lib/morphdom.js"></script>
