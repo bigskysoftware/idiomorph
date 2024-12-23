@@ -33,3 +33,37 @@ jobs:
       - name: Run tests
         run: npm run test-move-before
 
+  test-force-two-pass:
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_TWO_PASS: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Install browsers
+        run: npx playwright install --with-deps
+      - name: Run tests
+        run: npm run ci
+
+  test-force-two-pass-move-before:
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_TWO_PASS: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm run test-move-before
+
