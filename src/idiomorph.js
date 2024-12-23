@@ -759,11 +759,6 @@ var Idiomorph = (function () {
             if (oldNode == null || newNode == null) {
                 return false;
             }
-            // If the id's do not match and either of the id's are persisted through the morph then they can't be soft matches
-            if ( /** @type {Element} */ (node1).id !== /** @type {Element} */ (node2).id
-                && (ctx.persistentIds.has(/** @type {Element} */ (node1).id) || ctx.persistentIds.has(/** @type {Element} */ (node2).id))) {
-                return false;
-            }
             // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
             // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
             if ( /** @type {Element} */ (oldNode).id && /** @type {Element} */ (oldNode).id !== /** @type {Element} */ (newNode).id) {
