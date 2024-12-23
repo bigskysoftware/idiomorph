@@ -20,7 +20,6 @@
  * @property {function(Element): boolean} [beforeNodeRemoved]
  * @property {function(Element): void} [afterNodeRemoved]
  * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
- * @property {function(Element): boolean} [beforeNodePantried]
  */
 
 /**
@@ -61,7 +60,6 @@
  * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
  * @property {(function(Node): void) | NoOp} afterNodeRemoved
  * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
- * @property {(function(Node): boolean) | NoOp} beforeNodePantried
  */
 
 /**
@@ -72,7 +70,6 @@
  * @property {boolean} [ignoreActiveValue]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
- * @property {boolean} [twoPass]
  */
 
 /**
@@ -95,8 +92,8 @@ var Idiomorph = (function () {
   /**
    * @typedef {object} MorphContext
    *
-   * @property {Node} target
-   * @property {Node} newContent
+   * @property {Element} target
+   * @property {Element} newContent
    * @property {ConfigInternal} config
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
@@ -133,7 +130,6 @@ var Idiomorph = (function () {
       beforeNodeRemoved: noOp,
       afterNodeRemoved: noOp,
       beforeAttributeUpdated: noOp,
-      beforeNodePantried: noOp,
     },
     head: {
       style: "merge",
@@ -186,7 +182,7 @@ var Idiomorph = (function () {
       let oldHead = oldNode.querySelector("head");
       let newHead = normalizedNewContent.querySelector("head");
       if (oldHead && newHead) {
-        let promises = handleHeadElement(newHead, oldHead, ctx);
+        let promises = handleHeadElement(oldHead, newHead, ctx);
         // when head promises resolve, call morph again, ignoring the head tag
         Promise.all(promises).then(function () {
           morphNormalizedContent(
@@ -206,15 +202,13 @@ var Idiomorph = (function () {
 
     if (ctx.morphStyle === "innerHTML") {
       // innerHTML, so we are only updating the children
-      morphChildren(normalizedNewContent, oldNode, ctx);
-      if (ctx.config.twoPass) {
-        restoreFromPantry(oldNode, ctx);
-      }
+      morphChildren(oldNode, normalizedNewContent, ctx);
+      ctx.pantry.remove();
       return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
       // otherwise find the best element match in the new content, morph that, and merge its siblings
       // into either side of the best match
-      let bestMatch = findBestNodeMatch(normalizedNewContent, oldNode, ctx);
+      let bestMatch = findBestNodeMatch(oldNode, normalizedNewContent, ctx);
 
       // stash the siblings that will need to be inserted on either side of the best match
       let previousSibling = bestMatch?.previousSibling ?? null;
@@ -231,10 +225,9 @@ var Idiomorph = (function () {
             previousSibling,
             morphedNode,
             nextSibling,
+            ctx,
           );
-          if (ctx.config.twoPass) {
-            restoreFromPantry(morphedNode.parentNode, ctx);
-          }
+          ctx.pantry.remove();
           return elements;
         }
       } else {
@@ -264,6 +257,38 @@ var Idiomorph = (function () {
   }
 
   /**
+   * @param {Element | null} oldParent
+   * @param {Node} newChild new content to merge
+   * @param {Node | null} insertionPoint insertion point to place content before
+   * @param {MorphContext} ctx the merge context
+   */
+  function insertOrMorphNode(oldParent, newChild, insertionPoint, ctx) {
+    if (oldParent == null) return;
+    if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+      const movedChild = moveBeforeById(
+        oldParent,
+        /** @type {Element} */ (newChild).id,
+        insertionPoint,
+        ctx,
+      );
+      morphOldNodeTo(movedChild, newChild, ctx);
+    } else {
+      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+      if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
+        const newEmptyChild = document.createElement(newChild.tagName);
+        oldParent.insertBefore(newEmptyChild, insertionPoint);
+        morphOldNodeTo(newEmptyChild, newChild, ctx);
+        ctx.callbacks.afterNodeAdded(newEmptyChild);
+      } else {
+        const newClonedChild = document.importNode(newChild, true); // clone as to not mutate newParent
+        oldParent.insertBefore(newClonedChild, insertionPoint);
+        ctx.callbacks.afterNodeAdded(newClonedChild);
+      }
+    }
+    removeIdsFromConsideration(ctx, newChild);
+  }
+
+  /**
    * @param {Node} oldNode root node to merge content into
    * @param {Node | null} newContent new content to merge
    * @param {MorphContext} ctx the merge context
@@ -273,19 +298,13 @@ var Idiomorph = (function () {
     if (ctx.ignoreActive && oldNode === document.activeElement) {
       // don't morph focused element
     } else if (newContent == null) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-
-      oldNode.parentNode?.removeChild(oldNode);
-      ctx.callbacks.afterNodeRemoved(oldNode);
+      removeNode(oldNode, ctx);
       return null;
     } else if (!isSoftMatch(oldNode, newContent)) {
-      if (ctx.callbacks.beforeNodeRemoved(oldNode) === false) return oldNode;
-      if (ctx.callbacks.beforeNodeAdded(newContent) === false) return oldNode;
-
-      oldNode.parentNode?.replaceChild(newContent, oldNode);
-      ctx.callbacks.afterNodeAdded(newContent);
-      ctx.callbacks.afterNodeRemoved(oldNode);
-      return newContent;
+      insertOrMorphNode(oldNode.parentElement, newContent, oldNode, ctx);
+      const newNode = oldNode.previousSibling;
+      removeNode(oldNode, ctx);
+      return newNode;
     } else {
       if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false)
         return oldNode;
@@ -298,20 +317,39 @@ var Idiomorph = (function () {
       ) {
         // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
         handleHeadElement(
-          /** @type {HTMLHeadElement} */ (newContent),
           oldNode,
+          /** @type {HTMLHeadElement} */ (newContent),
           ctx,
         );
       } else {
-        syncNodeFrom(newContent, oldNode, ctx);
+        syncNodeFrom(oldNode, newContent, ctx);
         if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          morphChildren(newContent, oldNode, ctx);
+          // @ts-ignore newContent can be a node here because .firstChild will be null
+          morphChildren(oldNode, newContent, ctx);
         }
       }
       ctx.callbacks.afterNodeMorphed(oldNode, newContent);
       return oldNode;
     }
     return null;
+  }
+
+  /**
+   * @param {Node} oldNode the node to be morphed
+   * @param {Node} newChild the new content
+   * @param {Node|null} insertionPoint the current point in the DOM we are morphing content at
+   * @param {MorphContext} ctx the merge context
+   * @returns {Node|null} returns the new insertion point after the merged node
+   */
+  function morphChild(oldNode, newChild, insertionPoint, ctx) {
+    // if the node to morph is not at the insertion point then we need to move it here by moving or removing nodes
+    if (oldNode !== insertionPoint) {
+      // @ts-ignore we know the Node has a valid parent
+      moveBefore(oldNode.parentElement, oldNode, insertionPoint);
+    }
+    morphOldNodeTo(oldNode, newChild, ctx);
+    removeIdsFromConsideration(ctx, newChild);
+    return oldNode.nextSibling;
   }
 
   /**
@@ -325,6 +363,7 @@ var Idiomorph = (function () {
    * - if the new content has an id set match with the current insertion point, morph
    * - search for an id set match
    * - if id set match found, morph
+   * - if the new content is a soft match with the current insertion point, morph
    * - otherwise search for a "soft" match
    * - if a soft match is found, morph
    * - otherwise, prepend the new node before the current insertion point
@@ -332,116 +371,94 @@ var Idiomorph = (function () {
    * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
    * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
    *
-   * @param {Node} newParent the parent element of the new content
-   * @param {Node} oldParent the old content that we are merging the new content into
+   * @param {Element} newParent the parent element of the new content
+   * @param {Element} oldParent the old content that we are merging the new content into
    * @param {MorphContext} ctx the merge context
    * @returns {void}
    */
-  function morphChildren(newParent, oldParent, ctx) {
+  function morphChildren(oldParent, newParent, ctx) {
     if (
-      newParent instanceof HTMLTemplateElement &&
-      oldParent instanceof HTMLTemplateElement
+      oldParent instanceof HTMLTemplateElement &&
+      newParent instanceof HTMLTemplateElement
     ) {
-      newParent = newParent.content;
+      // @ts-ignore we can pretend the DocumentFragment is an Element
       oldParent = oldParent.content;
+      // @ts-ignore ditto
+      newParent = newParent.content;
     }
 
-    /**
-     *
-     * @type {Node | null}
-     */
-    let nextNewChild = newParent.firstChild;
-    /**
-     *
-     * @type {Node | null}
-     */
-    let insertionPoint = oldParent.firstChild;
-    let newChild;
+    let insertionPoint = /** @type {Node | null} */ (oldParent.firstChild);
 
     // run through all the new content
-    while (nextNewChild) {
-      newChild = nextNewChild;
-      nextNewChild = newChild.nextSibling;
-
-      // if we are at the end of the exiting parent's children, just append
-      if (insertionPoint == null) {
-        // skip add callbacks when we're going to be restoring this from the pantry in the second pass
-        if (
-          ctx.config.twoPass &&
-          ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
-        ) {
-          oldParent.appendChild(newChild);
-        } else {
-          if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-          oldParent.appendChild(newChild);
-          ctx.callbacks.afterNodeAdded(newChild);
-        }
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
-
+    for (const newChild of newParent.childNodes) {
       // if the current node has an id set match then morph
       if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-        morphOldNodeTo(insertionPoint, newChild, ctx);
-        insertionPoint = insertionPoint.nextSibling;
-        removeIdsFromConsideration(ctx, newChild);
+        insertionPoint = morphChild(
+          /** @type {Node} */ (insertionPoint),
+          newChild,
+          insertionPoint,
+          ctx,
+        );
         continue;
       }
 
       // otherwise search forward in the existing old children for an id set match
-      let idSetMatch = findIdSetMatch(
-        newParent,
+      const idSetMatch = findIdSetMatch(
         oldParent,
+        newParent,
         newChild,
         insertionPoint,
         ctx,
       );
-
-      // if we found a potential match, remove the nodes until that point and morph
       if (idSetMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-        morphOldNodeTo(idSetMatch, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
+        insertionPoint = morphChild(idSetMatch, newChild, insertionPoint, ctx);
         continue;
       }
 
-      // no id set match found, so scan forward for a soft match for the current node
-      let softMatch = findSoftMatch(
-        newParent,
+      // if the current point is already a soft match morph
+      if (isSoftMatch(insertionPoint, newChild)) {
+        insertionPoint = morphChild(
+          /** @type {Node} */ (insertionPoint),
+          newChild,
+          insertionPoint,
+          ctx,
+        );
+        continue;
+      }
+
+      // search forward in the existing old children for a soft match for the current node
+      const softMatch = findSoftMatch(
         oldParent,
+        newParent,
         newChild,
         insertionPoint,
         ctx,
       );
-
-      // if we found a soft match for the current node, morph
       if (softMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-        morphOldNodeTo(softMatch, newChild, ctx);
+        insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
+        continue;
+      }
+
+      // match is somewhere else in the document, find it and move it
+      if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+        const movedChild = moveBeforeById(
+          oldParent,
+          /** @type {Element} */ (newChild).id,
+          insertionPoint,
+          ctx,
+        );
+        morphOldNodeTo(movedChild, newChild, ctx);
         removeIdsFromConsideration(ctx, newChild);
         continue;
       }
 
-      // abandon all hope of morphing, just insert the new child before the insertion point
-      // and move on
-
-      // skip add callbacks when we're going to be restoring this from the pantry in the second pass
-      if (
-        ctx.config.twoPass &&
-        ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
-      ) {
-        oldParent.insertBefore(newChild, insertionPoint);
-      } else {
-        if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-        oldParent.insertBefore(newChild, insertionPoint);
-        ctx.callbacks.afterNodeAdded(newChild);
-      }
-      removeIdsFromConsideration(ctx, newChild);
+      // last resort, create a new node from scratch
+      insertOrMorphNode(oldParent, newChild, insertionPoint, ctx);
     }
 
     // remove any remaining old nodes that didn't match up with new content
-    while (insertionPoint !== null) {
-      let tempNode = insertionPoint;
+    while (insertionPoint) {
+      const tempNode = insertionPoint;
       insertionPoint = insertionPoint.nextSibling;
       removeNode(tempNode, ctx);
     }
@@ -453,107 +470,77 @@ var Idiomorph = (function () {
 
   /**
    * @param {string} attr the attribute to be mutated
-   * @param {Element} to the element that is going to be updated
+   * @param {Element} element the element that is going to be updated
    * @param {"update" | "remove"} updateType
    * @param {MorphContext} ctx the merge context
    * @returns {boolean} true if the attribute should be ignored, false otherwise
    */
-  function ignoreAttribute(attr, to, updateType, ctx) {
+  function ignoreAttribute(attr, element, updateType, ctx) {
     if (
       attr === "value" &&
       ctx.ignoreActiveValue &&
-      to === document.activeElement
+      element === document.activeElement
     ) {
       return true;
     }
-    return ctx.callbacks.beforeAttributeUpdated(attr, to, updateType) === false;
+    return (
+      ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) === false
+    );
   }
 
   /**
    * syncs a given node with another node, copying over all attributes and
-   * inner element state from the 'from' node to the 'to' node
+   * inner element state from the newNode to the oldNode
    *
-   * @param {Node} from the element to copy attributes & state from
-   * @param {Node} to the element to copy attributes & state to
+   * @param {Node} oldNode the node to copy attributes & state to
+   * @param {Node} newNode the node to copy attributes & state from
    * @param {MorphContext} ctx the merge context
    */
-  function syncNodeFrom(from, to, ctx) {
-    let type = from.nodeType;
+
+  function syncNodeFrom(oldNode, newNode, ctx) {
+    let type = newNode.nodeType;
 
     // if is an element type, sync the attributes from the
     // new node into the new node
     if (type === 1 /* element type */) {
-      const fromEl = /** @type {Element} */ (from);
-      const toEl = /** @type {Element} */ (to);
-      const fromAttributes = fromEl.attributes;
-      const toAttributes = toEl.attributes;
-      for (const fromAttribute of fromAttributes) {
-        if (ignoreAttribute(fromAttribute.name, toEl, "update", ctx)) {
+      const oldElt = /** @type {Element} */ (oldNode);
+      const newElt = /** @type {Element} */ (newNode);
+
+      const oldAttributes = oldElt.attributes;
+      const newAttributes = newElt.attributes;
+      for (const newAttribute of newAttributes) {
+        if (ignoreAttribute(newAttribute.name, oldElt, "update", ctx)) {
           continue;
         }
-        if (toEl.getAttribute(fromAttribute.name) !== fromAttribute.value) {
-          toEl.setAttribute(fromAttribute.name, fromAttribute.value);
+        if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
+          oldElt.setAttribute(newAttribute.name, newAttribute.value);
         }
       }
       // iterate backwards to avoid skipping over items when a delete occurs
-      for (let i = toAttributes.length - 1; 0 <= i; i--) {
-        const toAttribute = toAttributes[i];
+      for (let i = oldAttributes.length - 1; 0 <= i; i--) {
+        const oldAttribute = oldAttributes[i];
 
         // toAttributes is a live NamedNodeMap, so iteration+mutation is unsafe
         // e.g. custom element attribute callbacks can remove other attributes
-        if (!toAttribute) continue;
+        if (!oldAttribute) continue;
 
-        if (!fromEl.hasAttribute(toAttribute.name)) {
-          if (ignoreAttribute(toAttribute.name, toEl, "remove", ctx)) {
+        if (!newElt.hasAttribute(oldAttribute.name)) {
+          if (ignoreAttribute(oldAttribute.name, oldElt, "remove", ctx)) {
             continue;
           }
-          toEl.removeAttribute(toAttribute.name);
+          oldElt.removeAttribute(oldAttribute.name);
         }
+      }
+
+      if (!ignoreValueOfActiveElement(oldElt, ctx)) {
+        syncInputValue(oldElt, newElt, ctx);
       }
     }
 
     // sync text nodes
     if (type === 8 /* comment */ || type === 3 /* text */) {
-      if (to.nodeValue !== from.nodeValue) {
-        to.nodeValue = from.nodeValue;
-      }
-    }
-
-    if (!ignoreValueOfActiveElement(to, ctx)) {
-      // sync input values
-      syncInputValue(from, to, ctx);
-    }
-  }
-
-  /**
-   * @param {Element} from element to sync the value from
-   * @param {Element} to element to sync the value to
-   * @param {string} attributeName the attribute name
-   * @param {MorphContext} ctx the merge context
-   */
-  function syncBooleanAttribute(from, to, attributeName, ctx) {
-    // TODO: prefer set/getAttribute here
-    if (!(from instanceof Element && to instanceof Element)) return;
-    // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
-    const fromLiveValue = from[attributeName],
-      // @ts-ignore ditto
-      toLiveValue = to[attributeName];
-    if (fromLiveValue !== toLiveValue) {
-      let ignoreUpdate = ignoreAttribute(attributeName, to, "update", ctx);
-      if (!ignoreUpdate) {
-        // update attribute's associated DOM property
-        // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
-        to[attributeName] = from[attributeName];
-      }
-      if (fromLiveValue) {
-        if (!ignoreUpdate) {
-          // TODO: do we really want this? tests say so but it feels wrong
-          to.setAttribute(attributeName, fromLiveValue);
-        }
-      } else {
-        if (!ignoreAttribute(attributeName, to, "remove", ctx)) {
-          to.removeAttribute(attributeName);
-        }
+      if (oldNode.nodeValue !== newNode.nodeValue) {
+        oldNode.nodeValue = newNode.nodeValue;
       }
     }
   }
@@ -564,55 +551,94 @@ var Idiomorph = (function () {
    *  https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
    *  https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
    *
-   * @param {Node} from the element to sync the input value from
-   * @param {Node} to the element to sync the input value to
+   * @param {Element} oldElement the element to sync the input value to
+   * @param {Element} newElement the element to sync the input value from
    * @param {MorphContext} ctx the merge context
    */
-  function syncInputValue(from, to, ctx) {
+  function syncInputValue(oldElement, newElement, ctx) {
     if (
-      from instanceof HTMLInputElement &&
-      to instanceof HTMLInputElement &&
-      from.type !== "file"
+      oldElement instanceof HTMLInputElement &&
+      newElement instanceof HTMLInputElement &&
+      newElement.type !== "file"
     ) {
-      let fromValue = from.value;
-      let toValue = to.value;
+      let newValue = newElement.value;
+      let oldValue = oldElement.value;
 
       // sync boolean attributes
-      syncBooleanAttribute(from, to, "checked", ctx);
-      syncBooleanAttribute(from, to, "disabled", ctx);
+      syncBooleanAttribute(oldElement, newElement, "checked", ctx);
+      syncBooleanAttribute(oldElement, newElement, "disabled", ctx);
 
-      if (!from.hasAttribute("value")) {
-        if (!ignoreAttribute("value", to, "remove", ctx)) {
-          to.value = "";
-          to.removeAttribute("value");
+      if (!newElement.hasAttribute("value")) {
+        if (!ignoreAttribute("value", oldElement, "remove", ctx)) {
+          oldElement.value = "";
+          oldElement.removeAttribute("value");
         }
-      } else if (fromValue !== toValue) {
-        if (!ignoreAttribute("value", to, "update", ctx)) {
-          to.setAttribute("value", fromValue);
-          to.value = fromValue;
+      } else if (oldValue !== newValue) {
+        if (!ignoreAttribute("value", oldElement, "update", ctx)) {
+          oldElement.setAttribute("value", newValue);
+          oldElement.value = newValue;
         }
       }
-      // TODO: QUESTION(1cg): this used to only check `from` unlike the other branches -- why?
+      // TODO: QUESTION(1cg): this used to only check `newElement` unlike the other branches -- why?
       // did I break something?
     } else if (
-      from instanceof HTMLOptionElement &&
-      to instanceof HTMLOptionElement
+      oldElement instanceof HTMLOptionElement &&
+      newElement instanceof HTMLOptionElement
     ) {
-      syncBooleanAttribute(from, to, "selected", ctx);
+      syncBooleanAttribute(oldElement, newElement, "selected", ctx);
     } else if (
-      from instanceof HTMLTextAreaElement &&
-      to instanceof HTMLTextAreaElement
+      oldElement instanceof HTMLTextAreaElement &&
+      newElement instanceof HTMLTextAreaElement
     ) {
-      let fromValue = from.value;
-      let toValue = to.value;
-      if (ignoreAttribute("value", to, "update", ctx)) {
+      let newValue = newElement.value;
+      let oldValue = oldElement.value;
+      if (ignoreAttribute("value", oldElement, "update", ctx)) {
         return;
       }
-      if (fromValue !== toValue) {
-        to.value = fromValue;
+      if (newValue !== oldValue) {
+        oldElement.value = newValue;
       }
-      if (to.firstChild && to.firstChild.nodeValue !== fromValue) {
-        to.firstChild.nodeValue = fromValue;
+      if (
+        oldElement.firstChild &&
+        oldElement.firstChild.nodeValue !== newValue
+      ) {
+        oldElement.firstChild.nodeValue = newValue;
+      }
+    }
+  }
+
+  /**
+   * @param {Element} oldElement element to sync the value to
+   * @param {Element} newElement element to sync the value from
+   * @param {string} attributeName the attribute name
+   * @param {MorphContext} ctx the merge context
+   */
+  function syncBooleanAttribute(oldElement, newElement, attributeName, ctx) {
+    // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
+    const newLiveValue = newElement[attributeName],
+      // @ts-ignore ditto
+      oldLiveValue = oldElement[attributeName];
+    if (newLiveValue !== oldLiveValue) {
+      const ignoreUpdate = ignoreAttribute(
+        attributeName,
+        oldElement,
+        "update",
+        ctx,
+      );
+      if (!ignoreUpdate) {
+        // update attribute's associated DOM property
+        // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
+        oldElement[attributeName] = newElement[attributeName];
+      }
+      if (newLiveValue) {
+        if (!ignoreUpdate) {
+          // TODO: do we really want this? tests say so but it feels wrong
+          oldElement.setAttribute(attributeName, newLiveValue);
+        }
+      } else {
+        if (!ignoreAttribute(attributeName, oldElement, "remove", ctx)) {
+          oldElement.removeAttribute(attributeName);
+        }
       }
     }
   }
@@ -621,12 +647,12 @@ var Idiomorph = (function () {
    * =============================================================================
    *  The HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
    * =============================================================================
-   * @param {Element} newHeadTag
-   * @param {Element} currentHead
+   * @param {Element} oldHead
+   * @param {Element} newHead
    * @param {MorphContext} ctx
    * @returns {Promise<void>[]}
    */
-  function handleHeadElement(newHeadTag, currentHead, ctx) {
+  function handleHeadElement(oldHead, newHead, ctx) {
     /**
      * @type {Node[]}
      */
@@ -648,12 +674,12 @@ var Idiomorph = (function () {
 
     // put all new head elements into a Map, by their outerHTML
     let srcToNewHeadNodes = new Map();
-    for (const newHeadChild of newHeadTag.children) {
+    for (const newHeadChild of newHead.children) {
       srcToNewHeadNodes.set(newHeadChild.outerHTML, newHeadChild);
     }
 
     // for each elt in the current head
-    for (const currentHeadElt of currentHead.children) {
+    for (const currentHeadElt of oldHead.children) {
       // If the current head element is in the map
       let inNewContent = srcToNewHeadNodes.has(currentHeadElt.outerHTML);
       let isReAppended = ctx.head.shouldReAppend(currentHeadElt);
@@ -713,7 +739,7 @@ var Idiomorph = (function () {
           });
           promises.push(promise);
         }
-        currentHead.appendChild(newElt);
+        oldHead.appendChild(newElt);
         ctx.callbacks.afterNodeAdded(newElt);
         added.push(newElt);
       }
@@ -722,13 +748,10 @@ var Idiomorph = (function () {
     // remove all removed elements, after we have appended the new elements to avoid
     // additional network requests for things like style sheets
     for (const removedElement of removed) {
-      if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
-        currentHead.removeChild(removedElement);
-        ctx.callbacks.afterNodeRemoved(removedElement);
-      }
+      removeNode(removedElement, ctx);
     }
 
-    ctx.head.afterHeadMorphed(currentHead, {
+    ctx.head.afterHeadMorphed(oldHead, {
       added: added,
       kept: preserved,
       removed: removed,
@@ -795,12 +818,8 @@ var Idiomorph = (function () {
       ignoreActiveValue: mergedConfig.ignoreActiveValue,
       idMap: createIdMap(oldNode, newContent),
       deadIds: new Set(),
-      persistentIds: mergedConfig.twoPass
-        ? createPersistentIds(oldNode, newContent)
-        : new Set(),
-      pantry: mergedConfig.twoPass
-        ? createPantry()
-        : document.createElement("div"),
+      persistentIds: createPersistentIds(oldNode, newContent),
+      pantry: createPantry(),
       callbacks: mergedConfig.callbacks,
       head: mergedConfig.head,
     };
@@ -864,46 +883,28 @@ var Idiomorph = (function () {
   }
 
   /**
-   *
-   * @param {Node} startInclusive
-   * @param {Node} endExclusive
-   * @param {MorphContext} ctx
-   * @returns {Node | null}
-   */
-  function removeNodesBetween(startInclusive, endExclusive, ctx) {
-    /** @type {Node | null} */ let cursor = startInclusive;
-    while (cursor !== endExclusive) {
-      let tempNode = /** @type {Node} */ (cursor);
-      // TODO: Prefer assigning to a new variable here or expand the type of startInclusive
-      //  to be Node | null
-      cursor = tempNode.nextSibling;
-      removeNode(tempNode, ctx);
-    }
-    removeIdsFromConsideration(ctx, endExclusive);
-    return endExclusive.nextSibling;
-  }
-
-  /**
    * =============================================================================
    *  Scans forward from the insertionPoint in the old parent looking for a potential id match
    *  for the newChild.  We stop if we find a potential id match for the new child OR
    *  if the number of potential id matches we are discarding is greater than the
    *  potential id matches for the new child
    * =============================================================================
-   * @param {Node} newContent
    * @param {Node} oldParent
+   * @param {Node} newContent
    * @param {Node} newChild
-   * @param {Node} insertionPoint
+   * @param {Node | null} insertionPoint
    * @param {MorphContext} ctx
-   * @returns {null | Node}
+   * @returns {Node | null}
    */
   function findIdSetMatch(
-    newContent,
     oldParent,
+    newContent,
     newChild,
     insertionPoint,
     ctx,
   ) {
+    if (!insertionPoint) return null;
+
     // max id matches we are willing to discard in our search
     let newChildPotentialIdCount = getIdIntersectionCount(
       ctx,
@@ -958,14 +959,14 @@ var Idiomorph = (function () {
    *  if we find a potential id match in the old parents children OR if we find two
    *  potential soft matches for the next two pieces of new content
    * =============================================================================
-   * @param {Node} newContent
    * @param {Node} oldParent
+   * @param {Node} newContent
    * @param {Node} newChild
-   * @param {Node} insertionPoint
+   * @param {Node | null} insertionPoint
    * @param {MorphContext} ctx
    * @returns {null | Node}
    */
-  function findSoftMatch(newContent, oldParent, newChild, insertionPoint, ctx) {
+  function findSoftMatch(oldParent, newContent, newChild, insertionPoint, ctx) {
     /**
      * @type {Node | null}
      */
@@ -1094,9 +1095,10 @@ var Idiomorph = (function () {
    * @param {Node | null} previousSibling
    * @param {Node} morphedNode
    * @param {Node | null} nextSibling
+   * @param {MorphContext} ctx
    * @returns {Node[]}
    */
-  function insertSiblings(previousSibling, morphedNode, nextSibling) {
+  function insertSiblings(previousSibling, morphedNode, nextSibling, ctx) {
     /**
      * @type {Node[]}
      */
@@ -1114,7 +1116,7 @@ var Idiomorph = (function () {
     let node = stack.pop();
     while (node !== undefined) {
       added.push(node); // push added preceding siblings on in order and insert
-      morphedNode.parentElement?.insertBefore(node, morphedNode);
+      insertOrMorphNode(morphedNode.parentElement, node, morphedNode, ctx);
       node = stack.pop();
     }
     added.push(morphedNode);
@@ -1125,54 +1127,59 @@ var Idiomorph = (function () {
     }
     while (stack.length > 0) {
       const node = /** @type {Node} */ (stack.pop());
-      morphedNode.parentElement?.insertBefore(node, morphedNode.nextSibling);
+      insertOrMorphNode(
+        morphedNode.parentElement,
+        node,
+        morphedNode.nextSibling,
+        ctx,
+      );
     }
     return added;
   }
 
   /**
    *
+   * @param {Element} oldElement
    * @param {Element} newContent
-   * @param {Element} oldNode
    * @param {MorphContext} ctx
    * @returns {Node | null}
    */
-  function findBestNodeMatch(newContent, oldNode, ctx) {
+  function findBestNodeMatch(oldElement, newContent, ctx) {
     /**
      * @type {Node | null}
      */
-    let currentElement;
-    currentElement = newContent.firstChild;
+    let currentNode;
+    currentNode = newContent.firstChild;
     /**
      * @type {Node | null}
      */
-    let bestElement = currentElement;
+    let bestNode = currentNode;
     let score = 0;
-    while (currentElement) {
-      let newScore = scoreElement(currentElement, oldNode, ctx);
+    while (currentNode) {
+      let newScore = scoreElement(oldElement, currentNode, ctx);
       if (newScore > score) {
-        bestElement = currentElement;
+        bestNode = currentNode;
         score = newScore;
       }
-      currentElement = currentElement.nextSibling;
+      currentNode = currentNode.nextSibling;
     }
-    return bestElement;
+    return bestNode;
   }
 
   /**
    *
-   * @param {Node | null} node1
-   * @param {Element} node2
+   * @param {Element} element
+   * @param {Node | null} node
    * @param {MorphContext} ctx
    * @returns {number}
    */
   // TODO: The function handles node1 and node2 as if they are Elements but the function is
   //   called in places where node1 and node2 may be just Nodes, not Elements
-  function scoreElement(node1, node2, ctx) {
-    if (isSoftMatch(node2, node1)) {
+  function scoreElement(element, node, ctx) {
+    if (isSoftMatch(element, node)) {
       // ok to cast: isSoftMatch performs a null check
       return (
-        0.5 + getIdIntersectionCount(ctx, /** @type {Node} */ (node1), node2)
+        0.5 + getIdIntersectionCount(ctx, element, /** @type {Node} */ (node))
       );
     }
     return 0;
@@ -1180,48 +1187,14 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node} tempNode
-   * @param {MorphContext} ctx
-   */
-  // TODO: The function handles tempNode as if it's Element but the function is called in
-  //   places where tempNode may be just a Node, not an Element
-  function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode);
-    // skip remove callbacks when we're going to be restoring this from the pantry in the second pass
-    if (
-      ctx.config.twoPass &&
-      hasPersistentIdNodes(ctx, tempNode) &&
-      tempNode instanceof Element
-    ) {
-      moveToPantry(tempNode, ctx);
-    } else {
-      if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-      tempNode.parentNode?.removeChild(tempNode);
-      ctx.callbacks.afterNodeRemoved(tempNode);
-    }
-  }
-
-  /**
-   *
    * @param {Node} node
    * @param {MorphContext} ctx
    */
-  function moveToPantry(node, ctx) {
-    if (ctx.callbacks.beforeNodePantried(node) === false) return;
-
-    Array.from(node.childNodes).forEach((child) => {
-      moveToPantry(child, ctx);
-    });
-
-    // After processing children, process the current node
-    if (ctx.persistentIds.has(/** @type {Element} */ (node).id)) {
-      // @ts-ignore - use proposed moveBefore feature
-      if (ctx.pantry.moveBefore) {
-        // @ts-ignore - use proposed moveBefore feature
-        ctx.pantry.moveBefore(node, null);
-      } else {
-        ctx.pantry.insertBefore(node, null);
-      }
+  function removeNode(node, ctx) {
+    removeIdsFromConsideration(ctx, node);
+    // skip remove callbacks when we're going to be restoring this from the pantry later
+    if (hasPersistentIdNodes(ctx, node) && node instanceof Element) {
+      moveBefore(ctx.pantry, node, null);
     } else {
       if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
       node.parentNode?.removeChild(node);
@@ -1230,29 +1203,42 @@ var Idiomorph = (function () {
   }
 
   /**
+   * Search for an element by id within the document and pantry, and move it using moveBefore.
    *
-   * @param {Node | null} root
+   * @param {Element} parentNode - The parent node to which the element will be moved.
+   * @param {string} id - The ID of the element to be moved.
+   * @param {Node | null} after - The reference node to insert the element before.
+   *                              If `null`, the element is appended as the last child.
    * @param {MorphContext} ctx
+   * @returns {Element} The found element
    */
-  function restoreFromPantry(root, ctx) {
-    if (root instanceof Element) {
-      Array.from(ctx.pantry.children)
-        .reverse()
-        .forEach((element) => {
-          const matchElement = root.querySelector(`#${element.id}`);
-          if (matchElement) {
-            // @ts-ignore - use proposed moveBefore feature
-            if (matchElement.parentElement?.moveBefore) {
-              // @ts-ignore - use proposed moveBefore feature
-              matchElement.parentElement.moveBefore(element, matchElement);
-            } else {
-              matchElement.before(element);
-            }
-            morphOldNodeTo(element, matchElement, ctx);
-            matchElement.remove();
-          }
-        });
-      ctx.pantry.remove();
+  function moveBeforeById(parentNode, id, after, ctx) {
+    const target =
+      /** @type {Element} - will always be found */
+      (
+        ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`)
+      );
+    moveBefore(parentNode, target, after);
+    return target;
+  }
+
+  /**
+   * Moves an element before another element within the same parent.
+   * Uses the proposed `moveBefore` API if available, otherwise falls back to `insertBefore`.
+   * This is essentialy a forward-compat wrapper.
+   *
+   * @param {Element} parentNode - The parent node containing the after element.
+   * @param {Node} element - The element to be moved.
+   * @param {Node | null} after - The reference node to insert `element` before.
+   *                              If `null`, `element` is appended as the last child.
+   */
+  function moveBefore(parentNode, element, after) {
+    // @ts-ignore - use proposed moveBefore feature
+    if (parentNode.moveBefore) {
+      // @ts-ignore - use proposed moveBefore feature
+      parentNode.moveBefore(element, after);
+    } else {
+      parentNode.insertBefore(element, after);
     }
   }
 
@@ -1334,12 +1320,12 @@ var Idiomorph = (function () {
    * @param {Element} content
    * @returns {Element[]}
    */
-  function nodesWithIds(content) {
-    let nodes = Array.from(content.querySelectorAll("[id]"));
+  function elementsWithIds(content) {
+    let elements = Array.from(content.querySelectorAll("[id]"));
     if (content.id) {
-      nodes.push(content);
+      elements.push(content);
     }
-    return nodes;
+    return elements;
   }
 
   /**
@@ -1352,7 +1338,7 @@ var Idiomorph = (function () {
    */
   function populateIdMapForNode(node, idMap) {
     let nodeParent = node.parentElement;
-    for (const elt of nodesWithIds(node)) {
+    for (const elt of elementsWithIds(node)) {
       /**
        * @type {Element|null}
        */
@@ -1399,14 +1385,31 @@ var Idiomorph = (function () {
    * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
    */
   function createPersistentIds(oldContent, newContent) {
-    const toIdTagName = (/** @type {Element} */ node) =>
-      node.tagName + "#" + node.id;
-    const oldIdSet = new Set(nodesWithIds(oldContent).map(toIdTagName));
-
+    let oldIdMap = new Map();
+    let dupSet = new Set();
+    for (const oldNode of elementsWithIds(oldContent)) {
+      const id = oldNode.id;
+      // if already in map then log duplicates to be skipped
+      if (oldIdMap.get(id)) {
+        dupSet.add(id);
+      } else {
+        oldIdMap.set(id, oldNode.tagName);
+      }
+    }
     let matchIdSet = new Set();
-    for (const newNode of nodesWithIds(newContent)) {
-      if (oldIdSet.has(toIdTagName(newNode))) {
-        matchIdSet.add(newNode.id);
+    for (const newNode of elementsWithIds(newContent)) {
+      const id = newNode.id;
+      const oldTagName = oldIdMap.get(id);
+      // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
+      if (
+        matchIdSet.has(id) ||
+        (oldTagName && oldTagName !== newNode.tagName)
+      ) {
+        dupSet.add(id);
+        matchIdSet.delete(id);
+      }
+      if (oldTagName === newNode.tagName && !dupSet.has(id)) {
+        matchIdSet.add(id);
       }
     }
     return matchIdSet;
