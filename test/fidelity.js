@@ -31,7 +31,7 @@ describe("Tests to ensure that idiomorph merges properly", function(){
     it('morphs multiple attributes correctly twice', function ()
     {
         const a = `<section class="child">A</section>`;
-        const b = `<section class="thing" data-one="1" data-two="2" data-three="3" data-four="4" id="foo" fizz="buzz" foo="bar">B</section>`;
+        const b = `<section class="thing" data-one="1" data-two="2" data-three="3" data-four="4" fizz="buzz" foo="bar">B</section>`;
         const expectedA = make(a);
         const expectedB = make(b);
         const initial = make(a);

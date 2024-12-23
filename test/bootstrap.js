@@ -44,7 +44,7 @@ describe("Bootstrap test", function(){
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        let morphTo = '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
+        let morphTo = '<div id="root1"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
         let div2 = make(morphTo)
 
         print(div1);

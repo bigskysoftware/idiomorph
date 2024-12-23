@@ -751,23 +751,26 @@ var Idiomorph = (function () {
 
         /**
          *
-         * @param {Node | null} node1
-         * @param {Node | null} node2
-         * @param {MorphContext} ctx
+         * @param {Node | null} oldNode
+         * @param {Node | null} newNode
          * @returns {boolean}
          */
-        function isSoftMatch(node1, node2, ctx) {
-            if (node1 == null || node2 == null) {
+        function isSoftMatch(oldNode, newNode) {
+            if (oldNode == null || newNode == null) {
                 return false;
             }
             // If the id's do not match and either of the id's are persisted through the morph then they can't be soft matches
-            if ( /** @type {Element} */ (node1).id !== /** @type {Element} */ (node2).id 
+            if ( /** @type {Element} */ (node1).id !== /** @type {Element} */ (node2).id
                 && (ctx.persistentIds.has(/** @type {Element} */ (node1).id) || ctx.persistentIds.has(/** @type {Element} */ (node2).id))) {
                 return false;
             }
-            return node1.nodeType === node2.nodeType &&
-              // ok to cast: if one is not element, `tagName` will be undefined and we'll compare that
-              /** @type {Element} */ (node1).tagName === /** @type {Element} */ (node2).tagName
+            // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
+            // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
+            if ( /** @type {Element} */ (oldNode).id && /** @type {Element} */ (oldNode).id !== /** @type {Element} */ (newNode).id) {
+                return false;
+            }
+            return oldNode.nodeType === newNode.nodeType &&
+              /** @type {Element} */ (oldNode).tagName === /** @type {Element} */ (newNode).tagName
         }
 
         /**
@@ -884,11 +887,11 @@ var Idiomorph = (function () {
                 }
 
                 // if we have a soft match with the current node, return it
-                if (isSoftMatch(newChild, potentialSoftMatch, ctx)) {
+                if (isSoftMatch(potentialSoftMatch, newChild)) {
                     return potentialSoftMatch;
                 }
 
-                if (isSoftMatch(nextSibling, potentialSoftMatch, ctx)) {
+                if (isSoftMatch(potentialSoftMatch, nextSibling)) {
                     // the next new node has a soft match with this node, so
                     // increment the count of future soft matches
                     siblingSoftMatchCount++;
@@ -1059,7 +1062,7 @@ var Idiomorph = (function () {
         // TODO: The function handles node1 and node2 as if they are Elements but the function is
         //   called in places where node1 and node2 may be just Nodes, not Elements
         function scoreElement(node1, node2, ctx) {
-            if (isSoftMatch(node1, node2, ctx)) {
+            if (isSoftMatch(node2, node1)) {
                 // ok to cast: isSoftMatch performs a null check
                 return .5 + getIdIntersectionCount(ctx, /** @type {Node} */ (node1), node2);
             }
