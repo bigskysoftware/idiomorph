@@ -47,6 +47,17 @@ npm run debug
 ```
 This will start the server, and open the test runner in a browser. From there you can choose a test file to run.
 
+## Forcing Two Pass Mode
+If the `DEFAULT_TWO_PASS` environment variable is set before running the tests, Idiomorph will default to two-pass mode. This is useful for running the entire test suite with two-pass on.
+
+## GitHub Actions CI matrix
+On each push and PR, GitHub Actions runs the following test matrix:
+
+1. Normal baseline `npm run ci` run
+2. With experimental moveBefore enabled in the browser
+3. With two-pass mode forced
+4. With both moveBefore enabled and two-pass mode forced
+
 ## Code Coverage Report
 After a test run completes, you can open `coverage/lcov-report/index.html` to view the code coverage report. On Ubuntu you can run:
 ```bash

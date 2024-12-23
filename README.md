@@ -96,6 +96,7 @@ Idiomorph supports the following options:
 | `ignoreActiveValue` | If set to `true`, idiomorph will not update the active element's value                                      | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
 | `head`              | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                             |
 | `callbacks`         | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
+| `twoPass`           | If set to `true`, idiomorph does a second pass to maintain more state. See [Two Pass Mode](#two-pass-mode)  | `Idiomorph.morph(..., {twoPass:true})`                                   |
 
 #### Callbacks
 
@@ -110,7 +111,8 @@ of the algorithm.
 | afterNodeMorphed(oldNode, newNode)                           | Called after a node is morphed in the DOM                                                | none                                               |
 | beforeNodeRemoved(node)                                      | Called before a node is removed from the DOM                                             | return false to not remove the node                |
 | afterNodeRemoved(node)                                       | Called after a node is removed from the DOM                                              | none                                               |
-| beforeAttributeUpdated(attributeName, node, mutationType) | Called before an attribute on an element.  `mutationType` is either "updated" or "removed" | return false to not update or remove the attribute |
+| beforeAttributeUpdated(attributeName, node, mutationType)    | Called before an attribute on an element. `mutationType` is either "updated" or "removed"| return false to not update or remove the attribute |
+| beforeNodePantried(node)                                     | Called before moving the node into the pantry during the second pass (if enabled)        | return false to not move the node into the pantry  |
 
 ### The `head` tag
 
@@ -139,6 +141,15 @@ of the script.
 
 Similarly, you may wish to preserve an element even if it is not in `new`.  You can use the attribute `im-preserve='true'`
 in this case to retain the element.
+
+#### Two Pass Mode
+
+If the `twoPass` option is enabled, Idiomorph will try to maintain more state by temporarily moving some nodes into a
+hidden pantry div. After the initial morph is complete, it runs a second pass, moving the pantried nodes back into the
+document.  These are nodes that would otherwise have been removed and readded, losing identity and state. This is
+particularly useful for reordering morphs involving elements with non-attribute state, e.g. video elements, elements
+preserved with `data-turbo-permanent`, etc. Also, when this option is enabled, Idiomorph will use the upcoming
+`Element#moveBefore` API if it exists, falling back to `Element#insertBefore` if not.
 
 #### Additional Configuration
 
