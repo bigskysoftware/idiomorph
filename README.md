@@ -111,7 +111,8 @@ of the algorithm.
 | afterNodeMorphed(oldNode, newNode)                           | Called after a node is morphed in the DOM                                                | none                                               |
 | beforeNodeRemoved(node)                                      | Called before a node is removed from the DOM                                             | return false to not remove the node                |
 | afterNodeRemoved(node)                                       | Called after a node is removed from the DOM                                              | none                                               |
-| beforeAttributeUpdated(attributeName, node, mutationType) | Called before an attribute on an element.  `mutationType` is either "updated" or "removed" | return false to not update or remove the attribute |
+| beforeAttributeUpdated(attributeName, node, mutationType)    | Called before an attribute on an element. `mutationType` is either "updated" or "removed"| return false to not update or remove the attribute |
+| beforeNodePantried(node)                                     | Called before moving the node into the pantry during the second pass (if enabled)        | return false to not move the node into the pantry  |
 
 ### The `head` tag
 

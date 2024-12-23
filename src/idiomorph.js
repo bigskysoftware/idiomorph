@@ -20,6 +20,7 @@
  * @property {function(Element): boolean} [beforeNodeRemoved]
  * @property {function(Element): void} [afterNodeRemoved]
  * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
+ * @property {function(Element): boolean} [beforeNodePantried]
  */
 
 /**
@@ -60,6 +61,7 @@
  * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
  * @property {(function(Node): void) | NoOp} afterNodeRemoved
  * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
+ * @property {(function(Node): boolean) | NoOp} beforeNodePantried
  */
 
 /**
@@ -131,7 +133,7 @@ var Idiomorph = (function () {
                 beforeNodeRemoved: noOp,
                 afterNodeRemoved: noOp,
                 beforeAttributeUpdated: noOp,
-
+                beforeNodePantried: noOp,
             },
             head: {
                 style: 'merge',
@@ -1115,6 +1117,8 @@ var Idiomorph = (function () {
          * @param {MorphContext} ctx
          */
         function moveToPantry(node, ctx) {
+            if (ctx.callbacks.beforeNodePantried(node) === false) return
+
             Array.from(node.childNodes).forEach(child => {
                 moveToPantry(child, ctx);
             });
