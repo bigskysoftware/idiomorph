@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+test/*/*
+!test/lib
+package.json
+package-lock.json
+tsconfig.json
+*.md
+.github
+
