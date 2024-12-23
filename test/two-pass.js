@@ -1,7 +1,5 @@
 describe("Two-pass option for retaining more state", function () {
-  beforeEach(function () {
-    clearWorkArea();
-  });
+  setup();
 
   it("fails to preserve all non-attribute element state with single-pass option", function () {
     getWorkArea().append(
@@ -427,5 +425,46 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="first">`,
       ],
     ]);
+  });
+
+  it("beforeNodeMorphed hook also applies to nodes restored from the pantry", function () {
+    getWorkArea().append(
+      make(`
+            <div>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+            </div>
+        `),
+    );
+    document.getElementById("first").innerHTML = "First paragraph EDITED";
+    document.getElementById("second").innerHTML = "Second paragraph EDITED";
+
+    let finalSrc = `
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+            </div>
+        `;
+
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+      twoPass: true,
+      callbacks: {
+        // basic implementation of a preserve-me attr
+        beforeNodePantried(node) {
+          if (node.parentNode?.dataset?.preserveMe) return false;
+        },
+        beforeNodeMorphed(oldNode, newContent) {
+          if (oldNode.dataset?.preserveMe) return false;
+        },
+      },
+    });
+
+    getWorkArea().innerHTML.should.equal(`
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph EDITED</p>
+              <p data-preserve-me="true" id="first">First paragraph EDITED</p>
+            </div>
+        `);
   });
 });
