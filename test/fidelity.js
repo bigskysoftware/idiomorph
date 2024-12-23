@@ -1,132 +1,132 @@
-describe("Tests to ensure that idiomorph merges properly", function(){
-    setup();
+describe("Tests to ensure that idiomorph merges properly", function () {
+  setup();
 
-    function expectFidelity(actual, expected) {
-        if (actual.outerHTML !== expected) {
-            console.log("HTML after morph: " + actual.outerHTML);
-            console.log("Expected:         " + expected);
+  function expectFidelity(actual, expected) {
+    if (actual.outerHTML !== expected) {
+      console.log("HTML after morph: " + actual.outerHTML);
+      console.log("Expected:         " + expected);
+    }
+    actual.outerHTML.should.equal(expected);
+  }
+
+  function testFidelity(start, end) {
+    let initial = make(start);
+    let final = make(end);
+    Idiomorph.morph(initial, final);
+
+    expectFidelity(initial, end);
+  }
+
+  // bootstrap test
+  it("morphs text correctly", function () {
+    testFidelity("<button>Foo</button>", "<button>Bar</button>");
+  });
+
+  it("morphs attributes correctly", function () {
+    testFidelity(
+      '<button class="foo">Foo</button>',
+      '<button class="bar">Foo</button>',
+    );
+  });
+
+  it("morphs multiple attributes correctly twice", function () {
+    const a = `<section class="child">A</section>`;
+    const b = `<section class="thing" data-one="1" data-two="2" data-three="3" data-four="4" fizz="buzz" foo="bar">B</section>`;
+    const expectedA = make(a);
+    const expectedB = make(b);
+    const initial = make(a);
+
+    Idiomorph.morph(initial, expectedB);
+    expectFidelity(initial, b);
+
+    Idiomorph.morph(initial, expectedA);
+    expectFidelity(initial, a);
+  });
+
+  it("morphs children", function () {
+    testFidelity("<div><p>A</p><p>B</p></div>", "<div><p>C</p><p>D</p></div>");
+  });
+
+  it("morphs white space", function () {
+    testFidelity(
+      "<div><p>A</p><p>B</p></div>",
+      "<div><p>C</p><p>D</p>  </div>",
+    );
+  });
+
+  it("drops content", function () {
+    testFidelity("<div><p>A</p><p>B</p></div>", "<div></div>");
+  });
+
+  it("adds content", function () {
+    testFidelity("<div></div>", "<div><p>A</p><p>B</p></div>");
+  });
+
+  it("should morph a node", function () {
+    testFidelity("<p>hello world</p>", "<p>hello you</p>");
+  });
+
+  it("should stay same if same", function () {
+    testFidelity("<p>hello world</p>", "<p>hello world</p>");
+  });
+
+  it("should replace a node", function () {
+    testFidelity(
+      "<main><p>hello world</p></main>",
+      "<main><div>hello you</div></main>",
+    );
+  });
+
+  it("should append a node", function () {
+    testFidelity("<main></main>", "<main><p>hello you</p></main>");
+  });
+
+  it("issue https://github.com/bigskysoftware/idiomorph/issues/11", function () {
+    let el1 = make('<fieldset id="el"></fieldset>');
+
+    el1.classList.add("foo");
+    el1.disabled = true;
+
+    // Also fails (reorder setting class and disabling)
+    // el1.disabled = true;
+    // el1.classList.add('foo');
+
+    // Also fails (add and remove class)
+    // el1.classList.add('foo');
+    // el1.classList.remove('foo');
+    // el1.disabled = true;
+
+    let el2 = make('<fieldset id="el">hello</fieldset>');
+
+    // Act
+    Idiomorph.morph(el1, el2);
+
+    // Assert
+    should.equal("hello", el1.innerHTML);
+    should.equal(0, el1.classList.length);
+    should.equal(false, el1.disabled);
+  });
+
+  it("issue https://github.com/bigskysoftware/idiomorph/issues/41", function () {
+    window.customElements.define(
+      "fake-turbo-frame",
+      class extends HTMLElement {
+        static observedAttributes = ["src"];
+        attributeChangedCallback(name, oldValue, newValue) {
+          if (name === "src" && oldValue && oldValue !== newValue) {
+            this.removeAttribute("complete");
+          }
         }
-        actual.outerHTML.should.equal(expected);
-    }
+      },
+    );
 
-    function testFidelity(start, end) {
-        let initial = make(start);
-        let final = make(end);
-        Idiomorph.morph(initial, final);
+    let element = make(
+      '<fake-turbo-frame id="frame" complete="complete" src="https://example.com"></fake-turbo-frame>',
+    );
+    let finalSrc = '<fake-turbo-frame id="frame"></fake-turbo-frame>';
 
-        expectFidelity(initial, end);
-    }
+    Idiomorph.morph(element, finalSrc);
 
-    // bootstrap test
-    it('morphs text correctly', function()
-    {
-        testFidelity("<button>Foo</button>", "<button>Bar</button>")
-    });
-
-    it('morphs attributes correctly', function()
-    {
-        testFidelity("<button class=\"foo\">Foo</button>", "<button class=\"bar\">Foo</button>")
-    });
-
-    it('morphs multiple attributes correctly twice', function ()
-    {
-        const a = `<section class="child">A</section>`;
-        const b = `<section class="thing" data-one="1" data-two="2" data-three="3" data-four="4" fizz="buzz" foo="bar">B</section>`;
-        const expectedA = make(a);
-        const expectedB = make(b);
-        const initial = make(a);
-
-        Idiomorph.morph(initial, expectedB);
-        expectFidelity(initial, b);
-
-        Idiomorph.morph(initial, expectedA);
-        expectFidelity(initial, a);
-    });
-
-    it('morphs children', function()
-    {
-        testFidelity("<div><p>A</p><p>B</p></div>", "<div><p>C</p><p>D</p></div>")
-    });
-
-    it('morphs white space', function()
-    {
-        testFidelity("<div><p>A</p><p>B</p></div>", "<div><p>C</p><p>D</p>  </div>")
-    });
-
-    it('drops content', function()
-    {
-        testFidelity("<div><p>A</p><p>B</p></div>", "<div></div>")
-    });
-
-    it('adds content', function()
-    {
-        testFidelity("<div></div>", "<div><p>A</p><p>B</p></div>")
-    });
-
-    it('should morph a node', function()
-    {
-        testFidelity("<p>hello world</p>", "<p>hello you</p>")
-    });
-
-    it('should stay same if same', function()
-    {
-        testFidelity("<p>hello world</p>", "<p>hello world</p>")
-    });
-
-    it('should replace a node', function()
-    {
-        testFidelity("<main><p>hello world</p></main>", "<main><div>hello you</div></main>")
-    });
-
-    it('should append a node', function()
-    {
-        testFidelity("<main></main>", "<main><p>hello you</p></main>")
-    });
-
-    it('issue https://github.com/bigskysoftware/idiomorph/issues/11', function()
-    {
-        let el1 = make('<fieldset id="el"></fieldset>');
-
-        el1.classList.add('foo');
-        el1.disabled = true;
-
-        // Also fails (reorder setting class and disabling)
-        // el1.disabled = true;
-        // el1.classList.add('foo');
-
-        // Also fails (add and remove class)
-        // el1.classList.add('foo');
-        // el1.classList.remove('foo');
-        // el1.disabled = true;
-
-        let el2 = make('<fieldset id="el">hello</fieldset>')
-
-        // Act
-        Idiomorph.morph(el1, el2);
-
-        // Assert
-        should.equal('hello', el1.innerHTML);
-        should.equal(0, el1.classList.length);
-        should.equal(false, el1.disabled);
-    });
-
-    it('issue https://github.com/bigskysoftware/idiomorph/issues/41', function()
-    {
-        window.customElements.define('fake-turbo-frame', class extends HTMLElement {
-            static observedAttributes = ['src'];
-            attributeChangedCallback(name, oldValue, newValue) {
-                if (name === 'src' && oldValue && oldValue !== newValue) {
-                    this.removeAttribute('complete');
-                }
-            }
-        });
-
-        let element = make('<fake-turbo-frame id="frame" complete="complete" src="https://example.com"></fake-turbo-frame>');
-        let finalSrc = '<fake-turbo-frame id="frame"></fake-turbo-frame>';
-
-        Idiomorph.morph(element, finalSrc);
-
-        element.outerHTML.should.equal(finalSrc);
-    });
-
-})
+    element.outerHTML.should.equal(finalSrc);
+  });
+});
