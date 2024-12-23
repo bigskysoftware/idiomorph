@@ -1249,22 +1249,10 @@ var Idiomorph = (function () {
             if (matchElement.parentElement?.moveBefore) {
               // @ts-ignore - use proposed moveBefore feature
               matchElement.parentElement.moveBefore(element, matchElement);
-              while (matchElement.hasChildNodes()) {
-                // @ts-ignore - use proposed moveBefore feature
-                element.moveBefore(matchElement.firstChild, null);
-              }
             } else {
               matchElement.before(element);
-              while (matchElement.firstChild) {
-                element.insertBefore(matchElement.firstChild, null);
-              }
             }
-            if (
-              ctx.callbacks.beforeNodeMorphed(element, matchElement) !== false
-            ) {
-              syncNodeFrom(matchElement, element, ctx);
-              ctx.callbacks.afterNodeMorphed(element, matchElement);
-            }
+            morphOldNodeTo(element, matchElement, ctx);
             matchElement.remove();
           }
         });
