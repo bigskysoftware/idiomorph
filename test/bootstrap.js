@@ -38,13 +38,13 @@ describe("Bootstrap test", function(){
 
     it('basic deep morph works', function(done)
     {
-        let div1 = make('<div><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
+        let div1 = make('<div id="root1"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>')
 
         let d1 = div1.querySelector("#d1")
         let d2 = div1.querySelector("#d2")
         let d3 = div1.querySelector("#d3")
 
-        let morphTo = '<div id="root2"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
+        let morphTo = '<div id="root1"><div><div id="d2">E</div></div><div><div id="d3">F</div></div><div><div id="d1">D</div></div></div>';
         let div2 = make(morphTo)
 
         print(div1);

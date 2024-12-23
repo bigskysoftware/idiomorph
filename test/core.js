@@ -506,4 +506,58 @@ describe("Core morphing tests", function(){
         document.getElementById("second").indeterminate.should.eql(false)
     });
 
+    it('softMatch matches when old and new elt have no id so morphs in place', function()
+    {
+        let div = make('<div>A</div>');
+        getWorkArea().append(parent);
+
+        let finalSrc = '<div>B</div>';
+        Idiomorph.morph(div, finalSrc, {morphStyle:'outerHTML'});
+        // existing div gets morphed into B
+        div.innerHTML.should.equal('B');
+    });
+
+    it('softMatch does not match when old elt has id but new elt does not so no morph in place', function()
+    {
+        let div = make('<div id="d1">A</div>');
+        getWorkArea().append(parent);
+
+        let finalSrc = '<div>B</div>';
+        Idiomorph.morph(div, finalSrc, {morphStyle:'outerHTML'});
+        // existing div gets removed
+        div.innerHTML.should.equal('A');
+    });
+
+    it('softMatch matches when old and new elt have idhas no id but new elt does so morph in place', function()
+    {
+        let div = make('<div>A</div>');
+        getWorkArea().append(parent);
+
+        let finalSrc = '<div id="d1">B</div>';
+        Idiomorph.morph(div, finalSrc, {morphStyle:'outerHTML'});
+        // existing div gets morphed into B
+        div.innerHTML.should.equal('B');
+    });
+
+    it('softMatch does not match when old and new elt have different ids so no morph in place', function()
+    {
+        let div = make('<div id="d1">A</div>');
+        getWorkArea().append(parent);
+
+        let finalSrc = '<div id="d2">B</div>';
+        Idiomorph.morph(div, finalSrc, {morphStyle:'outerHTML'});
+        // existing div gets removed
+        div.innerHTML.should.equal('A');
+    });
+
+    it('idSetMatch matches when old and new elt have the same id so morph in place', function()
+    {
+        let div = make('<div id="d1">A</div>');
+        getWorkArea().append(parent);
+
+        let finalSrc = '<div id="d1">B</div>';
+        Idiomorph.morph(div, finalSrc, {morphStyle:'outerHTML'});
+        // existing div gets morphed into B
+        div.innerHTML.should.equal('B');
+    });
 })
