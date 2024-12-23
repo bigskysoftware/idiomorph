@@ -70,6 +70,7 @@
  * @property {boolean} [ignoreActiveValue]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
+ * @property {boolean} [twoPass]
  */
 
 /**
@@ -78,7 +79,7 @@
  * @param {Element | Document} oldNode
  * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
  * @param {Config} [config]
- * @returns {undefined | HTMLCollection | Node[]}
+ * @returns {undefined | Node[]}
  */
 
 // base IIFE to define idiomorph
@@ -103,6 +104,7 @@ var Idiomorph = (function () {
          * @property {Set<string>} deadIds
          * @property {ConfigInternal['callbacks']} callbacks
          * @property {ConfigInternal['head']} head
+         * @property {HTMLDivElement} pantry
          */
 
         //=============================================================================
@@ -153,7 +155,7 @@ var Idiomorph = (function () {
          * @param {Element | Document} oldNode
          * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
          * @param {Config} [config]
-         * @returns {undefined | HTMLCollection | Node[]}
+         * @returns {undefined | Node[]}
          */
         function morph(oldNode, newContent, config = {}) {
 
@@ -177,7 +179,7 @@ var Idiomorph = (function () {
          * @param {Element} oldNode
          * @param {Element} normalizedNewContent
          * @param {MorphContext} ctx
-         * @returns {undefined | HTMLCollection| Node[]}
+         * @returns {undefined | Node[]}
          */
         function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
             if (ctx.head.block) {
@@ -202,6 +204,9 @@ var Idiomorph = (function () {
 
                 // innerHTML, so we are only updating the children
                 morphChildren(normalizedNewContent, oldNode, ctx);
+                if (ctx.config.twoPass) {
+                    restoreFromPantry(oldNode, ctx);
+                }
                 return Array.from(oldNode.children);
 
             } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
@@ -220,7 +225,11 @@ var Idiomorph = (function () {
                     // if there was a best match, merge the siblings in too and return the
                     // whole bunch
                     if (morphedNode) {
-                        return insertSiblings(previousSibling, morphedNode, nextSibling);
+                        const elements = insertSiblings(previousSibling, morphedNode, nextSibling);
+                        if (ctx.config.twoPass) {
+                            restoreFromPantry(morphedNode.parentNode, ctx);
+                        }
+                        return elements
                     }
                 } else {
                     // otherwise nothing was added to the DOM
@@ -337,10 +346,14 @@ var Idiomorph = (function () {
 
                 // if we are at the end of the exiting parent's children, just append
                 if (insertionPoint == null) {
-                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-
-                    oldParent.appendChild(newChild);
-                    ctx.callbacks.afterNodeAdded(newChild);
+                    // skip add callbacks when we're going to be restoring this from the pantry in the second pass
+                    if (ctx.config.twoPass && ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+                        oldParent.appendChild(newChild);
+                    } else {
+                        if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
+                        oldParent.appendChild(newChild);
+                        ctx.callbacks.afterNodeAdded(newChild);
+                    }
                     removeIdsFromConsideration(ctx, newChild);
                     continue;
                 }
@@ -377,10 +390,15 @@ var Idiomorph = (function () {
 
                 // abandon all hope of morphing, just insert the new child before the insertion point
                 // and move on
-                if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
 
-                oldParent.insertBefore(newChild, insertionPoint);
-                ctx.callbacks.afterNodeAdded(newChild);
+                // skip add callbacks when we're going to be restoring this from the pantry in the second pass
+                if (ctx.config.twoPass && ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+                    oldParent.insertBefore(newChild, insertionPoint);
+                } else {
+                    if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
+                    oldParent.insertBefore(newChild, insertionPoint);
+                    ctx.callbacks.afterNodeAdded(newChild);
+                }
                 removeIdsFromConsideration(ctx, newChild);
             }
 
@@ -718,11 +736,19 @@ var Idiomorph = (function () {
                 ignoreActive: mergedConfig.ignoreActive,
                 ignoreActiveValue: mergedConfig.ignoreActiveValue,
                 idMap: createIdMap(oldNode, newContent),
-                persistentIds: persistentIdSet(oldNode, newContent),
                 deadIds: new Set(),
+                persistentIds: mergedConfig.twoPass ? createPersistentIds(oldNode, newContent) : new Set(),
+                pantry: mergedConfig.twoPass ? createPantry() : document.createElement("div"),
                 callbacks: mergedConfig.callbacks,
                 head: mergedConfig.head
             }
+        }
+
+        function createPantry() {
+            const pantry = document.createElement("div");
+            pantry.hidden = true;
+            document.body.insertAdjacentElement("afterend", pantry);
+            return pantry;
         }
 
         /**
@@ -1073,10 +1099,75 @@ var Idiomorph = (function () {
         //   places where tempNode may be just a Node, not an Element
         function removeNode(tempNode, ctx) {
             removeIdsFromConsideration(ctx, tempNode)
-            if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
+            // skip remove callbacks when we're going to be restoring this from the pantry in the second pass
+            if (ctx.config.twoPass && hasPersistentIdNodes(ctx, tempNode) && tempNode instanceof Element) {
+                moveToPantry(tempNode, ctx);
+            } else {
+                if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
+                tempNode.parentNode?.removeChild(tempNode);
+                ctx.callbacks.afterNodeRemoved(tempNode);
+            }
+        }
 
-            tempNode.parentNode?.removeChild(tempNode);
-            ctx.callbacks.afterNodeRemoved(tempNode);
+        /**
+         *
+         * @param {Node} node
+         * @param {MorphContext} ctx
+         */
+        function moveToPantry(node, ctx) {
+            Array.from(node.childNodes).forEach(child => {
+                moveToPantry(child, ctx);
+            });
+
+            // After processing children, process the current node
+            if (ctx.persistentIds.has(/** @type {Element} */ (node).id)) {
+                // @ts-ignore - use proposed moveBefore feature
+                if (ctx.pantry.moveBefore) {
+                    // @ts-ignore - use proposed moveBefore feature
+                    ctx.pantry.moveBefore(node, null);
+                } else {
+                    ctx.pantry.insertBefore(node, null);
+                }
+            } else {
+                if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
+                node.parentNode?.removeChild(node);
+                ctx.callbacks.afterNodeRemoved(node);
+            }
+        }
+
+        /**
+         *
+         * @param {Node | null} root
+         * @param {MorphContext} ctx
+         */
+        function restoreFromPantry(root, ctx) {
+            if (root instanceof Element) {
+                Array.from(ctx.pantry.children).reverse().forEach(element => {
+                    const matchElement = root.querySelector(`#${element.id}`);
+                    if (matchElement) {
+                        // @ts-ignore - use proposed moveBefore feature
+                        if (matchElement.parentElement?.moveBefore) {
+                            // @ts-ignore - use proposed moveBefore feature
+                            matchElement.parentElement.moveBefore(element, matchElement);
+                            while (matchElement.hasChildNodes()) {
+                                // @ts-ignore - use proposed moveBefore feature
+                                element.moveBefore(matchElement.firstChild, null);
+                            }
+                        } else {
+                            matchElement.before(element);
+                            while (matchElement.firstChild) {
+                                element.insertBefore(matchElement.firstChild, null)
+                            }
+                        }
+                        if (ctx.callbacks.beforeNodeMorphed(element, matchElement) !== false) {
+                            syncNodeFrom(matchElement, element, ctx);
+                            ctx.callbacks.afterNodeMorphed(element, matchElement);
+                        }
+                        matchElement.remove();
+                    }
+                });
+                ctx.pantry.remove();
+            }
         }
 
         //=============================================================================
@@ -1121,6 +1212,21 @@ var Idiomorph = (function () {
         /**
          *
          * @param {MorphContext} ctx
+         * @param {Node} node
+         * @returns {boolean}
+         */
+        function hasPersistentIdNodes(ctx, node) {
+            for (const id of ctx.idMap.get(node) || EMPTY_SET) {
+                if (ctx.persistentIds.has(id)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /**
+         *
+         * @param {MorphContext} ctx
          * @param {Node} node1
          * @param {Node} node2
          * @returns {number}
@@ -1139,15 +1245,15 @@ var Idiomorph = (function () {
         }
 
         /**
-         * @param {Element} Content
+         * @param {Element} content
          * @returns {Element[]}
          */
-        function nodesWithIds(Content) {
-            let Nodes = Array.from(Content.querySelectorAll('[id]'));
-            if(Content.id) {
-               Nodes.push(Content);
+        function nodesWithIds(content) {
+            let nodes = Array.from(content.querySelectorAll('[id]'));
+            if(content.id) {
+               nodes.push(content);
             }
-            return Nodes;
+            return nodes;
         }
 
         /**
@@ -1206,14 +1312,13 @@ var Idiomorph = (function () {
          * @param {Element} newContent  the new content to morph to
          * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
          */
-        function persistentIdSet(oldContent, newContent) {
+        function createPersistentIds(oldContent, newContent) {
+            const toIdTagName = node => node.tagName+'#'+node.id;
+            const oldIdSet = new Set(nodesWithIds(oldContent).map(toIdTagName));
+
             let matchIdSet = new Set();
-            let oldIdSet = new Set();
-            for (const oldNode of nodesWithIds(oldContent)) {
-                oldIdSet.add(oldNode.id+':'+oldNode.tagName);
-            }
             for (const newNode of nodesWithIds(newContent)) {
-                if (oldIdSet.has(newNode.id+':'+newNode.tagName)) {
+                if (oldIdSet.has(toIdTagName(newNode))) {
                     matchIdSet.add(newNode.id);
                 }
             }
