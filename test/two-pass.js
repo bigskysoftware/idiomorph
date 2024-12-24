@@ -214,16 +214,9 @@ describe("Two-pass option for retaining more state", function () {
     Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML", twoPass: true });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
-    if (document.body.moveBefore) {
-      document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
-      );
-    } else {
-      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state with two-pass option and outerHTML morphStyle test needs moveBefore enabled to work properly",
-      );
-    }
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("first").outerHTML,
+    );
   });
 
   it("preserves focus state when elements are moved to different levels of the DOM", function () {
@@ -337,16 +330,9 @@ describe("Two-pass option for retaining more state", function () {
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
-    if (document.body.moveBefore) {
-      document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
-      );
-    } else {
-      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state when parents are reorderd test needs moveBefore enabled to work properly",
-      );
-    }
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("first").outerHTML,
+    );
   });
 
   it("hooks work as expected", function () {
@@ -410,11 +396,6 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="second">`,
       ],
       [
-        "after",
-        finalSrc,
-        '<div>\n              <input type="checkbox" id="second">\n              </div>',
-      ],
-      [
         "before",
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
@@ -423,6 +404,11 @@ describe("Two-pass option for retaining more state", function () {
         "after",
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
+      ],
+      [
+        "after",
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
       ],
     ]);
   });

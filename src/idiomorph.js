@@ -20,7 +20,6 @@
  * @property {function(Element): boolean} [beforeNodeRemoved]
  * @property {function(Element): void} [afterNodeRemoved]
  * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
- * @property {function(Element): boolean} [beforeNodePantried]
  */
 
 /**
@@ -61,7 +60,6 @@
  * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
  * @property {(function(Node): void) | NoOp} afterNodeRemoved
  * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
- * @property {(function(Node): boolean) | NoOp} beforeNodePantried
  */
 
 /**
@@ -133,7 +131,6 @@ var Idiomorph = (function () {
       beforeNodeRemoved: noOp,
       afterNodeRemoved: noOp,
       beforeAttributeUpdated: noOp,
-      beforeNodePantried: noOp,
     },
     head: {
       style: "merge",
@@ -208,7 +205,7 @@ var Idiomorph = (function () {
       // innerHTML, so we are only updating the children
       morphChildren(normalizedNewContent, oldNode, ctx);
       if (ctx.config.twoPass) {
-        restoreFromPantry(oldNode, ctx);
+        ctx.pantry.remove();
       }
       return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
@@ -233,7 +230,7 @@ var Idiomorph = (function () {
             nextSibling,
           );
           if (ctx.config.twoPass) {
-            restoreFromPantry(morphedNode.parentNode, ctx);
+            ctx.pantry.remove();
           }
           return elements;
         }
@@ -365,12 +362,12 @@ var Idiomorph = (function () {
 
       // if we are at the end of the exiting parent's children, just append
       if (insertionPoint == null) {
-        // skip add callbacks when we're going to be restoring this from the pantry in the second pass
         if (
           ctx.config.twoPass &&
           ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
         ) {
-          oldParent.appendChild(newChild);
+          const movedChild = moveBeforeById(oldParent, newChild.id, null, ctx);
+          morphOldNodeTo(movedChild, newChild, ctx);
         } else {
           if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
           oldParent.appendChild(newChild);
@@ -399,8 +396,22 @@ var Idiomorph = (function () {
 
       // if we found a potential match, remove the nodes until that point and morph
       if (idSetMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+        if (ctx.config.twoPass) {
+          moveBefore(oldParent, idSetMatch, insertionPoint);
+        } else {
+          insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+        }
         morphOldNodeTo(idSetMatch, newChild, ctx);
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+
+      if (
+        ctx.config.twoPass && // maybe we can run this in default mode too?
+        isSoftMatch(insertionPoint, newChild)
+      ) {
+        morphOldNodeTo(insertionPoint, newChild, ctx);
+        insertionPoint = insertionPoint.nextSibling;
         removeIdsFromConsideration(ctx, newChild);
         continue;
       }
@@ -416,7 +427,11 @@ var Idiomorph = (function () {
 
       // if we found a soft match for the current node, morph
       if (softMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+        if (ctx.config.twoPass) {
+          moveBefore(oldParent, softMatch, insertionPoint);
+        } else {
+          insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+        }
         morphOldNodeTo(softMatch, newChild, ctx);
         removeIdsFromConsideration(ctx, newChild);
         continue;
@@ -425,16 +440,28 @@ var Idiomorph = (function () {
       // abandon all hope of morphing, just insert the new child before the insertion point
       // and move on
 
-      // skip add callbacks when we're going to be restoring this from the pantry in the second pass
       if (
         ctx.config.twoPass &&
         ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
       ) {
-        oldParent.insertBefore(newChild, insertionPoint);
+        const movedChild = moveBeforeById(
+          oldParent,
+          newChild.id,
+          insertionPoint,
+          ctx,
+        );
+        morphOldNodeTo(movedChild, newChild, ctx);
       } else {
         if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-        oldParent.insertBefore(newChild, insertionPoint);
-        ctx.callbacks.afterNodeAdded(newChild);
+        if (ctx.config.twoPass) {
+          // maybe this should be a bugfix and in both modes?
+          const newClonedChild = document.importNode(newChild, true); // clone as to not mutate newParent
+          oldParent.insertBefore(newClonedChild, insertionPoint);
+          ctx.callbacks.afterNodeAdded(newClonedChild);
+        } else {
+          oldParent.insertBefore(newChild, insertionPoint);
+          ctx.callbacks.afterNodeAdded(newChild);
+        }
       }
       removeIdsFromConsideration(ctx, newChild);
     }
@@ -1184,48 +1211,18 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node} tempNode
-   * @param {MorphContext} ctx
-   */
-  // TODO: The function handles tempNode as if it's Element but the function is called in
-  //   places where tempNode may be just a Node, not an Element
-  function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode);
-    // skip remove callbacks when we're going to be restoring this from the pantry in the second pass
-    if (
-      ctx.config.twoPass &&
-      hasPersistentIdNodes(ctx, tempNode) &&
-      tempNode instanceof Element
-    ) {
-      moveToPantry(tempNode, ctx);
-    } else {
-      if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-      tempNode.parentNode?.removeChild(tempNode);
-      ctx.callbacks.afterNodeRemoved(tempNode);
-    }
-  }
-
-  /**
-   *
    * @param {Node} node
    * @param {MorphContext} ctx
    */
-  function moveToPantry(node, ctx) {
-    if (ctx.callbacks.beforeNodePantried(node) === false) return;
-
-    Array.from(node.childNodes).forEach((child) => {
-      moveToPantry(child, ctx);
-    });
-
-    // After processing children, process the current node
-    if (ctx.persistentIds.has(/** @type {Element} */ (node).id)) {
-      // @ts-ignore - use proposed moveBefore feature
-      if (ctx.pantry.moveBefore) {
-        // @ts-ignore - use proposed moveBefore feature
-        ctx.pantry.moveBefore(node, null);
-      } else {
-        ctx.pantry.insertBefore(node, null);
-      }
+  function removeNode(node, ctx) {
+    removeIdsFromConsideration(ctx, node);
+    // skip remove callbacks when we're going to be restoring this from the pantry later
+    if (
+      ctx.config.twoPass &&
+      hasPersistentIdNodes(ctx, node) &&
+      node instanceof Element
+    ) {
+      moveBefore(ctx.pantry, node);
     } else {
       if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
       node.parentNode?.removeChild(node);
@@ -1233,30 +1230,20 @@ var Idiomorph = (function () {
     }
   }
 
-  /**
-   *
-   * @param {Node | null} root
-   * @param {MorphContext} ctx
-   */
-  function restoreFromPantry(root, ctx) {
-    if (root instanceof Element) {
-      Array.from(ctx.pantry.children)
-        .reverse()
-        .forEach((element) => {
-          const matchElement = root.querySelector(`#${element.id}`);
-          if (matchElement) {
-            // @ts-ignore - use proposed moveBefore feature
-            if (matchElement.parentElement?.moveBefore) {
-              // @ts-ignore - use proposed moveBefore feature
-              matchElement.parentElement.moveBefore(element, matchElement);
-            } else {
-              matchElement.before(element);
-            }
-            morphOldNodeTo(element, matchElement, ctx);
-            matchElement.remove();
-          }
-        });
-      ctx.pantry.remove();
+  function moveBeforeById(parentNode, id, after, ctx) {
+    const target =
+      ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`);
+    moveBefore(parentNode, target, after);
+    return target;
+  }
+
+  function moveBefore(parentNode, element, after) {
+    // @ts-ignore - use proposed moveBefore feature
+    if (parentNode.moveBefore) {
+      // @ts-ignore - use proposed moveBefore feature
+      parentNode.moveBefore(element, after);
+    } else {
+      parentNode.insertBefore(element, after);
     }
   }
 
