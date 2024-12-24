@@ -1,7 +1,5 @@
 describe("Two-pass option for retaining more state", function () {
-  beforeEach(function () {
-    clearWorkArea();
-  });
+  setup();
 
   it("fails to preserve all non-attribute element state with single-pass option", function () {
     getWorkArea().append(
@@ -216,16 +214,9 @@ describe("Two-pass option for retaining more state", function () {
     Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML", twoPass: true });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
-    if (document.body.moveBefore) {
-      document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
-      );
-    } else {
-      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state with two-pass option and outerHTML morphStyle test needs moveBefore enabled to work properly",
-      );
-    }
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("first").outerHTML,
+    );
   });
 
   it("preserves focus state when elements are moved to different levels of the DOM", function () {
@@ -339,16 +330,9 @@ describe("Two-pass option for retaining more state", function () {
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
-    if (document.body.moveBefore) {
-      document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
-      );
-    } else {
-      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-      console.log(
-        "preserves focus state when parents are reorderd test needs moveBefore enabled to work properly",
-      );
-    }
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("first").outerHTML,
+    );
   });
 
   it("hooks work as expected", function () {
@@ -412,11 +396,6 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="second">`,
       ],
       [
-        "after",
-        finalSrc,
-        '<div>\n              <input type="checkbox" id="second">\n              </div>',
-      ],
-      [
         "before",
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
@@ -426,6 +405,52 @@ describe("Two-pass option for retaining more state", function () {
         `<input type="checkbox" id="first">`,
         `<input type="checkbox" id="first">`,
       ],
+      [
+        "after",
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+      ],
     ]);
+  });
+
+  it("beforeNodeMorphed hook also applies to nodes restored from the pantry", function () {
+    getWorkArea().append(
+      make(`
+            <div>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+            </div>
+        `),
+    );
+    document.getElementById("first").innerHTML = "First paragraph EDITED";
+    document.getElementById("second").innerHTML = "Second paragraph EDITED";
+
+    let finalSrc = `
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+            </div>
+        `;
+
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+      twoPass: true,
+      callbacks: {
+        // basic implementation of a preserve-me attr
+        beforeNodePantried(node) {
+          if (node.parentNode?.dataset?.preserveMe) return false;
+        },
+        beforeNodeMorphed(oldNode, newContent) {
+          if (oldNode.dataset?.preserveMe) return false;
+        },
+      },
+    });
+
+    getWorkArea().innerHTML.should.equal(`
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph EDITED</p>
+              <p data-preserve-me="true" id="first">First paragraph EDITED</p>
+            </div>
+        `);
   });
 });
