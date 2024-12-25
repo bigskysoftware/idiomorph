@@ -195,6 +195,39 @@ describe("Two-pass option for retaining more state", function () {
     states.should.eql([true, true]);
   });
 
+  it("preserves focus state when focused element is moved", function () {
+    getWorkArea().innerHTML = `
+            <div>
+              <input type="text" id="first">
+            </div>
+            <div>
+              <input type="text" id="second">
+            </div>
+        `;
+    document.getElementById("second").focus();
+
+    let finalSrc = `
+            <div>
+              <input type="text" id="first">
+              <input type="text" id="second">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, { morphStyle: "innerHTML", twoPass: true });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    if (document.body.moveBefore) {
+      document.activeElement.outerHTML.should.equal(
+        document.getElementById("second").outerHTML,
+      );
+    } else {
+      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+      console.log(
+        "preserves focus state when focused element is moved needs moveBefore enabled to work properly",
+      );
+    }
+  });
+
+
   it("preserves focus state with two-pass option and outerHTML morphStyle", function () {
     const div = make(`
             <div>
