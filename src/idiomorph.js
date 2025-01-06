@@ -20,7 +20,6 @@
  * @property {function(Element): boolean} [beforeNodeRemoved]
  * @property {function(Element): void} [afterNodeRemoved]
  * @property {function(string, Element, "update" | "remove"): boolean} [beforeAttributeUpdated]
- * @property {function(Element): boolean} [beforeNodePantried]
  */
 
 /**
@@ -61,7 +60,6 @@
  * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
  * @property {(function(Node): void) | NoOp} afterNodeRemoved
  * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
- * @property {(function(Node): boolean) | NoOp} beforeNodePantried
  */
 
 /**
@@ -95,12 +93,13 @@ var Idiomorph = (function () {
   /**
    * @typedef {object} MorphContext
    *
-   * @property {Node} target
-   * @property {Node} newContent
+   * @property {Element} target
+   * @property {Element} newContent
    * @property {ConfigInternal} config
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+   * @property {Map<Element, [Element, Element]>} activeElementMap
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
    * @property {Set<string>} deadIds
@@ -133,7 +132,6 @@ var Idiomorph = (function () {
       beforeNodeRemoved: noOp,
       afterNodeRemoved: noOp,
       beforeAttributeUpdated: noOp,
-      beforeNodePantried: noOp,
     },
     head: {
       style: "merge",
@@ -208,7 +206,7 @@ var Idiomorph = (function () {
       // innerHTML, so we are only updating the children
       morphChildren(normalizedNewContent, oldNode, ctx);
       if (ctx.config.twoPass) {
-        restoreFromPantry(oldNode, ctx);
+        ctx.pantry.remove();
       }
       return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
@@ -233,7 +231,7 @@ var Idiomorph = (function () {
             nextSibling,
           );
           if (ctx.config.twoPass) {
-            restoreFromPantry(morphedNode.parentNode, ctx);
+            ctx.pantry.remove();
           }
           return elements;
         }
@@ -305,6 +303,7 @@ var Idiomorph = (function () {
       } else {
         syncNodeFrom(newContent, oldNode, ctx);
         if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+          // @ts-ignore newContent can be a node here because .firstChild will be null
           morphChildren(newContent, oldNode, ctx);
         }
       }
@@ -332,8 +331,8 @@ var Idiomorph = (function () {
    * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
    * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
    *
-   * @param {Node} newParent the parent element of the new content
-   * @param {Node} oldParent the old content that we are merging the new content into
+   * @param {Element} newParent the parent element of the new content
+   * @param {Element} oldParent the old content that we are merging the new content into
    * @param {MorphContext} ctx the merge context
    * @returns {void}
    */
@@ -342,39 +341,46 @@ var Idiomorph = (function () {
       newParent instanceof HTMLTemplateElement &&
       oldParent instanceof HTMLTemplateElement
     ) {
+      // @ts-ignore we can pretend the DocumentFragment is an Element
       newParent = newParent.content;
+      // @ts-ignore ditto
       oldParent = oldParent.content;
     }
 
-    /**
-     *
-     * @type {Node | null}
-     */
-    let nextNewChild = newParent.firstChild;
-    /**
-     *
-     * @type {Node | null}
-     */
-    let insertionPoint = oldParent.firstChild;
-    let newChild;
+    let insertionPoint = /** @type {Node | null} */ (oldParent.firstChild);
+    let newChild = /** @type {Node} */ ({ nextSibling: newParent.firstChild });
 
     // run through all the new content
-    while (nextNewChild) {
-      newChild = nextNewChild;
-      nextNewChild = newChild.nextSibling;
+    while ((newChild = /** @type {Node} */ (newChild.nextSibling))) {
+      // shift upcoming elements around to preserve the active element path if needed
+      if (ctx.activeElementMap.size) {
+        insertionPoint = preserveActiveElementPath(
+          oldParent,
+          insertionPoint,
+          newChild,
+          ctx,
+        );
+      }
 
       // if we are at the end of the exiting parent's children, just append
       if (insertionPoint == null) {
-        // skip add callbacks when we're going to be restoring this from the pantry in the second pass
         if (
           ctx.config.twoPass &&
           ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
         ) {
-          oldParent.appendChild(newChild);
+          const movedChild = moveBeforeById(
+            oldParent,
+            /** @type {Element} */ (newChild).id,
+            null,
+            ctx,
+          );
+          morphOldNodeTo(movedChild, newChild, ctx);
         } else {
           if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-          oldParent.appendChild(newChild);
-          ctx.callbacks.afterNodeAdded(newChild);
+          // clone as to not mutate newParent
+          const newClonedChild = document.importNode(newChild, true);
+          oldParent.appendChild(newClonedChild);
+          ctx.callbacks.afterNodeAdded(newClonedChild);
         }
         removeIdsFromConsideration(ctx, newChild);
         continue;
@@ -399,8 +405,20 @@ var Idiomorph = (function () {
 
       // if we found a potential match, remove the nodes until that point and morph
       if (idSetMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+        if (ctx.config.twoPass) {
+          moveBefore(oldParent, idSetMatch, insertionPoint);
+        } else {
+          insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+        }
         morphOldNodeTo(idSetMatch, newChild, ctx);
+        removeIdsFromConsideration(ctx, newChild);
+        continue;
+      }
+
+      // if the current node is a soft match then morph
+      if (isSoftMatch(insertionPoint, newChild)) {
+        morphOldNodeTo(insertionPoint, newChild, ctx);
+        insertionPoint = insertionPoint.nextSibling;
         removeIdsFromConsideration(ctx, newChild);
         continue;
       }
@@ -416,7 +434,11 @@ var Idiomorph = (function () {
 
       // if we found a soft match for the current node, morph
       if (softMatch) {
-        insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+        if (ctx.config.twoPass) {
+          moveBefore(oldParent, softMatch, insertionPoint);
+        } else {
+          insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+        }
         morphOldNodeTo(softMatch, newChild, ctx);
         removeIdsFromConsideration(ctx, newChild);
         continue;
@@ -425,26 +447,59 @@ var Idiomorph = (function () {
       // abandon all hope of morphing, just insert the new child before the insertion point
       // and move on
 
-      // skip add callbacks when we're going to be restoring this from the pantry in the second pass
       if (
         ctx.config.twoPass &&
         ctx.persistentIds.has(/** @type {Element} */ (newChild).id)
       ) {
-        oldParent.insertBefore(newChild, insertionPoint);
+        const movedChild = moveBeforeById(
+          oldParent,
+          /** @type {Element} */ (newChild).id,
+          insertionPoint,
+          ctx,
+        );
+        morphOldNodeTo(movedChild, newChild, ctx);
       } else {
         if (ctx.callbacks.beforeNodeAdded(newChild) === false) continue;
-        oldParent.insertBefore(newChild, insertionPoint);
-        ctx.callbacks.afterNodeAdded(newChild);
+        // clone as to not mutate newParent
+        const newClonedChild = document.importNode(newChild, true);
+        oldParent.insertBefore(newClonedChild, insertionPoint);
+        ctx.callbacks.afterNodeAdded(newClonedChild);
       }
       removeIdsFromConsideration(ctx, newChild);
     }
 
     // remove any remaining old nodes that didn't match up with new content
-    while (insertionPoint !== null) {
+    while (insertionPoint != null) {
       let tempNode = insertionPoint;
       insertionPoint = insertionPoint.nextSibling;
       removeNode(tempNode, ctx);
     }
+  }
+
+  /**
+   * @param {Element} oldParent
+   * @param {Node | null} insertionPoint
+   * @param {Node} newChild
+   * @param {MorphContext} ctx
+   * @returns {Node | null}
+   * If we're about to try to morph the active element or its ancestor, indirectly "move"
+   * it into place first, so that the rest of the main loop doesn't actually move it.
+   */
+  function preserveActiveElementPath(oldParent, insertionPoint, newChild, ctx) {
+    const [activeElement, newActiveElement] =
+      ctx.activeElementMap.get(oldParent) || [];
+    if (!activeElement) return insertionPoint;
+    // are we about to morph the active element or its ancestor?
+    if (newActiveElement === newChild) {
+      const beforePoint = activeElement.nextSibling;
+      while (insertionPoint && insertionPoint !== activeElement) {
+        // "move" the active element to the left by moving the current node after the active element
+        let nextInsertionPoint = insertionPoint.nextSibling;
+        moveBefore(oldParent, insertionPoint, beforePoint);
+        insertionPoint = nextInsertionPoint;
+      }
+    }
+    return insertionPoint;
   }
 
   //=============================================================================
@@ -536,6 +591,7 @@ var Idiomorph = (function () {
     if (!(from instanceof Element && to instanceof Element)) return;
     // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
     const fromLiveValue = from[attributeName],
+      // @ts-ignore ditto
       toLiveValue = to[attributeName];
     if (fromLiveValue !== toLiveValue) {
       let ignoreUpdate = ignoreAttribute(attributeName, to, "update", ctx);
@@ -792,6 +848,9 @@ var Idiomorph = (function () {
       morphStyle: mergedConfig.morphStyle,
       ignoreActive: mergedConfig.ignoreActive,
       ignoreActiveValue: mergedConfig.ignoreActiveValue,
+      activeElementMap:
+        (mergedConfig.twoPass && createActiveElementMap(oldNode, newContent)) ||
+        new Map(),
       idMap: createIdMap(oldNode, newContent),
       deadIds: new Set(),
       persistentIds: mergedConfig.twoPass
@@ -803,6 +862,38 @@ var Idiomorph = (function () {
       callbacks: mergedConfig.callbacks,
       head: mergedConfig.head,
     };
+  }
+
+  /**
+   *
+   * @param {Node} oldNode
+   * @param {Node} newContent
+   * @returns {Map<Element, [Element, Element]> | undefined}
+   * Checks to see if its possible to preserve the focused element by morphing around it,
+   * and if so, provides a map to so.
+   */
+  function createActiveElementMap(oldNode, newContent) {
+    // @ts-ignore - check for proposed moveBefore feature
+    if (document.body.moveBefore) return; // don't bother if we have moveBefore
+    let active = /** @type { Element } */ (document.activeElement);
+    if (active === document.body) return;
+    if (!oldNode.contains(active)) return;
+    if (!active.id) return; // TODO: handle anonymous activeElement?
+    // @ts-ignore we're checking for existing of query selector first, so settle down
+    let match = newContent.querySelector?.(`#${active.id}`);
+    if (!match) return;
+
+    // build the path from the roots to the active elements
+    let map = new Map();
+    while (active !== oldNode && toIdTagName(active) === toIdTagName(match)) {
+      map.set(active.parentNode, [active, match]);
+      active = /** @type { Element } */ (active.parentNode);
+      match = /** @type { Element } */ (match.parentNode);
+    }
+
+    // only return the map if its a viable path,
+    // i.e. both active and match  made it all the way to their respective roots together
+    if (map.has(oldNode)) return map;
   }
 
   function createPantry() {
@@ -1184,48 +1275,18 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node} tempNode
-   * @param {MorphContext} ctx
-   */
-  // TODO: The function handles tempNode as if it's Element but the function is called in
-  //   places where tempNode may be just a Node, not an Element
-  function removeNode(tempNode, ctx) {
-    removeIdsFromConsideration(ctx, tempNode);
-    // skip remove callbacks when we're going to be restoring this from the pantry in the second pass
-    if (
-      ctx.config.twoPass &&
-      hasPersistentIdNodes(ctx, tempNode) &&
-      tempNode instanceof Element
-    ) {
-      moveToPantry(tempNode, ctx);
-    } else {
-      if (ctx.callbacks.beforeNodeRemoved(tempNode) === false) return;
-      tempNode.parentNode?.removeChild(tempNode);
-      ctx.callbacks.afterNodeRemoved(tempNode);
-    }
-  }
-
-  /**
-   *
    * @param {Node} node
    * @param {MorphContext} ctx
    */
-  function moveToPantry(node, ctx) {
-    if (ctx.callbacks.beforeNodePantried(node) === false) return;
-
-    Array.from(node.childNodes).forEach((child) => {
-      moveToPantry(child, ctx);
-    });
-
-    // After processing children, process the current node
-    if (ctx.persistentIds.has(/** @type {Element} */ (node).id)) {
-      // @ts-ignore - use proposed moveBefore feature
-      if (ctx.pantry.moveBefore) {
-        // @ts-ignore - use proposed moveBefore feature
-        ctx.pantry.moveBefore(node, null);
-      } else {
-        ctx.pantry.insertBefore(node, null);
-      }
+  function removeNode(node, ctx) {
+    removeIdsFromConsideration(ctx, node);
+    // skip remove callbacks when we're going to be restoring this from the pantry later
+    if (
+      ctx.config.twoPass &&
+      hasPersistentIdNodes(ctx, node) &&
+      node instanceof Element
+    ) {
+      moveBefore(ctx.pantry, node, null);
     } else {
       if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
       node.parentNode?.removeChild(node);
@@ -1234,41 +1295,42 @@ var Idiomorph = (function () {
   }
 
   /**
+   * Search for an element by id within the document and pantry, and move it using moveBefore.
    *
-   * @param {Node | null} root
+   * @param {Element} parentNode - The parent node to which the element will be moved.
+   * @param {string} id - The ID of the element to be moved.
+   * @param {Node | null} after - The reference node to insert the element before.
+   *                              If `null`, the element is appended as the last child.
    * @param {MorphContext} ctx
+   * @returns {Element} The found element
    */
-  function restoreFromPantry(root, ctx) {
-    if (root instanceof Element) {
-      Array.from(ctx.pantry.children)
-        .reverse()
-        .forEach((element) => {
-          const matchElement = root.querySelector(`#${element.id}`);
-          if (matchElement) {
-            // @ts-ignore - use proposed moveBefore feature
-            if (matchElement.parentElement?.moveBefore) {
-              // @ts-ignore - use proposed moveBefore feature
-              matchElement.parentElement.moveBefore(element, matchElement);
-              while (matchElement.hasChildNodes()) {
-                // @ts-ignore - use proposed moveBefore feature
-                element.moveBefore(matchElement.firstChild, null);
-              }
-            } else {
-              matchElement.before(element);
-              while (matchElement.firstChild) {
-                element.insertBefore(matchElement.firstChild, null);
-              }
-            }
-            if (
-              ctx.callbacks.beforeNodeMorphed(element, matchElement) !== false
-            ) {
-              syncNodeFrom(matchElement, element, ctx);
-              ctx.callbacks.afterNodeMorphed(element, matchElement);
-            }
-            matchElement.remove();
-          }
-        });
-      ctx.pantry.remove();
+  function moveBeforeById(parentNode, id, after, ctx) {
+    const target =
+      /** @type {Element} - will always be found */
+      (
+        ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`)
+      );
+    moveBefore(parentNode, target, after);
+    return target;
+  }
+
+  /**
+   * Moves an element before another element within the same parent.
+   * Uses the proposed `moveBefore` API if available, otherwise falls back to `insertBefore`.
+   * This is essentialy a forward-compat wrapper.
+   *
+   * @param {Element} parentNode - The parent node containing the after element.
+   * @param {Node} element - The element to be moved.
+   * @param {Node | null} after - The reference node to insert `element` before.
+   *                              If `null`, `element` is appended as the last child.
+   */
+  function moveBefore(parentNode, element, after) {
+    // @ts-ignore - use proposed moveBefore feature
+    if (parentNode.moveBefore) {
+      // @ts-ignore - use proposed moveBefore feature
+      parentNode.moveBefore(element, after);
+    } else {
+      parentNode.insertBefore(element, after);
     }
   }
 
@@ -1350,12 +1412,12 @@ var Idiomorph = (function () {
    * @param {Element} content
    * @returns {Element[]}
    */
-  function nodesWithIds(content) {
-    let nodes = Array.from(content.querySelectorAll("[id]"));
+  function elementsWithIds(content) {
+    let elements = Array.from(content.querySelectorAll("[id]"));
     if (content.id) {
-      nodes.push(content);
+      elements.push(content);
     }
-    return nodes;
+    return elements;
   }
 
   /**
@@ -1368,7 +1430,7 @@ var Idiomorph = (function () {
    */
   function populateIdMapForNode(node, idMap) {
     let nodeParent = node.parentElement;
-    for (const elt of nodesWithIds(node)) {
+    for (const elt of elementsWithIds(node)) {
       /**
        * @type {Element|null}
        */
@@ -1415,18 +1477,26 @@ var Idiomorph = (function () {
    * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
    */
   function createPersistentIds(oldContent, newContent) {
-    const toIdTagName = (node) => node.tagName + "#" + node.id;
-    const oldIdSet = new Set(nodesWithIds(oldContent).map(toIdTagName));
+    const oldIdSet = new Set(elementsWithIds(oldContent).map(toIdTagName));
 
     let matchIdSet = new Set();
-    for (const newNode of nodesWithIds(newContent)) {
-      if (oldIdSet.has(toIdTagName(newNode))) {
-        matchIdSet.add(newNode.id);
+    for (const newElement of elementsWithIds(newContent)) {
+      if (oldIdSet.has(toIdTagName(newElement))) {
+        matchIdSet.add(newElement.id);
       }
     }
     return matchIdSet;
   }
 
+  /**
+   * Generates a string in the format "TAGNAME#id" for a given DOM element.
+   *
+   * @param {Element} element - The DOM element to generate the string for.
+   * @returns {string} The generated string in the format "TAGNAME#id".
+   */
+  function toIdTagName(element) {
+    return element.tagName + "#" + element.id;
+  }
   //=============================================================================
   // This is what ends up becoming the Idiomorph global object
   //=============================================================================
