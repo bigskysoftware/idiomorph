@@ -488,12 +488,14 @@ var Idiomorph = (function () {
   function preserveActiveElementPath(oldParent, insertionPoint, newChild, ctx) {
     const [activeElement, newActiveElement] =
       ctx.activeElementMap.get(oldParent) || [];
+    if (!activeElement) return insertionPoint;
     // are we about to morph the active element or its ancestor?
     if (newActiveElement === newChild) {
+      const beforePoint = activeElement.nextSibling;
       while (insertionPoint && insertionPoint !== activeElement) {
-        // "move" the active element to the left by moving the current node to end of the parent
+        // "move" the active element to the left by moving the current node after the active element
         let nextInsertionPoint = insertionPoint.nextSibling;
-        moveBefore(oldParent, insertionPoint, null);
+        moveBefore(oldParent, insertionPoint, beforePoint);
         insertionPoint = nextInsertionPoint;
       }
     }
