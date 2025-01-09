@@ -813,8 +813,8 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node | null} node1
-   * @param {Node | null} node2
+   * @param {Node} node1
+   * @param {Node} node2
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
