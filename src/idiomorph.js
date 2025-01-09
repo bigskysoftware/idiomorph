@@ -391,68 +391,62 @@ var Idiomorph = (function () {
 
     // run through all the new content
     for (const newChild of newParent.childNodes) {
-      // if the current node has an id set match then morph
-      if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-        insertionPoint = morphChild(
-          /** @type {Node} */ (insertionPoint),
-          newChild,
-          insertionPoint,
-          ctx,
-        );
-        continue;
-      }
+      // if we have reached the end of the old parent insertionPoint will be null so skip to end and insert
+      if (insertionPoint != null) {
+        // if the current node has an id set match then morph
+        if (isIdSetMatch(newChild, insertionPoint, ctx)) {
+          insertionPoint = morphChild(
+            insertionPoint,
+            newChild,
+            insertionPoint,
+            ctx,
+          );
+          continue;
+        }
 
-      // otherwise search forward in the existing old children for an id set match
-      const idSetMatch = findIdSetMatch(
-        oldParent,
-        newParent,
-        newChild,
-        insertionPoint,
-        ctx,
-      );
-      if (idSetMatch) {
-        insertionPoint = morphChild(idSetMatch, newChild, insertionPoint, ctx);
-        continue;
-      }
-
-      // if the current point is already a soft match morph
-      if (isSoftMatch(insertionPoint, newChild)) {
-        insertionPoint = morphChild(
-          /** @type {Node} */ (insertionPoint),
-          newChild,
-          insertionPoint,
-          ctx,
-        );
-        continue;
-      }
-
-      // search forward in the existing old children for a soft match for the current node
-      const softMatch = findSoftMatch(
-        oldParent,
-        newParent,
-        newChild,
-        insertionPoint,
-        ctx,
-      );
-      if (softMatch) {
-        insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
-        continue;
-      }
-
-      // match is somewhere else in the document, find it and move it
-      if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
-        const movedChild = moveBeforeById(
+        // otherwise search forward in the existing old children for an id set match
+        const idSetMatch = findIdSetMatch(
           oldParent,
-          /** @type {Element} */ (newChild).id,
+          newParent,
+          newChild,
           insertionPoint,
           ctx,
         );
-        morphOldNodeTo(movedChild, newChild, ctx);
-        removeIdsFromConsideration(ctx, newChild);
-        continue;
-      }
+        if (idSetMatch) {
+          insertionPoint = morphChild(
+            idSetMatch,
+            newChild,
+            insertionPoint,
+            ctx,
+          );
+          continue;
+        }
 
-      // last resort, create a new node from scratch
+        // if the current point is already a soft match morph
+        if (isSoftMatch(insertionPoint, newChild)) {
+          insertionPoint = morphChild(
+            insertionPoint,
+            newChild,
+            insertionPoint,
+            ctx,
+          );
+          continue;
+        }
+
+        // search forward in the existing old children for a soft match for the current node
+        const softMatch = findSoftMatch(
+          oldParent,
+          newParent,
+          newChild,
+          insertionPoint,
+          ctx,
+        );
+        if (softMatch) {
+          insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
+          continue;
+        }
+      }
+      // last resort, insert a new node from scratch or reuse and morph a remote node with matching id
       insertOrMorphNode(oldParent, newChild, insertionPoint, ctx);
     }
 
@@ -903,8 +897,6 @@ var Idiomorph = (function () {
     insertionPoint,
     ctx,
   ) {
-    if (!insertionPoint) return null;
-
     // max id matches we are willing to discard in our search
     let newChildPotentialIdCount = getIdIntersectionCount(
       ctx,
