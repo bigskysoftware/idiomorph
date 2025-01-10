@@ -196,28 +196,28 @@ describe("Tests to ensure that the head tag merging works correctly", function (
   it("can handle scripts with block mode with innerHTML morph", async function () {
     Idiomorph.morph(
       window.document,
-      `<head><script src='/test/lib/fixture.js'></script></head>${window.document.body.outerHTML}`,
+      `<head><script src='../test/lib/fixture.js'></script></head>${window.document.body.outerHTML}`,
       { morphStyle: "innerHTML", head: { block: true, style: "append" } },
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");
     delete window.fixture;
     window.document.head
-      .querySelector('script[src="/test/lib/fixture.js"]')
+      .querySelector('script[src$="lib/fixture.js"]')
       .remove();
   });
 
   it("can handle scripts with block mode with outerHTML morph", async function () {
     Idiomorph.morph(
       window.document,
-      `<html><head><script src='/test/lib/fixture.js'></script></head>${window.document.body.outerHTML}</html>`,
+      `<html><head><script src='../test/lib/fixture.js'></script></head>${window.document.body.outerHTML}</html>`,
       { morphStyle: "outerHTML", head: { block: true, style: "append" } },
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");
     delete window.fixture;
     window.document.head
-      .querySelector('script[src="/test/lib/fixture.js"]')
+      .querySelector('script[src$="lib/fixture.js"]')
       .remove();
   });
 });
