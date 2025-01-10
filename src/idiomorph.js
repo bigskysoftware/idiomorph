@@ -265,6 +265,7 @@ var Idiomorph = (function () {
   function insertOrMorphNode(oldParent, newChild, insertionPoint, ctx) {
     if (oldParent == null) return;
     if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+      // this node id is somewhere so move it and all its children here and then morph
       const movedChild = moveBeforeById(
         oldParent,
         /** @type {Element} */ (newChild).id,
@@ -275,12 +276,14 @@ var Idiomorph = (function () {
     } else {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
       if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
+        // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
         const newEmptyChild = document.createElement(newChild.tagName);
         oldParent.insertBefore(newEmptyChild, insertionPoint);
         morphOldNodeTo(newEmptyChild, newChild, ctx);
         ctx.callbacks.afterNodeAdded(newEmptyChild);
       } else {
-        const newClonedChild = document.importNode(newChild, true); // clone as to not mutate newParent
+        // no id state to preserve so just insert a clone of the new data to avoid mutating newParent
+        const newClonedChild = document.importNode(newChild, true);
         oldParent.insertBefore(newClonedChild, insertionPoint);
         ctx.callbacks.afterNodeAdded(newClonedChild);
       }
@@ -359,13 +362,13 @@ var Idiomorph = (function () {
    *
    * Basic algorithm is, for each node in the new content:
    *
-   * - if we have reached the end of the old parent, append the new content
-   * - if the new content has an id set match with the current insertion point, morph
-   * - search for an id set match
-   * - if id set match found, morph
-   * - if the new content is a soft match with the current insertion point, morph
-   * - otherwise search for a "soft" match
-   * - if a soft match is found, morph
+   * - if we have not reached the end of the old parent:
+   *   - if the new content has an id set match with the current insertion point, morph
+   *   - search for an id set match
+   *   - if id set match found, morph
+   *   - if the new content is a soft match with the current insertion point, morph
+   *   - otherwise search for a "soft" match
+   *   - if a soft match is found, morph
    * - otherwise, prepend the new node before the current insertion point
    *
    * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
