@@ -814,17 +814,14 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node | null} node1
-   * @param {Node | null} node2
+   * @param {Node} node1
+   * @param {Node} node2
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
   // TODO: The function handles this as if it's Element or null, but the function is called in
   //   places where the arguments may be just a Node, not an Element
   function isIdSetMatch(node1, node2, ctx) {
-    if (node1 == null || node2 == null) {
-      return false;
-    }
     if (
       node1 instanceof Element &&
       node2 instanceof Element &&
@@ -1044,10 +1041,8 @@ var Idiomorph = (function () {
         let htmlElement = content.firstChild;
         if (htmlElement) {
           generatedByIdiomorph.add(htmlElement);
-          return htmlElement;
-        } else {
-          return null;
         }
+        return htmlElement;
       }
     } else {
       // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help

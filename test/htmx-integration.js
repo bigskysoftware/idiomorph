@@ -147,4 +147,40 @@ describe("Tests for the htmx integration", function () {
     initialBtn.should.equal(newBtn);
     initialBtn.classList.contains("bar").should.equal(true);
   });
+
+  it("keeps the element stable in an outer morph with oob-swap", function () {
+    this.server.respondWith(
+      "GET",
+      "/test",
+      "<button id='b1' hx-swap-oob='morph'>Bar</button>",
+    );
+    let div = makeForHtmxTest(
+      "<div hx-get='/test' hx-swap='none'><button id='b1'>Foo</button></div>",
+    );
+    let initialBtn = document.getElementById("b1");
+    div.click();
+    this.server.respond();
+    let newBtn = document.getElementById("b1");
+    initialBtn.should.equal(newBtn);
+    initialBtn.innerHTML.should.equal("Bar");
+  });
+
+  /* Currently unable to test innerHTML style oob swaps because oob-swap syntax uses a : which conflicts with morph:innerHTML
+  it("keeps the element stable in an inner morph with oob-swap", function () {
+    this.server.respondWith(
+      "GET",
+      "/test",
+      "<div id='d1' hx-swap-oob='morph:innerHTML'><button id='b1'>Bar</button></button>",
+    );
+    let div = makeForHtmxTest(
+      "<div id='d1' hx-get='/test' hx-swap='none'><button id='b1'>Foo</button></div>",
+    );
+    let initialBtn = document.getElementById("b1");
+    div.click();
+    this.server.respond();
+    let newBtn = document.getElementById("b1");
+    initialBtn.should.equal(newBtn);
+    initialBtn.innerHTML.should.equal("Bar");
+  });
+  */
 });
