@@ -250,10 +250,6 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
-  // TODO: ignoreActive and ignoreActiveValue are marked as optional since they are not
-  //   initialised in the default config object. As a result the && in the function body may
-  //   return undefined instead of boolean. Either expand the type of the return value to
-  //   include undefined or wrap the ctx.ignoreActiveValue into a Boolean()
   function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
     return (
       !!ctx.ignoreActiveValue &&
@@ -845,8 +841,6 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
-  // TODO: The function handles this as if it's Element or null, but the function is called in
-  //   places where the arguments may be just a Node, not an Element
   function isIdSetMatch(node1, node2, ctx) {
     if (
       node1 instanceof Element &&
@@ -910,22 +904,15 @@ var Idiomorph = (function () {
     ctx,
   ) {
     // max id matches we are willing to discard in our search
-    let newChildPotentialIdCount = getIdIntersectionCount(
-      ctx,
-      newChild,
-      oldParent,
-    );
+    let newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
 
     /**
      * @type {Node | null}
      */
-    let potentialMatch = null;
 
     // only search forward if there is a possibility of an id match
     if (newChildPotentialIdCount > 0) {
-      // TODO: This is ghosting the potentialMatch variable outside of this block.
-      //   Probably an error
-      potentialMatch = insertionPoint;
+      let potentialMatch = insertionPoint;
       // if there is a possibility of an id match, scan forward
       // keep track of the potential id match count we are discarding (the
       // newChildPotentialIdCount must be greater than this to make it likely
@@ -938,11 +925,8 @@ var Idiomorph = (function () {
         }
 
         // computer the other potential matches of this new content
-        otherMatchCount += getIdIntersectionCount(
-          ctx,
-          potentialMatch,
-          newContent,
-        );
+        otherMatchCount += getPersistentIdNodeCount(ctx, potentialMatch);
+
         if (otherMatchCount > newChildPotentialIdCount) {
           // if we have more potential id matches in _other_ content, we
           // do not have a good candidate for an id match, so return null
@@ -953,7 +937,7 @@ var Idiomorph = (function () {
         potentialMatch = potentialMatch.nextSibling;
       }
     }
-    return potentialMatch;
+    return null;
   }
 
   /**
@@ -982,7 +966,7 @@ var Idiomorph = (function () {
     let siblingSoftMatchCount = 0;
 
     while (potentialSoftMatch != null) {
-      if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
+      if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
         // the current potential soft match has a potential id set match with the remaining new
         // content so bail out of looking
         return null;
@@ -1173,18 +1157,13 @@ var Idiomorph = (function () {
   /**
    *
    * @param {Element} element
-   * @param {Node | null} node
+   * @param {Node} node
    * @param {MorphContext} ctx
    * @returns {number}
    */
-  // TODO: The function handles node1 and node2 as if they are Elements but the function is
-  //   called in places where node1 and node2 may be just Nodes, not Elements
   function scoreElement(element, node, ctx) {
     if (isSoftMatch(element, node)) {
-      // ok to cast: isSoftMatch performs a null check
-      return (
-        0.5 + getIdIntersectionCount(ctx, element, /** @type {Node} */ (node))
-      );
+      return 0.5 + getPersistentIdNodeCount(ctx, node);
     }
     return 0;
   }
@@ -1294,15 +1273,21 @@ var Idiomorph = (function () {
    *
    * @param {MorphContext} ctx
    * @param {Node} node
+   * @returns {number}
+   */
+  function getPersistentIdNodeCount(ctx, node) {
+    let idSet = ctx.idMap.get(node) || EMPTY_SET;
+    return idSet.size;
+  }
+
+  /**
+   *
+   * @param {MorphContext} ctx
+   * @param {Node} node
    * @returns {boolean}
    */
   function hasPersistentIdNodes(ctx, node) {
-    for (const id of ctx.idMap.get(node) || EMPTY_SET) {
-      if (ctx.persistentIds.has(id)) {
-        return true;
-      }
-    }
-    return false;
+    return getPersistentIdNodeCount(ctx, node) > 0;
   }
 
   /**
