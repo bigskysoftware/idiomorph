@@ -114,7 +114,7 @@ describe("Bootstrap test", function () {
     d2.innerHTML.should.equal("E");
 
     // third paragrah should have been discarded because it was moved in front of two other paragraphs with ID's
-    // it should detect that removing the first two nodes with ID's to preserve just one ID is not worth it 
+    // it should detect that removing the first two nodes with ID's to preserve just one ID is not worth it
     d3.innerHTML.should.not.equal("F");
 
     div1.outerHTML.should.equal(morphTo);

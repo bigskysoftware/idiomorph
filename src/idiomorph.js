@@ -1399,7 +1399,8 @@ var Idiomorph = (function () {
    * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
    */
   function createPersistentIds(oldContent, newContent) {
-    const toIdTagName = (/** @type {Element} */ node) => node.tagName + "#" + node.id;
+    const toIdTagName = (/** @type {Element} */ node) =>
+      node.tagName + "#" + node.id;
     const oldIdSet = new Set(nodesWithIds(oldContent).map(toIdTagName));
 
     let matchIdSet = new Set();

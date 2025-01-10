@@ -201,8 +201,10 @@ describe("Tests to ensure that the head tag merging works correctly", function (
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");
-    delete(window.fixture);
-    window.document.head.querySelector('script[src="/test/lib/fixture.js"]').remove();
+    delete window.fixture;
+    window.document.head
+      .querySelector('script[src="/test/lib/fixture.js"]')
+      .remove();
   });
 
   it("can handle scripts with block mode with outerHTML morph", async function () {
@@ -213,7 +215,9 @@ describe("Tests to ensure that the head tag merging works correctly", function (
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");
-    delete(window.fixture);
-    window.document.head.querySelector('script[src="/test/lib/fixture.js"]').remove();
+    delete window.fixture;
+    window.document.head
+      .querySelector('script[src="/test/lib/fixture.js"]')
+      .remove();
   });
 });
