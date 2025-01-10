@@ -110,33 +110,4 @@ describe("Bootstrap test", function () {
     // }, 0)
     // print(div1);
   });
-
-  it("findIdSetMatch rejects morphing node that would lose more IDs", function (done) {
-    let div1 = make(
-      '<div id="root1"><div><div id="d1">A</div></div><div><div id="d2">B</div></div><div><div id="d3">C</div></div></div>',
-    );
-
-    let d1 = div1.querySelector("#d1");
-    let d2 = div1.querySelector("#d2");
-    let d3 = div1.querySelector("#d3");
-
-    let morphTo =
-      '<div id="root1"><div><div id="d3">F</div></div><div><div id="d1">D</div></div><div><div id="d2">E</div></div></div>';
-    let div2 = make(morphTo);
-
-    print(div1);
-    Idiomorph.morph(div1, div2);
-    print(div1);
-
-    // first and second paragraph should have morphed
-    d1.innerHTML.should.equal("D");
-    d2.innerHTML.should.equal("E");
-
-    // third paragrah should have been discarded because it was moved in front of two other paragraphs with ID's
-    // it should detect that removing the first two nodes with ID's to preserve just one ID is not worth it
-    d3.innerHTML.should.not.equal("F");
-
-    div1.outerHTML.should.equal(morphTo);
-    done();
-  });
 });

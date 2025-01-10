@@ -7,11 +7,19 @@ describe("Core morphing tests", function () {
     initial.isConnected.should.equal(false);
   });
 
-  it("morphs outerHTML as content properly when argument is single node", function () {
+  it("morphs outerHTML as content properly when argument is single node string", function () {
     let initial = make("<button>Foo</button>");
     let finalSrc = "<button>Bar</button>";
     let final = make(finalSrc);
     Idiomorph.morph(initial, final, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
+  it("morphs outerHTML as content properly when argument is single node", function () {
+    let initial = make("<button>Foo</button>");
+    let element = document.createElement("button");
+    element.innerText = "Bar";
+    Idiomorph.morph(initial, element, { morphStyle: "outerHTML" });
     initial.outerHTML.should.equal("<button>Bar</button>");
   });
 
@@ -105,11 +113,19 @@ describe("Core morphing tests", function () {
     initial.outerHTML.should.equal("<div></div>");
   });
 
-  it("morphs innerHTML as content properly when argument is single node", function () {
+  it("morphs innerHTML as content properly when argument is single node string", function () {
     let initial = make("<div>Foo</div>");
     let finalSrc = "<button>Bar</button>";
     let final = make(finalSrc);
     Idiomorph.morph(initial, final, { morphStyle: "innerHTML" });
+    initial.outerHTML.should.equal("<div><button>Bar</button></div>");
+  });
+
+  it("morphs innerHTML as content properly when argument is single node", function () {
+    let initial = make("<div>Foo</div>");
+    let element = document.createElement("button");
+    element.innerText = "Bar";
+    Idiomorph.morph(initial, element, { morphStyle: "innerHTML" });
     initial.outerHTML.should.equal("<div><button>Bar</button></div>");
   });
 
