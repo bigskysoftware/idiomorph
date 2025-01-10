@@ -18,12 +18,8 @@ let config = {
           window.useMoveBefore = ${process.env.USE_MOVE_BEFORE};
       </script>
       <script src="/test/lib/utilities.js"></script>
+      <script src="/test/lib/wait-for.js"></script>
       <script src="/node_modules/sinon/pkg/sinon.js"></script>
-      <script type="module" src="/node_modules/p-wait-for/index.js"></script>
-      <script type="module">
-          import pWaitFor from 'p-wait-for';
-          window.waitFor = pWaitFor;
-      </script>
 
       <script src="/src/idiomorph.js"></script>
       <script>Idiomorph.defaults.twoPass = ${process.env.DEFAULT_TWO_PASS}</script>

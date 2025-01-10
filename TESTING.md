@@ -40,8 +40,15 @@ npm test test/core.js
 ```
 If you want to run only one specific test, you can temporarily change `it("...` to `it.only("...` in the test file, and then specify the test file as above. Don't forget to undo this before you commit!
 
-### Headed Mode (Interactive Browser Tests)
-To run tests in a non-headless mode (with a visible browser window):
+### Browser Mode
+To run tests directly in the browser, simply `open test/index.html` in a browser.
+On Ubuntu you can run:
+```bash
+xdg-open test/index.html
+```
+This runs all the tests (minus the performance tests) in the browser using Mocha instead of web-test-runner for easier debugging.
+
+If you really want to open web-test-runner in headed mode, you can run:
 ```bash
 npm run debug
 ```
