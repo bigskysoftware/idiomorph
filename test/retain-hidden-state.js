@@ -687,4 +687,80 @@ describe("algorithm", function () {
       document.activeElement.outerHTML.should.equal(document.body.outerHTML);
     }
   });
+
+  it("check moveBefore function fails back to insertBefore if moveBefore fails", function () {
+    getWorkArea().append(
+      make(`
+            <div>
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
+            </div>
+        `),
+    );
+    // replace moveBefore function with a boolean which will fail the try catch
+    document.getElementById("first").parentNode.moveBefore = true;
+    document.getElementById("second").parentNode.moveBefore = true;
+
+    let finalSrc = `
+            <div>
+              <input type="checkbox" id="second">
+              <input type="checkbox" id="first">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+  });
+
+  it("check moveBefore function falls back to insertBefore if moveBefore fails", function () {
+    getWorkArea().innerHTML = `
+            <div>
+              <a></a>
+              <input type="text" id="focus">
+            </div>
+        `;
+    document.getElementById("focus").focus();
+    // break the moveBefore function so it fails back to insertBefore and focus is not preserved
+    document.getElementById("focus").parentNode.moveBefore = true;
+
+    let finalSrc = `
+            <div>
+              <b></b>
+              <input type="text" id="focus">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+  });
+
+  it("check moveBefore function falls back to insertBefore if moveBefore is missing", function () {
+    getWorkArea().innerHTML = `
+            <div>
+              <a></a>
+              <input type="text" id="focus">
+            </div>
+        `;
+    document.getElementById("focus").focus();
+    // remove the moveBefore function so it fails back to insertBefore and focus is not preserved
+    document.getElementById("focus").parentNode.moveBefore = undefined;
+
+    let finalSrc = `
+            <div>
+              <b></b>
+              <input type="text" id="focus">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+  });
 });

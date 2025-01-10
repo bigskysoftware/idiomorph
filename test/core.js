@@ -519,4 +519,16 @@ describe("Core morphing tests", function () {
       Idiomorph.defaults.morphStyle = "outerHTML";
     }
   });
+
+  it("add loc coverage for findSoftMatch aborting on two future soft matches", function () {
+    // when nodes can't be softMatched because they have different types it will scan ahead
+    // but it aborts the scan ahead if it finds two nodes ahead in both the new and old content
+    // that softmatch so it can just insert the mis matched node it is on and get to the matching.
+    // had no test coverage but not easy to test but at least it is called now.
+    let initial = parseHTML("<body><span></span><p></p><p></p></body>");
+    let finalSrc = "<body><div></div><p></p><p></p></body>";
+    let final = parseHTML(finalSrc);
+    Idiomorph.morph(initial.body, final.body);
+    initial.body.outerHTML.should.equal(finalSrc);
+  });
 });
