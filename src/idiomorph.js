@@ -73,6 +73,12 @@
  */
 
 /**
+ * @typedef {Object} IdSets
+ * @property {Set<string>} persistentIds
+ * @property {Map<Node, Set<string>>} idMap
+ */
+
+/**
  * @typedef {Function} Morph
  *
  * @param {Element | Document} oldNode
@@ -244,10 +250,6 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
-  // TODO: ignoreActive and ignoreActiveValue are marked as optional since they are not
-  //   initialised in the default config object. As a result the && in the function body may
-  //   return undefined instead of boolean. Either expand the type of the return value to
-  //   include undefined or wrap the ctx.ignoreActiveValue into a Boolean()
   function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
     return (
       !!ctx.ignoreActiveValue &&
@@ -304,6 +306,8 @@ var Idiomorph = (function () {
       removeNode(oldNode, ctx);
       return null;
     } else if (!isSoftMatch(oldNode, newContent)) {
+      // A parent node that has children with persistent ids may need to be morphed to a new type
+      // we can't do this so instead insert a dummy node and morph it before removing the old node
       insertOrMorphNode(oldNode.parentElement, newContent, oldNode, ctx);
       const newNode = oldNode.previousSibling;
       removeNode(oldNode, ctx);
@@ -806,6 +810,7 @@ var Idiomorph = (function () {
    */
   function createMorphContext(oldNode, newContent, config) {
     const mergedConfig = mergeDefaults(config);
+    const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
     return {
       target: oldNode,
       newContent: newContent,
@@ -813,9 +818,9 @@ var Idiomorph = (function () {
       morphStyle: mergedConfig.morphStyle,
       ignoreActive: mergedConfig.ignoreActive,
       ignoreActiveValue: mergedConfig.ignoreActiveValue,
-      idMap: createIdMap(oldNode, newContent),
+      idMap: idMap,
       deadIds: new Set(),
-      persistentIds: createPersistentIds(oldNode, newContent),
+      persistentIds: persistentIds,
       pantry: createPantry(),
       callbacks: mergedConfig.callbacks,
       head: mergedConfig.head,
@@ -836,8 +841,6 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
-  // TODO: The function handles this as if it's Element or null, but the function is called in
-  //   places where the arguments may be just a Node, not an Element
   function isIdSetMatch(node1, node2, ctx) {
     if (
       node1 instanceof Element &&
@@ -901,22 +904,15 @@ var Idiomorph = (function () {
     ctx,
   ) {
     // max id matches we are willing to discard in our search
-    let newChildPotentialIdCount = getIdIntersectionCount(
-      ctx,
-      newChild,
-      oldParent,
-    );
+    let newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
 
     /**
      * @type {Node | null}
      */
-    let potentialMatch = null;
 
     // only search forward if there is a possibility of an id match
     if (newChildPotentialIdCount > 0) {
-      // TODO: This is ghosting the potentialMatch variable outside of this block.
-      //   Probably an error
-      potentialMatch = insertionPoint;
+      let potentialMatch = insertionPoint;
       // if there is a possibility of an id match, scan forward
       // keep track of the potential id match count we are discarding (the
       // newChildPotentialIdCount must be greater than this to make it likely
@@ -929,11 +925,8 @@ var Idiomorph = (function () {
         }
 
         // computer the other potential matches of this new content
-        otherMatchCount += getIdIntersectionCount(
-          ctx,
-          potentialMatch,
-          newContent,
-        );
+        otherMatchCount += getPersistentIdNodeCount(ctx, potentialMatch);
+
         if (otherMatchCount > newChildPotentialIdCount) {
           // if we have more potential id matches in _other_ content, we
           // do not have a good candidate for an id match, so return null
@@ -944,7 +937,7 @@ var Idiomorph = (function () {
         potentialMatch = potentialMatch.nextSibling;
       }
     }
-    return potentialMatch;
+    return null;
   }
 
   /**
@@ -973,7 +966,7 @@ var Idiomorph = (function () {
     let siblingSoftMatchCount = 0;
 
     while (potentialSoftMatch != null) {
-      if (getIdIntersectionCount(ctx, potentialSoftMatch, newContent) > 0) {
+      if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
         // the current potential soft match has a potential id set match with the remaining new
         // content so bail out of looking
         return null;
@@ -1164,18 +1157,13 @@ var Idiomorph = (function () {
   /**
    *
    * @param {Element} element
-   * @param {Node | null} node
+   * @param {Node} node
    * @param {MorphContext} ctx
    * @returns {number}
    */
-  // TODO: The function handles node1 and node2 as if they are Elements but the function is
-  //   called in places where node1 and node2 may be just Nodes, not Elements
   function scoreElement(element, node, ctx) {
     if (isSoftMatch(element, node)) {
-      // ok to cast: isSoftMatch performs a null check
-      return (
-        0.5 + getIdIntersectionCount(ctx, element, /** @type {Node} */ (node))
-      );
+      return 0.5 + getPersistentIdNodeCount(ctx, node);
     }
     return 0;
   }
@@ -1285,15 +1273,21 @@ var Idiomorph = (function () {
    *
    * @param {MorphContext} ctx
    * @param {Node} node
+   * @returns {number}
+   */
+  function getPersistentIdNodeCount(ctx, node) {
+    let idSet = ctx.idMap.get(node) || EMPTY_SET;
+    return idSet.size;
+  }
+
+  /**
+   *
+   * @param {MorphContext} ctx
+   * @param {Node} node
    * @returns {boolean}
    */
   function hasPersistentIdNodes(ctx, node) {
-    for (const id of ctx.idMap.get(node) || EMPTY_SET) {
-      if (ctx.persistentIds.has(id)) {
-        return true;
-      }
-    }
-    return false;
+    return getPersistentIdNodeCount(ctx, node) > 0;
   }
 
   /**
@@ -1333,27 +1327,30 @@ var Idiomorph = (function () {
    * argument and populates id sets for those nodes and all their parents, generating
    * a set of ids contained within all nodes for the entire hierarchy in the DOM
    *
-   * @param {Element} node
+   * @param {Element|null} nodeParent
+   * @param {Element[]} nodes
+   * @param {Set<string>} persistentIds
    * @param {Map<Node, Set<string>>} idMap
    */
-  function populateIdMapForNode(node, idMap) {
-    let nodeParent = node.parentElement;
-    for (const elt of elementsWithIds(node)) {
-      /**
-       * @type {Element|null}
-       */
-      let current = elt;
-      // walk up the parent hierarchy of that element, adding the id
-      // of element to the parent's id set
-      while (current !== nodeParent && current != null) {
-        let idSet = idMap.get(current);
-        // if the id set doesn't exist, create it and insert it in the  map
-        if (idSet == null) {
-          idSet = new Set();
-          idMap.set(current, idSet);
+  function populateIdMapForNode(nodeParent, nodes, persistentIds, idMap) {
+    for (const elt of nodes) {
+      if (persistentIds.has(elt.id)) {
+        /**
+         * @type {Element|null}
+         */
+        let current = elt;
+        // walk up the parent hierarchy of that element, adding the id
+        // of element to the parent's id set
+        while (current !== nodeParent && current != null) {
+          let idSet = idMap.get(current);
+          // if the id set doesn't exist, create it and insert it in the  map
+          if (idSet == null) {
+            idSet = new Set();
+            idMap.set(current, idSet);
+          }
+          idSet.add(elt.id);
+          current = current.parentElement;
         }
-        idSet.add(elt.id);
-        current = current.parentElement;
       }
     }
   }
@@ -1366,53 +1363,57 @@ var Idiomorph = (function () {
    *
    * @param {Element} oldContent  the old content that will be morphed
    * @param {Element} newContent  the new content to morph to
-   * @returns {Map<Node, Set<string>>} a map of nodes to id sets for the
+   * @returns {IdSets} a map of nodes to id sets for the
    */
-  function createIdMap(oldContent, newContent) {
+  function createIdMaps(oldContent, newContent) {
+    // Calculate ids that persist between the two contents exculuding duplicates first
+    let oldIdMap = new Map();
+    let dupSet = new Set();
+    const oldElts = elementsWithIds(oldContent);
+    for (const oldElt of oldElts) {
+      const id = oldElt.id;
+      // if already in map then log duplicates to be skipped
+      if (oldIdMap.get(id)) {
+        dupSet.add(id);
+      } else {
+        oldIdMap.set(id, oldElt.tagName);
+      }
+    }
+    let persistentIds = new Set();
+    const newElts = elementsWithIds(newContent);
+    for (const newElt of newElts) {
+      const id = newElt.id;
+      const oldTagName = oldIdMap.get(id);
+      // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
+      if (
+        persistentIds.has(id) ||
+        (oldTagName && oldTagName !== newElt.tagName)
+      ) {
+        dupSet.add(id);
+        persistentIds.delete(id);
+      }
+      if (oldTagName === newElt.tagName && !dupSet.has(id)) {
+        persistentIds.add(id);
+      }
+    }
     /**
      *
      * @type {Map<Node, Set<string>>}
      */
     let idMap = new Map();
-    populateIdMapForNode(oldContent, idMap);
-    populateIdMapForNode(newContent, idMap);
-    return idMap;
-  }
-
-  /**
-   * @param {Element} oldContent  the old content that will be morphed
-   * @param {Element} newContent  the new content to morph to
-   * @returns {Set<string>} the id set of all persistent nodes that exist in both old and new content
-   */
-  function createPersistentIds(oldContent, newContent) {
-    let oldIdMap = new Map();
-    let dupSet = new Set();
-    for (const oldNode of elementsWithIds(oldContent)) {
-      const id = oldNode.id;
-      // if already in map then log duplicates to be skipped
-      if (oldIdMap.get(id)) {
-        dupSet.add(id);
-      } else {
-        oldIdMap.set(id, oldNode.tagName);
-      }
-    }
-    let matchIdSet = new Set();
-    for (const newNode of elementsWithIds(newContent)) {
-      const id = newNode.id;
-      const oldTagName = oldIdMap.get(id);
-      // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
-      if (
-        matchIdSet.has(id) ||
-        (oldTagName && oldTagName !== newNode.tagName)
-      ) {
-        dupSet.add(id);
-        matchIdSet.delete(id);
-      }
-      if (oldTagName === newNode.tagName && !dupSet.has(id)) {
-        matchIdSet.add(id);
-      }
-    }
-    return matchIdSet;
+    populateIdMapForNode(
+      oldContent.parentElement,
+      newElts,
+      persistentIds,
+      idMap,
+    );
+    populateIdMapForNode(
+      newContent.parentElement,
+      oldElts,
+      persistentIds,
+      idMap,
+    );
+    return { persistentIds, idMap };
   }
 
   //=============================================================================
