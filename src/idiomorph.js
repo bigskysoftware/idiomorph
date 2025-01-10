@@ -212,34 +212,10 @@ var Idiomorph = (function () {
       ctx.pantry.remove();
       return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      // otherwise find the best element match in the new content, morph that, and merge its siblings
-      // into either side of the best match
-      let bestMatch = findBestNodeMatch(oldNode, normalizedNewContent, ctx);
-
-      // stash the siblings that will need to be inserted on either side of the best match
-      let previousSibling = bestMatch?.previousSibling ?? null;
-      let nextSibling = bestMatch?.nextSibling ?? null;
-
-      // morph it
-      let morphedNode = morphOldNodeTo(oldNode, bestMatch, ctx);
-
-      if (bestMatch) {
-        // if there was a best match, merge the siblings in too and return the
-        // whole bunch
-        if (morphedNode) {
-          const elements = insertSiblings(
-            previousSibling,
-            morphedNode,
-            nextSibling,
-            ctx,
-          );
-          ctx.pantry.remove();
-          return elements;
-        }
-      } else {
-        // otherwise nothing was added to the DOM
-        return [];
-      }
+      const normalizedOldNode = normalizeContent(oldNode);
+      morphChildren(normalizedOldNode, normalizedNewContent, ctx);
+      ctx.pantry.remove();
+      return Array.from(normalizedOldNode.children);
     } else {
       throw "Do not understand how to morph style " + ctx.morphStyle;
     }
@@ -295,50 +271,41 @@ var Idiomorph = (function () {
 
   /**
    * @param {Node} oldNode root node to merge content into
-   * @param {Node | null} newContent new content to merge
+   * @param {Node} newContent new content to merge
    * @param {MorphContext} ctx the merge context
    * @returns {Node | null} the element that ended up in the DOM
    */
   function morphOldNodeTo(oldNode, newContent, ctx) {
     if (ctx.ignoreActive && oldNode === document.activeElement) {
       // don't morph focused element
-    } else if (newContent == null) {
-      removeNode(oldNode, ctx);
       return null;
-    } else if (!isSoftMatch(oldNode, newContent)) {
-      // A parent node that has children with persistent ids may need to be morphed to a new type
-      // we can't do this so instead insert a dummy node and morph it before removing the old node
-      insertOrMorphNode(oldNode.parentElement, newContent, oldNode, ctx);
-      const newNode = oldNode.previousSibling;
-      removeNode(oldNode, ctx);
-      return newNode;
-    } else {
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false)
-        return oldNode;
+    }
 
-      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
-        // ignore the head element
-      } else if (
-        oldNode instanceof HTMLHeadElement &&
-        ctx.head.style !== "morph"
-      ) {
-        // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
-        handleHeadElement(
-          oldNode,
-          /** @type {HTMLHeadElement} */ (newContent),
-          ctx,
-        );
-      } else {
-        syncNode(oldNode, newContent, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          // @ts-ignore newContent can be a node here because .firstChild will be null
-          morphChildren(oldNode, newContent, ctx);
-        }
-      }
-      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
+    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
       return oldNode;
     }
-    return null;
+
+    if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+      // ignore the head element
+    } else if (
+      oldNode instanceof HTMLHeadElement &&
+      ctx.head.style !== "morph"
+    ) {
+      // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
+      handleHeadElement(
+        oldNode,
+        /** @type {HTMLHeadElement} */ (newContent),
+        ctx,
+      );
+    } else {
+      syncNode(oldNode, newContent, ctx);
+      if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+        // @ts-ignore newContent can be a node here because .firstChild will be null
+        morphChildren(oldNode, newContent, ctx);
+      }
+    }
+    ctx.callbacks.afterNodeMorphed(oldNode, newContent);
+    return oldNode;
   }
 
   /**
@@ -1063,10 +1030,14 @@ var Idiomorph = (function () {
       // the template tag created by idiomorph parsing can serve as a dummy parent
       return /** @type {Element} */ (newContent);
     } else if (newContent instanceof Node) {
-      // a single node is added as a child to a dummy parent
-      const dummyParent = document.createElement("div");
-      dummyParent.append(newContent);
-      return dummyParent;
+      if (newContent.parentNode) {
+        return /** @type {Element} */ (newContent.parentNode);
+      } else {
+        // a single node is added as a child to a dummy parent
+        const dummyParent = document.createElement("div");
+        dummyParent.append(newContent);
+        return dummyParent;
+      }
     } else {
       // all nodes in the array or HTMLElement collection are consolidated under
       // a single dummy parent element
@@ -1076,96 +1047,6 @@ var Idiomorph = (function () {
       }
       return dummyParent;
     }
-  }
-
-  /**
-   *
-   * @param {Node | null} previousSibling
-   * @param {Node} morphedNode
-   * @param {Node | null} nextSibling
-   * @param {MorphContext} ctx
-   * @returns {Node[]}
-   */
-  function insertSiblings(previousSibling, morphedNode, nextSibling, ctx) {
-    /**
-     * @type {Node[]}
-     */
-    let stack = [];
-    /**
-     * @type {Node[]}
-     */
-    let added = [];
-    while (previousSibling != null) {
-      stack.push(previousSibling);
-      previousSibling = previousSibling.previousSibling;
-    }
-    // Base the loop on the node variable, so that you do not need runtime checks for
-    // undefined value inside the loop
-    let node = stack.pop();
-    while (node !== undefined) {
-      added.push(node); // push added preceding siblings on in order and insert
-      insertOrMorphNode(morphedNode.parentElement, node, morphedNode, ctx);
-      node = stack.pop();
-    }
-    added.push(morphedNode);
-    while (nextSibling != null) {
-      stack.push(nextSibling);
-      added.push(nextSibling); // here we are going in order, so push on as we scan, rather than add
-      nextSibling = nextSibling.nextSibling;
-    }
-    while (stack.length > 0) {
-      const node = /** @type {Node} */ (stack.pop());
-      insertOrMorphNode(
-        morphedNode.parentElement,
-        node,
-        morphedNode.nextSibling,
-        ctx,
-      );
-    }
-    return added;
-  }
-
-  /**
-   *
-   * @param {Element} oldElement
-   * @param {Element} newContent
-   * @param {MorphContext} ctx
-   * @returns {Node | null}
-   */
-  function findBestNodeMatch(oldElement, newContent, ctx) {
-    /**
-     * @type {Node | null}
-     */
-    let currentNode;
-    currentNode = newContent.firstChild;
-    /**
-     * @type {Node | null}
-     */
-    let bestNode = currentNode;
-    let score = 0;
-    while (currentNode) {
-      let newScore = scoreElement(oldElement, currentNode, ctx);
-      if (newScore > score) {
-        bestNode = currentNode;
-        score = newScore;
-      }
-      currentNode = currentNode.nextSibling;
-    }
-    return bestNode;
-  }
-
-  /**
-   *
-   * @param {Element} element
-   * @param {Node} node
-   * @param {MorphContext} ctx
-   * @returns {number}
-   */
-  function scoreElement(element, node, ctx) {
-    if (isSoftMatch(element, node)) {
-      return 0.5 + getPersistentIdNodeCount(ctx, node);
-    }
-    return 0;
   }
 
   /**
