@@ -1230,8 +1230,13 @@ var Idiomorph = (function () {
   function moveBefore(parentNode, element, after) {
     // @ts-ignore - use proposed moveBefore feature
     if (parentNode.moveBefore) {
-      // @ts-ignore - use proposed moveBefore feature
-      parentNode.moveBefore(element, after);
+      try {
+        // @ts-ignore - use proposed moveBefore feature
+        parentNode.moveBefore(element, after);
+      } catch (e) {
+        // fall back to insertBefore as some browsers may fail on moveBefore when trying to move Dom disconnected nodes to pantry
+        parentNode.insertBefore(element, after);
+      }
     } else {
       parentNode.insertBefore(element, after);
     }
