@@ -229,9 +229,9 @@ Idiomorph is not designed to be as fast as either morphdom or nanomorph.  Rather
 * Better DOM tree matching
 * Relatively simple code
 
-Performance is a consideration, but better matching is the reason Idiomorph was created.  Initial tests indicate that
+Performance is a consideration, but better matching is the reason Idiomorph was created.  Our benchmarks indicate that
 it is approximately equal to 10% slower than morphdom for large DOM morphs, and equal to or faster than morphdom for 
-smaller morphs.
+smaller morphs. See the [Performance](PERFORMANCE.md) document for more details.
 
 ## Example Morph
 

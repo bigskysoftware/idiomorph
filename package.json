@@ -23,6 +23,7 @@
     "debug": "web-test-runner --manual --open",
     "test-move-before": "USE_MOVE_BEFORE=1 web-test-runner",
     "ci": "web-test-runner --fail-only --playwright --browsers chromium firefox webkit",
+    "perf": "node perf/runner.js",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
@@ -47,6 +48,7 @@
     "mocha": "^11.0.1",
     "prettier": "^3.4.2",
     "sinon": "^9.2.4",
+    "tachometer": "^0.7.1",
     "typescript": "^5.3.3",
     "uglify-js": "^3.15.0"
   }

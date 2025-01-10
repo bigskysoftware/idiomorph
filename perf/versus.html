@@ -1,0 +1,41 @@
+<!-- HACK:
+  idiomorph.html is just a symlink to the versus.html.
+  This is to allow tachometer to differentiate between them in the results output.
+  Perhaps we can find a better way to do this in the future.
+-->
+<script>
+  window.params = new URLSearchParams(window.location.search);
+  let using = params.get("using");
+  let match = using.match(/v(\d+\.\d+\.\d+)/);
+  let path;
+  if (match) {
+    path = `https://www.unpkg.com/idiomorph@${match[1]}/dist/idiomorph.min.js`;
+  } else if (using === "idiomorph") {
+    path = "/src/idiomorph.js";
+  } else {
+    path = `/test/lib/${using}.js`;
+  }
+  document.write(`<script src="${path}"><\/script>`);
+</script>
+
+<script type="module">
+  import * as bench from "/bench.js";
+
+  const benchmark = params.get("benchmark");
+  const startUrl = `/perf/benchmarks/${benchmark}.old.html`;
+  const endUrl = `/perf/benchmarks/${benchmark}.new.html`;
+
+  Promise.all([
+    fetch(startUrl).then((r) => r.text()),
+    fetch(endUrl).then((r) => r.text()),
+  ]).then(([start, end]) => {
+    document.body.innerHTML = start;
+    bench.start();
+    if (params.get("using").includes("morphdom")) {
+      morphdom(document.body.firstElementChild, end);
+    } else {
+      Idiomorph.morph(document.body.firstElementChild, end);
+    }
+    bench.stop();
+  });
+</script>

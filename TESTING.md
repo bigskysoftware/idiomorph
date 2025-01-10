@@ -46,7 +46,7 @@ On Ubuntu you can run:
 ```bash
 xdg-open test/index.html
 ```
-This runs all the tests (minus the performance tests) in the browser using Mocha instead of web-test-runner for easier debugging.
+This runs all the tests in the browser using Mocha instead of web-test-runner for easier debugging.
 
 If you really want to open web-test-runner in headed mode, you can run:
 ```bash
@@ -74,4 +74,7 @@ xdg-open coverage/lcov-report/index.html
 ## Test Locations
 - All tests are located in the `test/` directory. Only .js files in this directory will be discovered by the test runner, so support files can go in subdirectories.
 - The `web-test-runner.config.mjs` file in the root directory contains the boilerplate HTML for the test runs, including `<script>` tags for the test dependencies.
+
+## Performance Benchmarks
+See [PERFORMANCE.md](PERFORMANCE.md) for information on running performance benchmarks.
 
