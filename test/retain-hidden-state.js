@@ -653,4 +653,38 @@ describe("algorithm", function () {
     );
     states.should.eql([true]);
   });
+
+  it("findIdSetMatch rejects morphing node that would lose more IDs", function () {
+    const div = make(`
+            <div>
+              <input type="text" id="first">
+              <input type="text" id="second">
+              <input type="text" id="third">
+            </div>
+        `);
+    getWorkArea().append(div);
+    document.getElementById("third").focus();
+
+    let finalSrc = `
+            <div>
+              <input type="text" id="third">
+              <input type="text" id="second">
+              <input type="text" id="first">
+            </div>
+        `;
+    Idiomorph.morph(div, finalSrc, { morphStyle: "outerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    if (document.body.moveBefore) {
+      // moveBefore would prevent the node being discarded and losing state so we can't detect easily if findIdSetMatch rejected the morphing
+      document.activeElement.outerHTML.should.equal(
+        document.getElementById("third").outerHTML,
+      );
+    } else {
+      // but testing with no moveBefore we can test it
+      // third paragrah should have been discarded because it was moved in front of two other paragraphs with ID's
+      // it should detect that removing the first two nodes with ID's to preserve just one ID is not worth it
+      document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+    }
+  });
 });
