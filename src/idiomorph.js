@@ -106,7 +106,6 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
-   * @property {Set<string>} deadIds
    * @property {ConfigInternal['callbacks']} callbacks
    * @property {ConfigInternal['head']} head
    * @property {HTMLDivElement} pantry
@@ -205,20 +204,17 @@ var Idiomorph = (function () {
         return;
       }
     }
-
+    let normalizedOldNode;
     if (ctx.morphStyle === "innerHTML") {
-      // innerHTML, so we are only updating the children
-      morphChildren(oldNode, normalizedNewContent, ctx);
-      ctx.pantry.remove();
-      return Array.from(oldNode.children);
+      normalizedOldNode = oldNode;
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      const normalizedOldNode = normalizeContent(oldNode);
-      morphChildren(normalizedOldNode, normalizedNewContent, ctx);
-      ctx.pantry.remove();
-      return Array.from(normalizedOldNode.children);
+      normalizedOldNode = normalizeContent(oldNode);
     } else {
       throw "Do not understand how to morph style " + ctx.morphStyle;
     }
+    morphChildren(normalizedOldNode, normalizedNewContent, ctx);
+    ctx.pantry.remove();
+    return Array.from(normalizedOldNode.children);
   }
 
   /**
@@ -266,7 +262,6 @@ var Idiomorph = (function () {
         ctx.callbacks.afterNodeAdded(newClonedChild);
       }
     }
-    removeIdsFromConsideration(ctx, newChild);
   }
 
   /**
@@ -322,7 +317,6 @@ var Idiomorph = (function () {
       moveBefore(oldNode.parentElement, oldNode, insertionPoint);
     }
     morphOldNodeTo(oldNode, newChild, ctx);
-    removeIdsFromConsideration(ctx, newChild);
     return oldNode.nextSibling;
   }
 
@@ -362,62 +356,71 @@ var Idiomorph = (function () {
     }
 
     let insertionPoint = /** @type {Node | null} */ (oldParent.firstChild);
+    let bestMatch = /** @type {Node | null} */ (null);
 
     // run through all the new content
     for (const newChild of newParent.childNodes) {
       // if we have reached the end of the old parent insertionPoint will be null so skip to end and insert
       if (insertionPoint != null) {
-        // if the current node has an id set match then morph
-        if (isIdSetMatch(newChild, insertionPoint, ctx)) {
-          insertionPoint = morphChild(
-            insertionPoint,
+        // if last remaining child node then make sure we morph with the best remaining node if there are multiple
+        if (!insertionPoint.nextSibling && newChild.nextSibling) {
+          bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
+        }
+
+        // if there is no bestMatch or we have found the bestMatch then morph, else skip to end and insert
+        if (!bestMatch || bestMatch === newChild) {
+          // if the current node has an id set match then morph
+          if (isIdSetMatch(insertionPoint, newChild, ctx)) {
+            insertionPoint = morphChild(
+              insertionPoint,
+              newChild,
+              insertionPoint,
+              ctx,
+            );
+            continue;
+          }
+
+          // otherwise search forward in the existing old children for an id set match
+          const idSetMatch = findIdSetMatch(
+            oldParent,
+            newParent,
             newChild,
             insertionPoint,
             ctx,
           );
-          continue;
-        }
+          if (idSetMatch) {
+            insertionPoint = morphChild(
+              idSetMatch,
+              newChild,
+              insertionPoint,
+              ctx,
+            );
+            continue;
+          }
 
-        // otherwise search forward in the existing old children for an id set match
-        const idSetMatch = findIdSetMatch(
-          oldParent,
-          newParent,
-          newChild,
-          insertionPoint,
-          ctx,
-        );
-        if (idSetMatch) {
-          insertionPoint = morphChild(
-            idSetMatch,
+          // if the current point is already a soft match morph
+          if (isSoftMatch(insertionPoint, newChild)) {
+            insertionPoint = morphChild(
+              insertionPoint,
+              newChild,
+              insertionPoint,
+              ctx,
+            );
+            continue;
+          }
+
+          // search forward in the existing old children for a soft match for the current node
+          const softMatch = findSoftMatch(
+            oldParent,
+            newParent,
             newChild,
             insertionPoint,
             ctx,
           );
-          continue;
-        }
-
-        // if the current point is already a soft match morph
-        if (isSoftMatch(insertionPoint, newChild)) {
-          insertionPoint = morphChild(
-            insertionPoint,
-            newChild,
-            insertionPoint,
-            ctx,
-          );
-          continue;
-        }
-
-        // search forward in the existing old children for a soft match for the current node
-        const softMatch = findSoftMatch(
-          oldParent,
-          newParent,
-          newChild,
-          insertionPoint,
-          ctx,
-        );
-        if (softMatch) {
-          insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
-          continue;
+          if (softMatch) {
+            insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
+            continue;
+          }
         }
       }
       // last resort, insert a new node from scratch or reuse and morph a remote node with matching id
@@ -786,7 +789,6 @@ var Idiomorph = (function () {
       ignoreActive: mergedConfig.ignoreActive,
       ignoreActiveValue: mergedConfig.ignoreActiveValue,
       idMap: idMap,
-      deadIds: new Set(),
       persistentIds: persistentIds,
       pantry: createPantry(),
       callbacks: mergedConfig.callbacks,
@@ -803,21 +805,21 @@ var Idiomorph = (function () {
 
   /**
    *
-   * @param {Node} node1
-   * @param {Node} node2
+   * @param {Node} oldNode
+   * @param {Node} newNode
    * @param {MorphContext} ctx
    * @returns {boolean}
    */
-  function isIdSetMatch(node1, node2, ctx) {
+  function isIdSetMatch(oldNode, newNode, ctx) {
     if (
-      node1 instanceof Element &&
-      node2 instanceof Element &&
-      node1.tagName === node2.tagName
+      oldNode instanceof Element &&
+      newNode instanceof Element &&
+      oldNode.tagName === newNode.tagName
     ) {
-      if (node1.id !== "" && node1.id === node2.id) {
+      if (oldNode.id !== "" && oldNode.id === newNode.id) {
         return true;
       } else {
-        return getIdIntersectionCount(ctx, node1, node2) > 0;
+        return getIdIntersectionCount(oldNode, newNode, ctx) > 0;
       }
     }
     return false;
@@ -887,7 +889,7 @@ var Idiomorph = (function () {
       let otherMatchCount = 0;
       while (potentialMatch != null) {
         // If we have an id match, return the current potential match
-        if (isIdSetMatch(newChild, potentialMatch, ctx)) {
+        if (isIdSetMatch(potentialMatch, newChild, ctx)) {
           return potentialMatch;
         }
 
@@ -1051,11 +1053,52 @@ var Idiomorph = (function () {
 
   /**
    *
+   * @param {Node} oldNode
+   * @param {Node} newChild
+   * @param {MorphContext} ctx
+   * @returns {Node | null}
+   */
+  function findBestNodeMatch(oldNode, newChild, ctx) {
+    /**
+     * @type {Node | null}
+     */
+    let currentNode = newChild;
+    /**
+     * @type {Node}
+     */
+    let bestNode = currentNode;
+    let score = 0;
+    while (currentNode) {
+      let newScore = scoreElement(oldNode, currentNode, ctx);
+      if (newScore > score) {
+        bestNode = currentNode;
+        score = newScore;
+      }
+      currentNode = currentNode.nextSibling;
+    }
+    return bestNode;
+  } 
+
+  /**
+   *
+   * @param {Node} oldNode
+   * @param {Node} newNode
+   * @param {MorphContext} ctx
+   * @returns {number}
+   */
+  function scoreElement(oldNode, newNode, ctx) {
+    if (isSoftMatch(oldNode, newNode)) {
+      return 0.5 + getPersistentIdNodeCount(ctx, newNode);
+    }
+    return 0;
+  }
+
+  /**
+   *
    * @param {Node} node
    * @param {MorphContext} ctx
    */
   function removeNode(node, ctx) {
-    removeIdsFromConsideration(ctx, node);
     // skip remove callbacks when we're going to be restoring this from the pantry later
     if (hasPersistentIdNodes(ctx, node) && node instanceof Element) {
       moveBefore(ctx.pantry, node, null);
@@ -1118,41 +1161,6 @@ var Idiomorph = (function () {
   /**
    *
    * @param {MorphContext} ctx
-   * @param {string} id
-   * @returns {boolean}
-   */
-  function isIdInConsideration(ctx, id) {
-    return !ctx.deadIds.has(id);
-  }
-
-  /**
-   *
-   * @param {MorphContext} ctx
-   * @param {string} id
-   * @param {Node} targetNode
-   * @returns {boolean}
-   */
-  function idIsWithinNode(ctx, id, targetNode) {
-    let idSet = ctx.idMap.get(targetNode) || EMPTY_SET;
-    return idSet.has(id);
-  }
-
-  /**
-   *
-   * @param {MorphContext} ctx
-   * @param {Node} node
-   * @returns {void}
-   */
-  function removeIdsFromConsideration(ctx, node) {
-    let idSet = ctx.idMap.get(node) || EMPTY_SET;
-    for (const id of idSet) {
-      ctx.deadIds.add(id);
-    }
-  }
-
-  /**
-   *
-   * @param {MorphContext} ctx
    * @param {Node} node
    * @returns {number}
    */
@@ -1173,18 +1181,22 @@ var Idiomorph = (function () {
 
   /**
    *
+   * @param {Node} oldNode
+   * @param {Node} newNode
    * @param {MorphContext} ctx
-   * @param {Node} node1
-   * @param {Node} node2
    * @returns {number}
    */
-  function getIdIntersectionCount(ctx, node1, node2) {
-    let sourceSet = ctx.idMap.get(node1) || EMPTY_SET;
+  function getIdIntersectionCount(oldNode, newNode, ctx) {
+    let oldSet = ctx.idMap.get(oldNode) || EMPTY_SET;
+    let newSet = ctx.idMap.get(newNode) || EMPTY_SET;
+    
     let matchCount = 0;
-    for (const id of sourceSet) {
-      // a potential match is an id in the source and potentialIdsSet, but
-      // that has not already been merged into the DOM
-      if (isIdInConsideration(ctx, id) && idIsWithinNode(ctx, id, node2)) {
+    for (const id of oldSet) {
+      // a potential match is an id in the new and old nodes that
+      // has not already been merged into the DOM
+      // But the newNode content we call this on has not been
+      // merged yet and we don't allow duplicate IDs so it is simple
+      if (newSet.has(id)) {
         ++matchCount;
       }
     }
