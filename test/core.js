@@ -85,6 +85,20 @@ describe("Core morphing tests", function () {
     );
   });
 
+  it("morphs outerHTML properly when oldNode has siblings", function () {
+    let parent = make(
+      "<div><p>Preserve me!</p><button>Foo</button><p>Preserve me too!</p></div>",
+    );
+    let initial = parent.querySelector("button");
+    let finalSrc =
+      "<p>Doh</p><p>Foo</p><button>Bar</button><p>Bar</p><p>Ray</p>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+    initial.parentElement.innerHTML.should.equal(
+      "<p>Preserve me!</p><p>Doh</p><p>Foo</p><button>Bar</button><p>Bar</p><p>Ray</p><p>Preserve me too!</p>",
+    );
+  });
+
   it("morphs innerHTML as content properly when argument is null", function () {
     let initial = make("<div>Foo</div>");
     Idiomorph.morph(initial, null, { morphStyle: "innerHTML" });
