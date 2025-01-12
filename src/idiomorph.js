@@ -370,10 +370,10 @@ var Idiomorph = (function () {
 
     // run through all the new content
     for (const newChild of newParent.childNodes) {
-      // if we have reached the end of the old parent insertionPoint will be null so skip to end and insert
+      // once we reach the end of the old parent content skip to the end and insert
       if (insertionPoint != null && insertionPoint != endPoint) {
         // if last remaining child node then make sure we morph with the best remaining node if there are multiple
-          if (onlyNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
+        if (onlyNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
           bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
         }
 
