@@ -43,6 +43,7 @@
     "@web/test-runner-playwright": "^0.11.0",
     "chai": "^4.3.6",
     "chai-dom": "^1.11.0",
+    "chromedriver": "^131.0.5",
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
     "mocha": "^11.0.1",
