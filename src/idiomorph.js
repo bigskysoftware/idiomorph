@@ -351,10 +351,10 @@ var Idiomorph = (function () {
    * @param {Element} newParent the parent element of the new content
    * @param {Element} oldParent the old content that we are merging the new content into
    * @param {MorphContext} ctx the merge context
-   * @param {Element} [singleOldNode]
+   * @param {Element} [onlyNode]
    * @returns {void}
    */
-  function morphChildren(oldParent, newParent, ctx, singleOldNode) {
+  function morphChildren(oldParent, newParent, ctx, onlyNode) {
     if (
       oldParent instanceof HTMLTemplateElement &&
       newParent instanceof HTMLTemplateElement
@@ -364,8 +364,8 @@ var Idiomorph = (function () {
       // @ts-ignore ditto
       newParent = newParent.content;
     }
-    let insertionPoint = /** @type {Node | null} */ (singleOldNode || oldParent.firstChild);
-    let endPoint = /** @type {Node | null} */ (singleOldNode?.nextSibling || null);
+    let insertionPoint = /** @type {Node | null} */ (onlyNode || oldParent.firstChild);
+    let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
     let bestMatch = /** @type {Node | null} */ (null);
 
     // run through all the new content
@@ -373,7 +373,7 @@ var Idiomorph = (function () {
       // if we have reached the end of the old parent insertionPoint will be null so skip to end and insert
       if (insertionPoint != null && insertionPoint != endPoint) {
         // if last remaining child node then make sure we morph with the best remaining node if there are multiple
-          if (singleOldNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
+          if (onlyNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
           bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
         }
 
