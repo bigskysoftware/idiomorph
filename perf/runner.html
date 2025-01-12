@@ -1,10 +1,6 @@
-<!-- HACK:
-  idiomorph.html is just a symlink to the versus.html.
-  This is to allow tachometer to differentiate between them in the results output.
-  Perhaps we can find a better way to do this in the future.
--->
+<script>window.params = new URLSearchParams(window.location.search);</script>
+
 <script>
-  window.params = new URLSearchParams(window.location.search);
   let using = params.get("using");
   let match = using.match(/v(\d+\.\d+\.\d+)/);
   let path;

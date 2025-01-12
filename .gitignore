@@ -1,4 +1,6 @@
 /node_modules/
 /coverage
 /test/chrome-profile
+/tmp/*
+!tmp/.gitkeep
 .idea

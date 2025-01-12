@@ -19,14 +19,26 @@ if (benchmarks.length === 0) {
 }
 
 benchmarks.forEach(benchmark => {
-  const command = [
-    "tachometer",
-    "--browser=chrome-headless",
-    `perf/versus.html?using=${versus}&benchmark=${benchmark}`,
-    `perf/idiomorph.html?using=idiomorph&benchmark=${benchmark}`,
-  ];
-  console.log(`Current vs. ${versus}`);
-  console.log(`Benchmark: ${benchmark}\n`);
+  const config = {
+    root: "..",
+    benchmarks: [
+      {
+        name: `${benchmark}: ${versus}`,
+        url: `../perf/runner.html?using=${versus}&benchmark=${benchmark}`,
+        browser: "chrome-headless",
+      },
+      {
+        name: `${benchmark}: src/idiomorph.js`,
+        url: `../perf/runner.html?using=idiomorph&benchmark=${benchmark}`,
+        browser: "chrome-headless",
+      },
+    ],
+  };
+  fs.writeFileSync(path.resolve(__dirname, "../tmp/tachometer.json"), JSON.stringify(config), 'utf8');
 
-  spawnSync("npx", command, { stdio: "inherit" });
+  spawnSync("npx",
+    ["tachometer", "--config=tmp/tachometer.json"],
+    { stdio: "inherit" },
+  );
 });
+
