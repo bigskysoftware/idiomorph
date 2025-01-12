@@ -348,8 +348,8 @@ var Idiomorph = (function () {
    * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
    * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
    *
-   * @param {Element} newParent the parent element of the new content
    * @param {Element} oldParent the old content that we are merging the new content into
+   * @param {Element} newParent the parent element of the new content
    * @param {MorphContext} ctx the merge context
    * @param {Element} [onlyNode]
    * @returns {void}
@@ -366,22 +366,40 @@ var Idiomorph = (function () {
     }
     let insertionPoint = /** @type {Node | null} */ (onlyNode || oldParent.firstChild);
     let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
+
+    // Find the last Node with Ids to be used to find final best match
     let bestMatch = /** @type {Node | null} */ (null);
+    let lastNodeWithIds = /** @type {Node | null} */ (null);
+    // @ts-ignore check for moveBefore existance
+    if (!oldParent.moveBefore) {
+      if (onlyNode) {
+        if (hasPersistentIdNodes(ctx, onlyNode)) {
+          lastNodeWithIds = onlyNode;
+        }
+      } else {
+        lastNodeWithIds = oldParent.lastChild;
+        while (lastNodeWithIds && !hasPersistentIdNodes(ctx, lastNodeWithIds)) {
+          lastNodeWithIds = lastNodeWithIds.previousSibling
+        }
+      }
+    }
 
     // run through all the new content
     for (const newChild of newParent.childNodes) {
       // once we reach the end of the old parent content skip to the end and insert
       if (insertionPoint != null && insertionPoint != endPoint) {
-        // if last remaining child node then make sure we morph with the best remaining node if there are multiple
-        if (onlyNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
+        // if last remaining child node with Ids then make sure we morph with the best remaining node if there are multiple
+        if (!bestMatch && insertionPoint == lastNodeWithIds) {
           bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
         }
-
+        // if(bestMatch) console.log(bestMatch.outerHTML)
         // if there is no bestMatch or we have found the bestMatch then morph, else skip to end and insert
         if (!bestMatch || bestMatch === newChild) {
+          // clear bestMatch if set
+          bestMatch = null;
           // if the current node has an id set match then morph
           if (isIdSetMatch(insertionPoint, newChild, ctx)) {
-              insertionPoint = morphChild(
+            insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
@@ -398,7 +416,8 @@ var Idiomorph = (function () {
             ctx,
           );
           if (idSetMatch) {
-              insertionPoint = morphChild(
+            //insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+            insertionPoint = morphChild(
               idSetMatch,
               newChild,
               insertionPoint,
@@ -409,7 +428,7 @@ var Idiomorph = (function () {
 
           // if the current point is already a soft match morph
           if (isSoftMatch(insertionPoint, newChild)) {
-              insertionPoint = morphChild(
+            insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
@@ -426,6 +445,7 @@ var Idiomorph = (function () {
             ctx,
           );
           if (softMatch) {
+            //insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
             insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
             continue;
           }
@@ -436,7 +456,7 @@ var Idiomorph = (function () {
     }
 
     // remove any remaining old nodes that didn't match up with new content
-    while (insertionPoint) {
+    while (insertionPoint && insertionPoint != endPoint) {
       const tempNode = insertionPoint;
       insertionPoint = insertionPoint.nextSibling;
       removeNode(tempNode, ctx);
@@ -968,7 +988,7 @@ var Idiomorph = (function () {
       potentialSoftMatch = potentialSoftMatch.nextSibling;
     }
 
-    return potentialSoftMatch;
+    return null;
   }
 
   /** @type {WeakSet<Node>} */
@@ -1095,6 +1115,26 @@ var Idiomorph = (function () {
       return 0.5 + getPersistentIdNodeCount(ctx, newNode);
     }
     return 0;
+  }
+
+  /**
+   *
+   * @param {Node} startInclusive
+   * @param {Node} endExclusive
+   * @param {MorphContext} ctx
+   * @returns {Node | null}
+   */
+  function removeNodesBetween(startInclusive, endExclusive, ctx) {
+    /** @type {Node | null} */ let cursor = startInclusive;
+    while (cursor && cursor !== endExclusive) { // } && !hasPersistentIdNodes(ctx, cursor)) {
+      let tempNode = /** @type {Node} */ (cursor);
+      // TODO: Prefer assigning to a new variable here or expand the type of startInclusive
+      //  to be Node | null
+      cursor = tempNode.nextSibling;
+      removeNode(tempNode, ctx);
+    }
+    //removeIdsFromConsideration(ctx, endExclusive);
+    return cursor;
   }
 
   /**
