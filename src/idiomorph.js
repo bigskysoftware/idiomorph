@@ -210,9 +210,17 @@ var Idiomorph = (function () {
       return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
       const normalizedOldNode = normalizeContent(oldNode);
+      const startPoint = oldNode.previousSibling;
+      const endPoint = oldNode.nextSibling;
       morphChildren(normalizedOldNode, normalizedNewContent, ctx, oldNode);
       ctx.pantry.remove();
-      return Array.from(normalizedOldNode.children);
+      let added = [];
+      let nextSibling = startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
+      while (nextSibling != null && nextSibling != endPoint) {
+        added.push(nextSibling);
+        nextSibling = nextSibling.nextSibling;
+      }
+      return added;
     } else {
       throw "Do not understand how to morph style " + ctx.morphStyle;
     }
