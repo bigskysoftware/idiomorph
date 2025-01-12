@@ -386,8 +386,8 @@ var Idiomorph = (function () {
           const idSetMatch = findIdSetMatch(
             newChild,
             insertionPoint,
+            endPoint,
             ctx,
-            !!singleOldNode,
           );
           if (idSetMatch) {
               insertionPoint = morphChild(
@@ -414,8 +414,8 @@ var Idiomorph = (function () {
           const softMatch = findSoftMatch(
             newChild,
             insertionPoint,
+            endPoint,
             ctx,
-            !!singleOldNode,
           );
           if (softMatch) {
             insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
@@ -860,15 +860,15 @@ var Idiomorph = (function () {
    * =============================================================================
    * @param {Node} newChild
    * @param {Node | null} insertionPoint
+   * @param {Node | null} endPoint
    * @param {MorphContext} ctx
-   * @param {boolean} [singleNode]
    * @returns {Node | null}
    */
   function findIdSetMatch(
     newChild,
     insertionPoint,
+    endPoint,
     ctx,
-    singleNode,
   ) {
     // max id matches we are willing to discard in our search
     let newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
@@ -885,15 +885,10 @@ var Idiomorph = (function () {
       // newChildPotentialIdCount must be greater than this to make it likely
       // worth it)
       let otherMatchCount = 0;
-      while (potentialMatch != null) {
+      while (potentialMatch != null && potentialMatch != endPoint) {
         // If we have an id match, return the current potential match
         if (isIdSetMatch(potentialMatch, newChild, ctx)) {
           return potentialMatch;
-        }
-        
-        // if we are only processing a single Node then stop matching now
-        if (singleNode) {
-          return null
         }
 
         // computer the other potential matches of this new content
@@ -921,11 +916,11 @@ var Idiomorph = (function () {
    * =============================================================================
    * @param {Node} newChild
    * @param {Node | null} insertionPoint
+   * @param {Node | null} endPoint
    * @param {MorphContext} ctx
-   * @param {boolean} [singleNode]
    * @returns {null | Node}
    */
-  function findSoftMatch(newChild, insertionPoint, ctx, singleNode) {
+  function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
     /**
      * @type {Node | null}
      */
@@ -936,7 +931,7 @@ var Idiomorph = (function () {
     let nextSibling = newChild.nextSibling;
     let siblingSoftMatchCount = 0;
 
-    while (potentialSoftMatch != null) {
+    while (potentialSoftMatch != null && potentialSoftMatch != endPoint) {
       if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
         // the current potential soft match has a potential id set match with the remaining new
         // content so bail out of looking
@@ -946,11 +941,6 @@ var Idiomorph = (function () {
       // if we have a soft match with the current node, return it
       if (isSoftMatch(potentialSoftMatch, newChild)) {
         return potentialSoftMatch;
-      }
-
-      // if we are only processing a single Node then stop matching now
-      if (singleNode) {
-        return null
       }
 
       if (isSoftMatch(potentialSoftMatch, nextSibling)) {
