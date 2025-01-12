@@ -14,11 +14,11 @@ if (benchmarks[0] === "morphdom" || /^v[\d.]+$/.test(benchmarks[0])) {
 if (benchmarks.length === 0) {
   benchmarks = fs
     .readdirSync(`${__dirname}/benchmarks`)
-    .map(file => file.split(".")[0]) // Remove file extension
+    .map((file) => file.split(".")[0]) // Remove file extension
     .filter((name, i, self) => i === self.indexOf(name)); // Remove duplicates
 }
 
-benchmarks.forEach(benchmark => {
+benchmarks.forEach((benchmark) => {
   const config = {
     root: "..",
     benchmarks: [
@@ -34,11 +34,13 @@ benchmarks.forEach(benchmark => {
       },
     ],
   };
-  fs.writeFileSync(path.resolve(__dirname, "../tmp/tachometer.json"), JSON.stringify(config), 'utf8');
-
-  spawnSync("npx",
-    ["tachometer", "--config=tmp/tachometer.json"],
-    { stdio: "inherit" },
+  fs.writeFileSync(
+    path.resolve(__dirname, "../tmp/tachometer.json"),
+    JSON.stringify(config),
+    "utf8",
   );
-});
 
+  spawnSync("npx", ["tachometer", "--config=tmp/tachometer.json"], {
+    stdio: "inherit",
+  });
+});
