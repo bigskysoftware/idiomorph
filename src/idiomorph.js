@@ -204,17 +204,26 @@ var Idiomorph = (function () {
         return;
       }
     }
-    let normalizedOldNode;
     if (ctx.morphStyle === "innerHTML") {
-      normalizedOldNode = oldNode;
+      morphChildren(oldNode, normalizedNewContent, ctx);
+      ctx.pantry.remove();
+      return Array.from(oldNode.children);
     } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      normalizedOldNode = normalizeContent(oldNode);
+      const normalizedOldNode = normalizeContent(oldNode);
+      const startPoint = oldNode.previousSibling;
+      const endPoint = oldNode.nextSibling;
+      morphChildren(normalizedOldNode, normalizedNewContent, ctx, oldNode);
+      ctx.pantry.remove();
+      let added = [];
+      let nextSibling = startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
+      while (nextSibling != null && nextSibling != endPoint) {
+        added.push(nextSibling);
+        nextSibling = nextSibling.nextSibling;
+      }
+      return added;
     } else {
       throw "Do not understand how to morph style " + ctx.morphStyle;
     }
-    morphChildren(normalizedOldNode, normalizedNewContent, ctx);
-    ctx.pantry.remove();
-    return Array.from(normalizedOldNode.children);
   }
 
   /**
@@ -342,9 +351,10 @@ var Idiomorph = (function () {
    * @param {Element} newParent the parent element of the new content
    * @param {Element} oldParent the old content that we are merging the new content into
    * @param {MorphContext} ctx the merge context
+   * @param {Element} [onlyNode]
    * @returns {void}
    */
-  function morphChildren(oldParent, newParent, ctx) {
+  function morphChildren(oldParent, newParent, ctx, onlyNode) {
     if (
       oldParent instanceof HTMLTemplateElement &&
       newParent instanceof HTMLTemplateElement
@@ -354,16 +364,16 @@ var Idiomorph = (function () {
       // @ts-ignore ditto
       newParent = newParent.content;
     }
-
-    let insertionPoint = /** @type {Node | null} */ (oldParent.firstChild);
+    let insertionPoint = /** @type {Node | null} */ (onlyNode || oldParent.firstChild);
+    let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
     let bestMatch = /** @type {Node | null} */ (null);
 
     // run through all the new content
     for (const newChild of newParent.childNodes) {
-      // if we have reached the end of the old parent insertionPoint will be null so skip to end and insert
-      if (insertionPoint != null) {
+      // once we reach the end of the old parent content skip to the end and insert
+      if (insertionPoint != null && insertionPoint != endPoint) {
         // if last remaining child node then make sure we morph with the best remaining node if there are multiple
-        if (!insertionPoint.nextSibling && newChild.nextSibling) {
+        if (onlyNode || (!insertionPoint.nextSibling && newChild.nextSibling)) {
           bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
         }
 
@@ -371,7 +381,7 @@ var Idiomorph = (function () {
         if (!bestMatch || bestMatch === newChild) {
           // if the current node has an id set match then morph
           if (isIdSetMatch(insertionPoint, newChild, ctx)) {
-            insertionPoint = morphChild(
+              insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
@@ -382,14 +392,13 @@ var Idiomorph = (function () {
 
           // otherwise search forward in the existing old children for an id set match
           const idSetMatch = findIdSetMatch(
-            oldParent,
-            newParent,
             newChild,
             insertionPoint,
+            endPoint,
             ctx,
           );
           if (idSetMatch) {
-            insertionPoint = morphChild(
+              insertionPoint = morphChild(
               idSetMatch,
               newChild,
               insertionPoint,
@@ -400,7 +409,7 @@ var Idiomorph = (function () {
 
           // if the current point is already a soft match morph
           if (isSoftMatch(insertionPoint, newChild)) {
-            insertionPoint = morphChild(
+              insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
@@ -411,10 +420,9 @@ var Idiomorph = (function () {
 
           // search forward in the existing old children for a soft match for the current node
           const softMatch = findSoftMatch(
-            oldParent,
-            newParent,
             newChild,
             insertionPoint,
+            endPoint,
             ctx,
           );
           if (softMatch) {
@@ -858,18 +866,16 @@ var Idiomorph = (function () {
    *  if the number of potential id matches we are discarding is greater than the
    *  potential id matches for the new child
    * =============================================================================
-   * @param {Node} oldParent
-   * @param {Node} newContent
    * @param {Node} newChild
    * @param {Node | null} insertionPoint
+   * @param {Node | null} endPoint
    * @param {MorphContext} ctx
    * @returns {Node | null}
    */
   function findIdSetMatch(
-    oldParent,
-    newContent,
     newChild,
     insertionPoint,
+    endPoint,
     ctx,
   ) {
     // max id matches we are willing to discard in our search
@@ -887,7 +893,7 @@ var Idiomorph = (function () {
       // newChildPotentialIdCount must be greater than this to make it likely
       // worth it)
       let otherMatchCount = 0;
-      while (potentialMatch != null) {
+      while (potentialMatch != null && potentialMatch != endPoint) {
         // If we have an id match, return the current potential match
         if (isIdSetMatch(potentialMatch, newChild, ctx)) {
           return potentialMatch;
@@ -916,14 +922,13 @@ var Idiomorph = (function () {
    *  if we find a potential id match in the old parents children OR if we find two
    *  potential soft matches for the next two pieces of new content
    * =============================================================================
-   * @param {Node} oldParent
-   * @param {Node} newContent
    * @param {Node} newChild
    * @param {Node | null} insertionPoint
+   * @param {Node | null} endPoint
    * @param {MorphContext} ctx
    * @returns {null | Node}
    */
-  function findSoftMatch(oldParent, newContent, newChild, insertionPoint, ctx) {
+  function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
     /**
      * @type {Node | null}
      */
@@ -934,7 +939,7 @@ var Idiomorph = (function () {
     let nextSibling = newChild.nextSibling;
     let siblingSoftMatchCount = 0;
 
-    while (potentialSoftMatch != null) {
+    while (potentialSoftMatch != null && potentialSoftMatch != endPoint) {
       if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
         // the current potential soft match has a potential id set match with the remaining new
         // content so bail out of looking
@@ -959,7 +964,6 @@ var Idiomorph = (function () {
           return null;
         }
       }
-
       // advanced to the next old content child
       potentialSoftMatch = potentialSoftMatch.nextSibling;
     }
