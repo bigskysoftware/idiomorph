@@ -329,7 +329,7 @@ var Idiomorph = (function () {
           ctx,
         );
       } else {
-        syncNodeFrom(oldNode, newContent, ctx);
+        syncNode(oldNode, newContent, ctx);
         if (!ignoreValueOfActiveElement(oldNode, ctx)) {
           // @ts-ignore newContent can be a node here because .firstChild will be null
           morphChildren(oldNode, newContent, ctx);
@@ -498,7 +498,7 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx the merge context
    */
 
-  function syncNodeFrom(oldNode, newNode, ctx) {
+  function syncNode(oldNode, newNode, ctx) {
     let type = newNode.nodeType;
 
     // if is an element type, sync the attributes from the
