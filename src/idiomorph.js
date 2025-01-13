@@ -138,6 +138,7 @@ var Idiomorph = (function () {
       shouldRemove: noOp,
       afterHeadMorphed: noOp,
     },
+    restoreFocus: false,
   };
 
   /**
@@ -153,28 +154,53 @@ var Idiomorph = (function () {
     const newNode = normalizeParent(newContent);
     const ctx = createMorphContext(oldNode, newNode, config);
 
-    return withHeadBlocking(
-      ctx,
-      oldNode,
-      newNode,
-      /** @param {MorphContext} ctx */ (ctx) => {
-        let morphedNodes;
-        if (ctx.morphStyle === "innerHTML") {
-          morphedNodes = morphChildren(ctx, oldNode, newNode);
-        } else {
-          // outerHTML
-          morphedNodes = morphChildren(
-            ctx,
-            normalizeParent(oldNode),
-            newNode,
-            oldNode,
-            oldNode.nextSibling,
-          );
-        }
-        ctx.pantry.remove();
-        return morphedNodes;
-      },
-    );
+    return saveAndRestoreFocus(ctx, () => {
+      return withHeadBlocking(
+        ctx,
+        oldNode,
+        newNode,
+        /** @param {MorphContext} ctx */ (ctx) => {
+          let morphedNodes;
+          if (ctx.morphStyle === "innerHTML") {
+            morphedNodes = morphChildren(ctx, oldNode, newNode);
+          } else {
+            // outerHTML
+            morphedNodes = morphChildren(
+              ctx,
+              normalizeParent(oldNode),
+              newNode,
+              oldNode,
+              oldNode.nextSibling,
+            );
+          }
+          ctx.pantry.remove();
+          return morphedNodes;
+        },
+      );
+    });
+  }
+
+  function saveAndRestoreFocus(ctx, fn) {
+    if (!ctx.config.restoreFocus || document.body.moveBefore) return fn();
+
+    let activeElement = document.activeElement;
+    let activeElementId, selectionStart, selectionEnd;
+
+    if (activeElement && ["INPUT", "TEXTAREA"].includes(activeElement.tagName)) {
+      activeElementId = activeElement.id;
+      selectionStart = activeElement.selectionStart;
+      selectionEnd = activeElement.selectionEnd;
+    }
+
+    const results = fn();
+
+    if (activeElementId && activeElementId !== document.activeElement?.id) {
+      activeElement = ctx.target.querySelector(`#${activeElementId}`);
+      activeElement.focus();
+      activeElement.setSelectionRange(selectionStart, selectionEnd);
+    }
+
+    return results;
   }
 
   const morphChildren = (function () {
