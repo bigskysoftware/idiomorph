@@ -367,88 +367,61 @@ var Idiomorph = (function () {
     let insertionPoint = /** @type {Node | null} */ (onlyNode || oldParent.firstChild);
     let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
 
-    // Find the last Node with Ids to be used to find final best match
-    let bestMatch = /** @type {Node | null} */ (null);
-    let lastNodeWithIds = /** @type {Node | null} */ (null);
-    // @ts-ignore check for moveBefore existance
-    if (!oldParent.moveBefore) {
-      if (onlyNode) {
-        if (hasPersistentIdNodes(ctx, onlyNode)) {
-          lastNodeWithIds = onlyNode;
-        }
-      } else {
-        lastNodeWithIds = oldParent.lastChild;
-        while (lastNodeWithIds && !hasPersistentIdNodes(ctx, lastNodeWithIds)) {
-          lastNodeWithIds = lastNodeWithIds.previousSibling
-        }
-      }
-    }
-
     // run through all the new content
     for (const newChild of newParent.childNodes) {
       // once we reach the end of the old parent content skip to the end and insert
       if (insertionPoint != null && insertionPoint != endPoint) {
-        // if last remaining child node with Ids then make sure we morph with the best remaining node if there are multiple
-        if (!bestMatch && insertionPoint == lastNodeWithIds) {
-          bestMatch = findBestNodeMatch(insertionPoint, newChild, ctx);
+        // if the current node has an id set match then morph
+        if (isIdSetMatch(insertionPoint, newChild, ctx)) {
+          insertionPoint = morphChild(
+            insertionPoint,
+            newChild,
+            insertionPoint,
+            ctx,
+          );
+          continue;
         }
-        // if(bestMatch) console.log(bestMatch.outerHTML)
-        // if there is no bestMatch or we have found the bestMatch then morph, else skip to end and insert
-        if (!bestMatch || bestMatch === newChild) {
-          // clear bestMatch if set
-          bestMatch = null;
-          // if the current node has an id set match then morph
-          if (isIdSetMatch(insertionPoint, newChild, ctx)) {
-            insertionPoint = morphChild(
-              insertionPoint,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            continue;
-          }
 
-          // otherwise search forward in the existing old children for an id set match
-          const idSetMatch = findIdSetMatch(
+        // otherwise search forward in the existing old children for an id set match
+        const idSetMatch = findIdSetMatch(
+          newChild,
+          insertionPoint,
+          endPoint,
+          ctx,
+        );
+        if (idSetMatch) {
+          //insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
+          insertionPoint = morphChild(
+            idSetMatch,
             newChild,
             insertionPoint,
-            endPoint,
             ctx,
           );
-          if (idSetMatch) {
-            //insertionPoint = removeNodesBetween(insertionPoint, idSetMatch, ctx);
-            insertionPoint = morphChild(
-              idSetMatch,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            continue;
-          }
+          continue;
+        }
 
-          // if the current point is already a soft match morph
-          if (isSoftMatch(insertionPoint, newChild)) {
-            insertionPoint = morphChild(
-              insertionPoint,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            continue;
-          }
-
-          // search forward in the existing old children for a soft match for the current node
-          const softMatch = findSoftMatch(
+        // if the current point is already a soft match morph
+        if (isSoftMatch(insertionPoint, newChild)) {
+          insertionPoint = morphChild(
+            insertionPoint,
             newChild,
             insertionPoint,
-            endPoint,
             ctx,
           );
-          if (softMatch) {
-            //insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
-            insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
-            continue;
-          }
+          continue;
+        }
+
+        // search forward in the existing old children for a soft match for the current node
+        const softMatch = findSoftMatch(
+          newChild,
+          insertionPoint,
+          endPoint,
+          ctx,
+        );
+        if (softMatch) {
+          //insertionPoint = removeNodesBetween(insertionPoint, softMatch, ctx);
+          insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
+          continue;
         }
       }
       // last resort, insert a new node from scratch or reuse and morph a remote node with matching id
@@ -1063,68 +1036,6 @@ var Idiomorph = (function () {
       }
       return dummyParent;
     }
-  }
-
-  /**
-   *
-   * @param {Node} oldNode
-   * @param {Node} newChild
-   * @param {MorphContext} ctx
-   * @returns {Node | null}
-   */
-  function findBestNodeMatch(oldNode, newChild, ctx) {
-    /**
-     * @type {Node | null}
-     */
-    let currentNode = newChild;
-    /**
-     * @type {Node}
-     */
-    let bestNode = currentNode;
-    let score = 0;
-    while (currentNode) {
-      let newScore = scoreElement(oldNode, currentNode, ctx);
-      if (newScore > score) {
-        bestNode = currentNode;
-        score = newScore;
-      }
-      currentNode = currentNode.nextSibling;
-    }
-    return bestNode;
-  } 
-
-  /**
-   *
-   * @param {Node} oldNode
-   * @param {Node} newNode
-   * @param {MorphContext} ctx
-   * @returns {number}
-   */
-  function scoreElement(oldNode, newNode, ctx) {
-    if (isSoftMatch(oldNode, newNode)) {
-      return 0.5 + getPersistentIdNodeCount(ctx, newNode);
-    }
-    return 0;
-  }
-
-  /**
-   *
-   * @param {Node} startInclusive
-   * @param {Node} endExclusive
-   * @param {MorphContext} ctx
-   * @returns {Node | null}
-   */
-  function removeNodesBetween(startInclusive, endExclusive, ctx) {
-    /** @type {Node | null} */ let cursor = startInclusive;
-    while (cursor && cursor !== endExclusive) { // } && !hasPersistentIdNodes(ctx, cursor)) {
-      let tempNode = /** @type {Node} */ (cursor);
-      // TODO: Prefer assigning to a new variable here or expand the type of startInclusive
-      //  to be Node | null
-      cursor = tempNode.nextSibling;
-      removeNode(tempNode, ctx);
-    }
-    //removeIdsFromConsideration(ctx, endExclusive);
-    return cursor;
   }
 
   /**
