@@ -398,10 +398,10 @@ describe("Hidden state preservation tests", function () {
     getWorkArea().append(div);
 
     let called = false;
-    div.moveBefore = function(element, after) {
+    div.moveBefore = function (element, after) {
       called = true;
       return div.insertBefore(element, after);
-    }
+    };
 
     let finalSrc = `
             <div>
