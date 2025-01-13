@@ -28,6 +28,7 @@
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacks} [callbacks]
  * @property {ConfigHead} [head]
  */
@@ -68,6 +69,7 @@
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
  */
@@ -104,6 +106,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+   * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
    * @property {ConfigInternal['callbacks']} callbacks
@@ -138,6 +141,7 @@ var Idiomorph = (function () {
       shouldRemove: noOp,
       afterHeadMorphed: noOp,
     },
+    restoreFocus: false,
   };
 
   /**
@@ -153,28 +157,67 @@ var Idiomorph = (function () {
     const newNode = normalizeParent(newContent);
     const ctx = createMorphContext(oldNode, newNode, config);
 
-    return withHeadBlocking(
-      ctx,
-      oldNode,
-      newNode,
-      /** @param {MorphContext} ctx */ (ctx) => {
-        let morphedNodes;
-        if (ctx.morphStyle === "innerHTML") {
-          morphedNodes = morphChildren(ctx, oldNode, newNode);
-        } else {
-          // outerHTML
-          morphedNodes = morphChildren(
-            ctx,
-            normalizeParent(oldNode),
-            newNode,
-            oldNode,
-            oldNode.nextSibling,
-          );
-        }
-        ctx.pantry.remove();
-        return morphedNodes;
-      },
-    );
+    return saveAndRestoreFocus(ctx, () => {
+      return withHeadBlocking(
+        ctx,
+        oldNode,
+        newNode,
+        /** @param {MorphContext} ctx */ (ctx) => {
+          let morphedNodes;
+          if (ctx.morphStyle === "innerHTML") {
+            morphedNodes = morphChildren(ctx, oldNode, newNode);
+          } else {
+            // outerHTML
+            morphedNodes = morphChildren(
+              ctx,
+              normalizeParent(oldNode),
+              newNode,
+              oldNode,
+              oldNode.nextSibling,
+            );
+          }
+          ctx.pantry.remove();
+          return morphedNodes;
+        },
+      );
+    });
+  }
+
+  /**
+   * @param {MorphContext} ctx
+   * @param {Function} fn
+   * @returns {Promise<Node[]> | Node[]}
+   */
+  function saveAndRestoreFocus(ctx, fn) {
+    if (!ctx.config.restoreFocus) return fn();
+
+    let activeElement = document.activeElement;
+
+    // don't bother if the active element is not an input or textarea
+    if (
+      !(
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement
+      )
+    ) {
+      return fn();
+    }
+
+    const { id: activeElementId, selectionStart, selectionEnd } = activeElement;
+
+    const results = fn();
+
+    if (activeElementId && activeElementId !== document.activeElement?.id) {
+      activeElement = ctx.target.querySelector(`#${activeElementId}`);
+      // @ts-ignore we can assume this is focusable
+      activeElement?.focus();
+    }
+    if (activeElement && selectionStart && selectionEnd) {
+      // @ts-ignore we know this is an input element
+      activeElement.setSelectionRange(selectionStart, selectionEnd);
+    }
+
+    return results;
   }
 
   const morphChildren = (function () {
@@ -943,6 +986,7 @@ var Idiomorph = (function () {
         morphStyle: morphStyle,
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        restoreFocus: mergedConfig.restoreFocus,
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
