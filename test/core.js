@@ -415,6 +415,79 @@ describe("Core morphing tests", function () {
     document.body.removeChild(parent);
   });
 
+  it("can morph <select> remove selected option properly", function () {
+    let parent = make(`
+      <div>
+        <select>
+          <option>0</option>
+          <option selected>1</option>
+        </select>
+      </div>
+    `);
+    document.body.append(parent);
+    let select = parent.querySelector("select");
+    let options = parent.querySelectorAll("option");
+    select.selectedIndex.should.equal(1);
+    Array.from(select.selectedOptions).should.eql([options[1]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([false, true]);
+
+    let finalSrc = `
+        <select>
+          <option>0</option>
+          <option>1</option>
+        </select>
+      `;
+    Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });
+    // FIXME? morph writes different html explicitly selecting first element
+    // is this a problem at all?
+    parent.innerHTML.should.equal(`
+        <select>
+          <option selected="true">0</option>
+          <option>1</option>
+        </select>
+      `);
+    select.selectedIndex.should.equal(0);
+    Array.from(select.selectedOptions).should.eql([options[0]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([true, false]);
+  });
+
+  it("can morph <select> new selected option properly", function () {
+    let parent = make(`
+      <div>
+        <select>
+          <option>0</option>
+          <option>1</option>
+        </select>
+      </div>
+    `);
+    document.body.append(parent);
+    let select = parent.querySelector("select");
+    let options = parent.querySelectorAll("option");
+    select.selectedIndex.should.equal(0);
+    Array.from(select.selectedOptions).should.eql([options[0]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([true, false]);
+
+    let finalSrc = `
+        <select>
+          <option>0</option>
+          <option selected="true">1</option>
+        </select>
+      `;
+    Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });
+    parent.innerHTML.should.equal(finalSrc);
+    select.selectedIndex.should.equal(1);
+    Array.from(select.selectedOptions).should.eql([options[1]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([false, true]);
+  });
+
   it("can override defaults w/ global set", function () {
     try {
       // set default to inner HTML
