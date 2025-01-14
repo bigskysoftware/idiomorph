@@ -81,6 +81,13 @@ describe("Tests to ensure that idiomorph merges properly", function () {
     testFidelity("<main></main>", "<main><p>hello you</p></main>");
   });
 
+  it("moves a node from the future", function () {
+    testFidelity(
+      `<div><div id="container"><div id="item"></div></div></div>`,
+      `<div><div id="item"></div><div id="container"></div></div>`,
+    );
+  });
+
   it("issue https://github.com/bigskysoftware/idiomorph/issues/11", function () {
     let el1 = make('<fieldset id="el"></fieldset>');
 
