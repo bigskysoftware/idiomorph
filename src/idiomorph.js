@@ -276,12 +276,31 @@ var Idiomorph = (function () {
             ctx,
           );
           if (softMatch) {
-            insertionPoint = morphChild(softMatch, newChild, insertionPoint, ctx);
+            insertionPoint = morphChild(
+              softMatch,
+              newChild,
+              insertionPoint,
+              ctx,
+            );
             continue;
           }
         }
-        // last resort, insert a new node from scratch or reuse and morph a remote node with matching id
-        insertOrMorphNode(oldParent, newChild, insertionPoint, ctx);
+
+        // if the matching node is in the upcoming old content
+        if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+          // move it and all its children here and morph
+          const movedChild = moveBeforeById(
+            oldParent,
+            /** @type {Element} */ (newChild).id,
+            insertionPoint,
+            ctx,
+          );
+          morphNode(movedChild, newChild, ctx);
+          continue;
+        }
+
+        // last resort, insert a new node from scratch
+        createNode(oldParent, newChild, insertionPoint, ctx);
       }
 
       // remove any remaining old nodes that didn't match up with new content
@@ -309,37 +328,19 @@ var Idiomorph = (function () {
       return oldNode.nextSibling;
     }
 
-    /**
-     * @param {Element | null} oldParent
-     * @param {Node} newChild new content to merge
-     * @param {Node | null} insertionPoint insertion point to place content before
-     * @param {MorphContext} ctx the merge context
-     */
-    function insertOrMorphNode(oldParent, newChild, insertionPoint, ctx) {
-      if (oldParent == null) return;
-      if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
-        // this node id is somewhere so move it and all its children here and then morph
-        const movedChild = moveBeforeById(
-          oldParent,
-          /** @type {Element} */ (newChild).id,
-          insertionPoint,
-          ctx,
-        );
-        morphNode(movedChild, newChild, ctx);
+    function createNode(oldParent, newChild, insertionPoint, ctx) {
+      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+      if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
+        // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
+        const newEmptyChild = document.createElement(newChild.tagName);
+        oldParent.insertBefore(newEmptyChild, insertionPoint);
+        morphNode(newEmptyChild, newChild, ctx);
+        ctx.callbacks.afterNodeAdded(newEmptyChild);
       } else {
-        if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
-        if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
-          // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
-          const newEmptyChild = document.createElement(newChild.tagName);
-          oldParent.insertBefore(newEmptyChild, insertionPoint);
-          morphNode(newEmptyChild, newChild, ctx);
-          ctx.callbacks.afterNodeAdded(newEmptyChild);
-        } else {
-          // no id state to preserve so just insert a clone of the new data to avoid mutating newParent
-          const newClonedChild = document.importNode(newChild, true);
-          oldParent.insertBefore(newClonedChild, insertionPoint);
-          ctx.callbacks.afterNodeAdded(newClonedChild);
-        }
+        // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
+        const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
+        oldParent.insertBefore(newClonedChild, insertionPoint);
+        ctx.callbacks.afterNodeAdded(newClonedChild);
       }
     }
 
@@ -532,7 +533,8 @@ var Idiomorph = (function () {
       const target =
         /** @type {Element} - will always be found */
         (
-          ctx.target.querySelector(`#${id}`) || ctx.pantry.querySelector(`#${id}`)
+          ctx.target.querySelector(`#${id}`) ||
+            ctx.pantry.querySelector(`#${id}`)
         );
       moveBefore(parentNode, target, after);
       return target;
