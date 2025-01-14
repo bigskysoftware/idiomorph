@@ -346,7 +346,7 @@ var Idiomorph = (function () {
    * - otherwise, prepend the new node before the current insertion point
    *
    * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
-   * with the current node.  See findIdSetMatch() and findSoftMatch() for details.
+   * with the current node.  See findIdSetMatch and findSoftMatch for details.
    *
    * @param {Element} oldParent the old content that we are merging the new content into
    * @param {Element} newParent the parent element of the new content
@@ -713,17 +713,14 @@ var Idiomorph = (function () {
     // Push the remaining new head elements in the Map into the
     // nodes to append to the head tag
     nodesToAppend.push(...srcToNewHeadNodes.values());
-    log("to append: ", nodesToAppend);
 
     let promises = [];
     for (const newNode of nodesToAppend) {
-      log("adding: ", newNode);
       // TODO: This could theoretically be null, based on type
       let newElt = /** @type {ChildNode} */ (
         document.createRange().createContextualFragment(newNode.outerHTML)
           .firstChild
       );
-      log(newElt);
       if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
         if (
           ("href" in newElt && newElt.href) ||
@@ -761,13 +758,6 @@ var Idiomorph = (function () {
   //=============================================================================
   // Misc
   //=============================================================================
-
-  /**
-   * @param {any[]} _args
-   */
-  function log(..._args) {
-    //console.log(args);
-  }
 
   function noOp() {}
 
