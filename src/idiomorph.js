@@ -146,32 +146,37 @@ var Idiomorph = (function () {
    * =============================================================================
    *
    * @param {Element | Document} oldNode
-   * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
+   * @param {Element | String | Node | HTMLCollection | Node[] | string | null} newContent
    * @param {Config} [config]
-   * @returns {undefined | Node[]}
+   * @returns {Promise<Node[]> | Node[]}
    */
   function morph(oldNode, newContent, config = {}) {
     oldNode = normalizeElement(oldNode);
     const newNode = normalizeParent(newContent);
     const ctx = createMorphContext(oldNode, newNode, config);
 
-    return withHeadBlocking(ctx, oldNode, newNode, (ctx) => {
-      let morphedNodes;
-      if (ctx.morphStyle === "innerHTML") {
-        morphedNodes = morphChildren(ctx, oldNode, newNode);
-      } else {
-        // outerHTML
-        morphedNodes = morphChildren(
-          ctx,
-          normalizeParent(oldNode),
-          newNode,
-          oldNode,
-          oldNode.nextSibling,
-        );
-      }
-      ctx.pantry.remove();
-      return morphedNodes;
-    });
+    return withHeadBlocking(
+      ctx,
+      oldNode,
+      newNode,
+      /** @param {MorphContext} ctx */ (ctx) => {
+        let morphedNodes;
+        if (ctx.morphStyle === "innerHTML") {
+          morphedNodes = morphChildren(ctx, oldNode, newNode);
+        } else {
+          // outerHTML
+          morphedNodes = morphChildren(
+            ctx,
+            normalizeParent(oldNode),
+            newNode,
+            oldNode,
+            oldNode.nextSibling,
+          );
+        }
+        ctx.pantry.remove();
+        return morphedNodes;
+      },
+    );
   }
 
   const morphChildren = (function () {
@@ -197,16 +202,16 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx the merge context
      * @param {Element} oldParent the old content that we are merging the new content into
      * @param {Element} newParent the parent element of the new content
-     * @param {Element | null} insertionPoint the point in the DOM we start morphing at (defaults to first child)
-     * @param {Element | null} endPoint the point in the DOM we stop morphing at (defaults to after last child)
+     * @param {Node|null} [insertionPoint] the point in the DOM we start morphing at (defaults to first child)
+     * @param {Node|null} [endPoint] the point in the DOM we stop morphing at (defaults to after last child)
      * @returns {Node[]}
      */
     function morphChildren(
       ctx,
       oldParent,
       newParent,
-      insertionPoint,
-      endPoint,
+      insertionPoint = null,
+      endPoint = null,
     ) {
       if (
         oldParent instanceof HTMLTemplateElement &&
@@ -262,11 +267,19 @@ var Idiomorph = (function () {
         removeNode(tempNode, ctx);
       }
 
-      return morphedNodes;
+      return morphedNodes.filter((e) => e != null);
     }
 
+    /**
+     *
+     * @param {Element} oldParent
+     * @param {Node} newChild
+     * @param {Node|null} insertionPoint
+     * @param {MorphContext} ctx
+     * @returns {Node|null}
+     */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
+      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
       if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
         // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
         const newEmptyChild = document.createElement(newChild.tagName);
@@ -803,7 +816,8 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @param {Element} oldNode
    * @param {Element} newNode
-   * @returns {undefined | Node[]}
+   * @param {function} callback
+   * @returns {Node[] | Promise<Node[]>}
    */
   function withHeadBlocking(ctx, oldNode, newNode, callback) {
     if (ctx.head.block) {
@@ -1123,7 +1137,7 @@ var Idiomorph = (function () {
 
     /**
      *
-     * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
+     * @param {Element | Document} content
      * @returns {Element}
      */
     function normalizeElement(content) {
@@ -1136,7 +1150,7 @@ var Idiomorph = (function () {
 
     /**
      *
-     * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
+     * @param {null | String | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
      * @returns {Element}
      */
     function normalizeParent(newContent) {
