@@ -115,12 +115,12 @@ var Idiomorph = (function () {
   // AND NOW IT BEGINS...
   //=============================================================================
 
-  function noOp() {}
+  const noOp = () => {};
   /**
    * Default configuration values, updatable by users now
    * @type {ConfigInternal}
    */
-  let defaults = {
+  const defaults = {
     morphStyle: "outerHTML",
     callbacks: {
       beforeNodeAdded: noOp,
@@ -133,12 +133,8 @@ var Idiomorph = (function () {
     },
     head: {
       style: "merge",
-      shouldPreserve: function (elt) {
-        return elt.getAttribute("im-preserve") === "true";
-      },
-      shouldReAppend: function (elt) {
-        return elt.getAttribute("im-re-append") === "true";
-      },
+      shouldPreserve: (elt) => elt.getAttribute("im-preserve") === "true",
+      shouldReAppend: (elt) => elt.getAttribute("im-re-append") === "true",
       shouldRemove: noOp,
       afterHeadMorphed: noOp,
     },
