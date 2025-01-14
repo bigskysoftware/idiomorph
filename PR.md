@@ -74,11 +74,11 @@ Title says it all. We're feeling really good about the tests suite's ability to 
 
 ## Future Work
 ### Retain focus and selection natively in more cases, rather than restoring
-This is the last major remaining endeavour before we would consider Idiomorph to be more-or-less complete. Michael and I both have several promising ideas, but I want to get this PR merged and released before we dive into that. In the meantime, the `restoreFocus` option is a good stopgap.
+This is likely the last major endeavour before we might consider Idiomorph to be more-or-less complete i.e. v1.0.0. Michael and I both have several promising ideas, but I want to get this PR merged before we dive into that. In the meantime, the `restoreFocus` option is a good stop-gap improvement.
 
 ### Performance improvements
 According to `npm run perf` on my machine, this branch is ~0%-5% slower than v0.4.0, and ~10%-20% slower than v0.3.0. To me, this sees like an acceptable trade of minor performance loss for major correctness gains. That said, I'd like to spend some time with my perf hat on to see if we can't make it any faster.
 
 ### Investigate how Idiomorph works (or does not) with Shadow DOM, Iframes, and other likely troublesome cases
-Known unknowns. I'd like to at least be aware of the status quo before making any plans for v1.0.
+Known unknowns. I'd like to at least be aware of the status quo before making any plans for v1.0.0.
 
