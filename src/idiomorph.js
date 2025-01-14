@@ -146,7 +146,7 @@ var Idiomorph = (function () {
 
   /**
    * =============================================================================
-   * Core Morphing Algorithm - morph, morphNormalizedContent, morphNode, morphChildren
+   * Core Morphing Algorithm - morph, morphChildren, morphNode
    * =============================================================================
    *
    * @param {Element | Document} oldNode
@@ -155,67 +155,61 @@ var Idiomorph = (function () {
    * @returns {undefined | Node[]}
    */
   function morph(oldNode, newContent, config = {}) {
-    if (oldNode instanceof Document) {
-      oldNode = oldNode.documentElement;
-    }
+    oldNode = normalizeElement(oldNode);
+    const newNode = normalizeParent(newContent);
+    const ctx = createMorphContext(oldNode, newNode, config);
 
-    let normalizedContent = normalizeContent(newContent);
+    return withHeadBlocking(ctx, oldNode, newNode, (ctx) => {
+      if (ctx.morphStyle === "innerHTML") {
+        morphChildren(oldNode, newNode, ctx);
+        ctx.pantry.remove();
+        return Array.from(oldNode.childNodes);
+      } else {
+        // outerHTML
+        const oldNodeParent = normalizeParent(oldNode);
+        const startPoint = oldNode.previousSibling;
+        const endPoint = oldNode.nextSibling;
+        morphChildren(oldNodeParent, newNode, ctx, oldNode);
+        ctx.pantry.remove();
 
-    let ctx = createMorphContext(oldNode, normalizedContent, config);
-
-    return morphNormalizedContent(oldNode, normalizedContent, ctx);
+        let added = [];
+        let nextSibling =
+          startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
+        while (nextSibling != null && nextSibling != endPoint) {
+          added.push(nextSibling);
+          nextSibling = nextSibling.nextSibling;
+        }
+        return added;
+      }
+    });
   }
 
   /**
-   *
-   * @param {Element} oldNode
-   * @param {Element} normalizedNewContent
    * @param {MorphContext} ctx
+   * @param {Element} oldNode
+   * @param {Element} newNode
    * @returns {undefined | Node[]}
    */
-  function morphNormalizedContent(oldNode, normalizedNewContent, ctx) {
+  function withHeadBlocking(ctx, oldNode, newNode, callback) {
     if (ctx.head.block) {
-      let oldHead = oldNode.querySelector("head");
-      let newHead = normalizedNewContent.querySelector("head");
+      const oldHead = oldNode.querySelector("head");
+      const newHead = newNode.querySelector("head");
       if (oldHead && newHead) {
-        let promises = handleHeadElement(oldHead, newHead, ctx);
-        // when head promises resolve, call morph again, ignoring the head tag
-        Promise.all(promises).then(function () {
-          morphNormalizedContent(
-            oldNode,
-            normalizedNewContent,
-            Object.assign(ctx, {
-              head: {
-                block: false,
-                ignore: true,
-              },
-            }),
-          );
+        const promises = handleHeadElement(oldHead, newHead, ctx);
+        // when head promises resolve, proceed ignoring the head tag
+        return Promise.all(promises).then(() => {
+          const newCtx = Object.assign(ctx, {
+            head: {
+              block: false,
+              ignore: true,
+            },
+          });
+          return callback(newCtx);
         });
-        return;
       }
     }
-    if (ctx.morphStyle === "innerHTML") {
-      morphChildren(oldNode, normalizedNewContent, ctx);
-      ctx.pantry.remove();
-      return Array.from(oldNode.children);
-    } else if (ctx.morphStyle === "outerHTML" || ctx.morphStyle == null) {
-      const normalizedOldNode = normalizeContent(oldNode);
-      const startPoint = oldNode.previousSibling;
-      const endPoint = oldNode.nextSibling;
-      morphChildren(normalizedOldNode, normalizedNewContent, ctx, oldNode);
-      ctx.pantry.remove();
-      let added = [];
-      let nextSibling =
-        startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
-      while (nextSibling != null && nextSibling != endPoint) {
-        added.push(nextSibling);
-        nextSibling = nextSibling.nextSibling;
-      }
-      return added;
-    } else {
-      throw "Do not understand how to morph style " + ctx.morphStyle;
-    }
+    // just proceed if we not head blocking
+    return callback(ctx);
   }
 
   /**
@@ -255,7 +249,7 @@ var Idiomorph = (function () {
   //=============================================================================
   // Single Node Morphing Code
   //=============================================================================
-  const morphNode = (function() {
+  const morphNode = (function () {
     /**
      * @param {Node} oldNode root node to merge content into
      * @param {Node} newContent new content to merge
@@ -465,7 +459,8 @@ var Idiomorph = (function () {
         return true;
       }
       return (
-        ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) === false
+        ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) ===
+        false
       );
     }
 
@@ -621,21 +616,13 @@ var Idiomorph = (function () {
    * @returns {Promise<void>[]}
    */
   function handleHeadElement(oldHead, newHead, ctx) {
-    /**
-     * @type {Node[]}
-     */
+    /** @type {Node[]} */
     let added = [];
-    /**
-     * @type {Element[]}
-     */
+    /** @type {Element[]} */
     let removed = [];
-    /**
-     * @type {Element[]}
-     */
+    /** @type {Element[]} */
     let preserved = [];
-    /**
-     * @type {Element[]}
-     */
+    /** @type {Element[]} */
     let nodesToAppend = [];
 
     let headMergeStyle = ctx.head.style;
@@ -725,7 +712,7 @@ var Idiomorph = (function () {
   }
 
   //=============================================================================
-  // Misc
+  // Create Morph Context Functions
   //=============================================================================
 
   const createMorphContext = (function () {
@@ -739,11 +726,17 @@ var Idiomorph = (function () {
     function createMorphContext(oldNode, newContent, config) {
       const mergedConfig = mergeDefaults(config);
       const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
+
+      const morphStyle = mergedConfig.morphStyle || "outerHTML";
+      if (!["innerHTML", "outerHTML"].includes(morphStyle)) {
+        throw `Do not understand how to morph style ${morphStyle}`;
+      }
+
       return {
         target: oldNode,
         newContent: newContent,
         config: mergedConfig,
-        morphStyle: mergedConfig.morphStyle,
+        morphStyle: morphStyle,
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
         idMap: idMap,
@@ -1056,7 +1049,7 @@ var Idiomorph = (function () {
   //=============================================================================
   // HTML Normalization Functions
   //=============================================================================
-  const normalizeContent = (function() {
+  const { normalizeElement, normalizeParent } = (function () {
     /** @type {WeakSet<Node>} */
     const generatedByIdiomorph = new WeakSet();
 
@@ -1065,14 +1058,27 @@ var Idiomorph = (function () {
      * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
      * @returns {Element}
      */
-    function normalizeContent(newContent) {
+    function normalizeElement(content) {
+      if (content instanceof Document) {
+        return content.documentElement;
+      } else {
+        return content;
+      }
+    }
+
+    /**
+     *
+     * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
+     * @returns {Element}
+     */
+    function normalizeParent(newContent) {
       if (newContent == null) {
-        // noinspection UnnecessaryLocalVariableJS
-        const dummyParent = document.createElement("div");
-        return dummyParent;
+        return document.createElement("div"); // dummy parent element
       } else if (typeof newContent === "string") {
-        return normalizeContent(parseContent(newContent));
-      } else if (generatedByIdiomorph.has(/** @type {Element} */ (newContent))) {
+        return normalizeParent(parseContent(newContent));
+      } else if (
+        generatedByIdiomorph.has(/** @type {Element} */ (newContent))
+      ) {
         // the template tag created by idiomorph parsing can serve as a dummy parent
         return /** @type {Element} */ (newContent);
       } else if (newContent instanceof Node) {
@@ -1143,7 +1149,7 @@ var Idiomorph = (function () {
       }
     }
 
-    return normalizeContent;
+    return { normalizeElement, normalizeParent };
   })();
 
   //=============================================================================
