@@ -141,9 +141,7 @@ var Idiomorph = (function () {
   };
 
   /**
-   * =============================================================================
-   * Core Morphing Algorithm - morph, morphChildren, morphNode
-   * =============================================================================
+   * Core idiomorph function for morphing one DOM tree to another
    *
    * @param {Element | Document} oldNode
    * @param {Element | String | Node | HTMLCollection | Node[] | string | null} newContent
@@ -271,6 +269,8 @@ var Idiomorph = (function () {
     }
 
     /**
+     * This performs the action of inserting a new node while handling situations where the node contains
+     * elements with persistent ids and possible state info we can still preserve by moving in and then morphing
      *
      * @param {Element} oldParent
      * @param {Node} newChild
@@ -842,9 +842,8 @@ var Idiomorph = (function () {
   }
 
   /**
-   * =============================================================================
    *  The HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
-   * =============================================================================
+   *
    * @param {Element} oldHead
    * @param {Element} newHead
    * @param {MorphContext} ctx

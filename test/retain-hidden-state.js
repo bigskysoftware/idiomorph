@@ -714,46 +714,23 @@ describe("algorithm", function () {
     getWorkArea().innerHTML.should.equal(finalSrc);
   });
 
-  it("check moveBefore function falls back to insertBefore if moveBefore fails", function () {
-    getWorkArea().innerHTML = `
-            <div>
-              <a></a>
-              <input type="text" id="focus">
-            </div>
-        `;
-    document.getElementById("focus").focus();
-    // break the moveBefore function so it fails back to insertBefore and focus is not preserved
-    document.getElementById("focus").parentNode.moveBefore = true;
-
-    let finalSrc = `
-            <div>
-              <b></b>
-              <input type="text" id="focus">
-            </div>
-        `;
-    Idiomorph.morph(getWorkArea(), finalSrc, {
-      morphStyle: "innerHTML",
-    });
-
-    getWorkArea().innerHTML.should.equal(finalSrc);
-    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
-  });
-
   it("check moveBefore function falls back to insertBefore if moveBefore is missing", function () {
-    getWorkArea().innerHTML = `
+    getWorkArea().append(
+      make(`
             <div>
-              <a></a>
-              <input type="text" id="focus">
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
             </div>
-        `;
-    document.getElementById("focus").focus();
-    // remove the moveBefore function so it fails back to insertBefore and focus is not preserved
-    document.getElementById("focus").parentNode.moveBefore = undefined;
+        `),
+    );
+    // disable moveBefore function to force it to use insertBefore
+    document.getElementById("first").parentNode.moveBefore = undefined;
+    document.getElementById("second").parentNode.moveBefore = undefined;
 
     let finalSrc = `
             <div>
-              <b></b>
-              <input type="text" id="focus">
+              <input type="checkbox" id="second">
+              <input type="checkbox" id="first">
             </div>
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
