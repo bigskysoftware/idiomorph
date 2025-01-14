@@ -224,19 +224,6 @@ var Idiomorph = (function () {
   }
 
   /**
-   * @param {Node} possibleActiveElement
-   * @param {MorphContext} ctx
-   * @returns {boolean}
-   */
-  function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
-    return (
-      !!ctx.ignoreActiveValue &&
-      possibleActiveElement === document.activeElement &&
-      possibleActiveElement !== document.body
-    );
-  }
-
-  /**
    * @param {Element | null} oldParent
    * @param {Node} newChild new content to merge
    * @param {Node | null} insertionPoint insertion point to place content before
@@ -270,44 +257,238 @@ var Idiomorph = (function () {
     }
   }
 
-  /**
-   * @param {Node} oldNode root node to merge content into
-   * @param {Node} newContent new content to merge
-   * @param {MorphContext} ctx the merge context
-   * @returns {Node | null} the element that ended up in the DOM
-   */
-  function morphNode(oldNode, newContent, ctx) {
-    if (ctx.ignoreActive && oldNode === document.activeElement) {
-      // don't morph focused element
-      return null;
-    }
+  //=============================================================================
+  // Single Node Morphing Code
+  //=============================================================================
+  const morphNode = (function() {
+    /**
+     * @param {Node} oldNode root node to merge content into
+     * @param {Node} newContent new content to merge
+     * @param {MorphContext} ctx the merge context
+     * @returns {Node | null} the element that ended up in the DOM
+     */
+    function morphNode(oldNode, newContent, ctx) {
+      if (ctx.ignoreActive && oldNode === document.activeElement) {
+        // don't morph focused element
+        return null;
+      }
 
-    if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
+      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
+        return oldNode;
+      }
+
+      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+        // ignore the head element
+      } else if (
+        oldNode instanceof HTMLHeadElement &&
+        ctx.head.style !== "morph"
+      ) {
+        // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
+        handleHeadElement(
+          oldNode,
+          /** @type {HTMLHeadElement} */ (newContent),
+          ctx,
+        );
+      } else {
+        morphAttributes(oldNode, newContent, ctx);
+        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+          // @ts-ignore newContent can be a node here because .firstChild will be null
+          morphChildren(oldNode, newContent, ctx);
+        }
+      }
+      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
       return oldNode;
     }
 
-    if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
-      // ignore the head element
-    } else if (
-      oldNode instanceof HTMLHeadElement &&
-      ctx.head.style !== "morph"
-    ) {
-      // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
-      handleHeadElement(
-        oldNode,
-        /** @type {HTMLHeadElement} */ (newContent),
-        ctx,
-      );
-    } else {
-      morphAttributes(oldNode, newContent, ctx);
-      if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-        // @ts-ignore newContent can be a node here because .firstChild will be null
-        morphChildren(oldNode, newContent, ctx);
+    /**
+     * syncs a given node with another node, copying over all attributes and
+     * inner element state from the newNode to the oldNode
+     *
+     * @param {Node} oldNode the node to copy attributes & state to
+     * @param {Node} newNode the node to copy attributes & state from
+     * @param {MorphContext} ctx the merge context
+     */
+    function morphAttributes(oldNode, newNode, ctx) {
+      let type = newNode.nodeType;
+
+      // if is an element type, sync the attributes from the
+      // new node into the new node
+      if (type === 1 /* element type */) {
+        const oldElt = /** @type {Element} */ (oldNode);
+        const newElt = /** @type {Element} */ (newNode);
+
+        const oldAttributes = oldElt.attributes;
+        const newAttributes = newElt.attributes;
+        for (const newAttribute of newAttributes) {
+          if (ignoreAttribute(newAttribute.name, oldElt, "update", ctx)) {
+            continue;
+          }
+          if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
+            oldElt.setAttribute(newAttribute.name, newAttribute.value);
+          }
+        }
+        // iterate backwards to avoid skipping over items when a delete occurs
+        for (let i = oldAttributes.length - 1; 0 <= i; i--) {
+          const oldAttribute = oldAttributes[i];
+
+          // toAttributes is a live NamedNodeMap, so iteration+mutation is unsafe
+          // e.g. custom element attribute callbacks can remove other attributes
+          if (!oldAttribute) continue;
+
+          if (!newElt.hasAttribute(oldAttribute.name)) {
+            if (ignoreAttribute(oldAttribute.name, oldElt, "remove", ctx)) {
+              continue;
+            }
+            oldElt.removeAttribute(oldAttribute.name);
+          }
+        }
+
+        if (!ignoreValueOfActiveElement(oldElt, ctx)) {
+          syncInputValue(oldElt, newElt, ctx);
+        }
+      }
+
+      // sync text nodes
+      if (type === 8 /* comment */ || type === 3 /* text */) {
+        if (oldNode.nodeValue !== newNode.nodeValue) {
+          oldNode.nodeValue = newNode.nodeValue;
+        }
       }
     }
-    ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-    return oldNode;
-  }
+
+    /**
+     * NB: many bothans died to bring us information:
+     *
+     *  https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
+     *  https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
+     *
+     * @param {Element} oldElement the element to sync the input value to
+     * @param {Element} newElement the element to sync the input value from
+     * @param {MorphContext} ctx the merge context
+     */
+    function syncInputValue(oldElement, newElement, ctx) {
+      if (
+        oldElement instanceof HTMLInputElement &&
+        newElement instanceof HTMLInputElement &&
+        newElement.type !== "file"
+      ) {
+        let newValue = newElement.value;
+        let oldValue = oldElement.value;
+
+        // sync boolean attributes
+        syncBooleanAttribute(oldElement, newElement, "checked", ctx);
+        syncBooleanAttribute(oldElement, newElement, "disabled", ctx);
+
+        if (!newElement.hasAttribute("value")) {
+          if (!ignoreAttribute("value", oldElement, "remove", ctx)) {
+            oldElement.value = "";
+            oldElement.removeAttribute("value");
+          }
+        } else if (oldValue !== newValue) {
+          if (!ignoreAttribute("value", oldElement, "update", ctx)) {
+            oldElement.setAttribute("value", newValue);
+            oldElement.value = newValue;
+          }
+        }
+        // TODO: QUESTION(1cg): this used to only check `newElement` unlike the other branches -- why?
+        // did I break something?
+      } else if (
+        oldElement instanceof HTMLOptionElement &&
+        newElement instanceof HTMLOptionElement
+      ) {
+        syncBooleanAttribute(oldElement, newElement, "selected", ctx);
+      } else if (
+        oldElement instanceof HTMLTextAreaElement &&
+        newElement instanceof HTMLTextAreaElement
+      ) {
+        let newValue = newElement.value;
+        let oldValue = oldElement.value;
+        if (ignoreAttribute("value", oldElement, "update", ctx)) {
+          return;
+        }
+        if (newValue !== oldValue) {
+          oldElement.value = newValue;
+        }
+        if (
+          oldElement.firstChild &&
+          oldElement.firstChild.nodeValue !== newValue
+        ) {
+          oldElement.firstChild.nodeValue = newValue;
+        }
+      }
+    }
+
+    /**
+     * @param {Element} oldElement element to sync the value to
+     * @param {Element} newElement element to sync the value from
+     * @param {string} attributeName the attribute name
+     * @param {MorphContext} ctx the merge context
+     */
+    function syncBooleanAttribute(oldElement, newElement, attributeName, ctx) {
+      // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
+      const newLiveValue = newElement[attributeName],
+        // @ts-ignore ditto
+        oldLiveValue = oldElement[attributeName];
+      if (newLiveValue !== oldLiveValue) {
+        const ignoreUpdate = ignoreAttribute(
+          attributeName,
+          oldElement,
+          "update",
+          ctx,
+        );
+        if (!ignoreUpdate) {
+          // update attribute's associated DOM property
+          // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
+          oldElement[attributeName] = newElement[attributeName];
+        }
+        if (newLiveValue) {
+          if (!ignoreUpdate) {
+            // TODO: do we really want this? tests say so but it feels wrong
+            oldElement.setAttribute(attributeName, newLiveValue);
+          }
+        } else {
+          if (!ignoreAttribute(attributeName, oldElement, "remove", ctx)) {
+            oldElement.removeAttribute(attributeName);
+          }
+        }
+      }
+    }
+
+    /**
+     * @param {string} attr the attribute to be mutated
+     * @param {Element} element the element that is going to be updated
+     * @param {"update" | "remove"} updateType
+     * @param {MorphContext} ctx the merge context
+     * @returns {boolean} true if the attribute should be ignored, false otherwise
+     */
+    function ignoreAttribute(attr, element, updateType, ctx) {
+      if (
+        attr === "value" &&
+        ctx.ignoreActiveValue &&
+        element === document.activeElement
+      ) {
+        return true;
+      }
+      return (
+        ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) === false
+      );
+    }
+
+    /**
+     * @param {Node} possibleActiveElement
+     * @param {MorphContext} ctx
+     * @returns {boolean}
+     */
+    function ignoreValueOfActiveElement(possibleActiveElement, ctx) {
+      return (
+        !!ctx.ignoreActiveValue &&
+        possibleActiveElement === document.activeElement &&
+        possibleActiveElement !== document.body
+      );
+    }
+
+    return morphNode;
+  })();
 
   /**
    * @param {Node} oldNode the node to be morphed
@@ -432,185 +613,6 @@ var Idiomorph = (function () {
       const tempNode = insertionPoint;
       insertionPoint = insertionPoint.nextSibling;
       removeNode(tempNode, ctx);
-    }
-  }
-
-  //=============================================================================
-  // Attribute Syncing Code
-  //=============================================================================
-
-  /**
-   * @param {string} attr the attribute to be mutated
-   * @param {Element} element the element that is going to be updated
-   * @param {"update" | "remove"} updateType
-   * @param {MorphContext} ctx the merge context
-   * @returns {boolean} true if the attribute should be ignored, false otherwise
-   */
-  function ignoreAttribute(attr, element, updateType, ctx) {
-    if (
-      attr === "value" &&
-      ctx.ignoreActiveValue &&
-      element === document.activeElement
-    ) {
-      return true;
-    }
-    return (
-      ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) === false
-    );
-  }
-
-  /**
-   * syncs a given node with another node, copying over all attributes and
-   * inner element state from the newNode to the oldNode
-   *
-   * @param {Node} oldNode the node to copy attributes & state to
-   * @param {Node} newNode the node to copy attributes & state from
-   * @param {MorphContext} ctx the merge context
-   */
-
-  function morphAttributes(oldNode, newNode, ctx) {
-    let type = newNode.nodeType;
-
-    // if is an element type, sync the attributes from the
-    // new node into the new node
-    if (type === 1 /* element type */) {
-      const oldElt = /** @type {Element} */ (oldNode);
-      const newElt = /** @type {Element} */ (newNode);
-
-      const oldAttributes = oldElt.attributes;
-      const newAttributes = newElt.attributes;
-      for (const newAttribute of newAttributes) {
-        if (ignoreAttribute(newAttribute.name, oldElt, "update", ctx)) {
-          continue;
-        }
-        if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
-          oldElt.setAttribute(newAttribute.name, newAttribute.value);
-        }
-      }
-      // iterate backwards to avoid skipping over items when a delete occurs
-      for (let i = oldAttributes.length - 1; 0 <= i; i--) {
-        const oldAttribute = oldAttributes[i];
-
-        // toAttributes is a live NamedNodeMap, so iteration+mutation is unsafe
-        // e.g. custom element attribute callbacks can remove other attributes
-        if (!oldAttribute) continue;
-
-        if (!newElt.hasAttribute(oldAttribute.name)) {
-          if (ignoreAttribute(oldAttribute.name, oldElt, "remove", ctx)) {
-            continue;
-          }
-          oldElt.removeAttribute(oldAttribute.name);
-        }
-      }
-
-      if (!ignoreValueOfActiveElement(oldElt, ctx)) {
-        syncInputValue(oldElt, newElt, ctx);
-      }
-    }
-
-    // sync text nodes
-    if (type === 8 /* comment */ || type === 3 /* text */) {
-      if (oldNode.nodeValue !== newNode.nodeValue) {
-        oldNode.nodeValue = newNode.nodeValue;
-      }
-    }
-  }
-
-  /**
-   * NB: many bothans died to bring us information:
-   *
-   *  https://github.com/patrick-steele-idem/morphdom/blob/master/src/specialElHandlers.js
-   *  https://github.com/choojs/nanomorph/blob/master/lib/morph.jsL113
-   *
-   * @param {Element} oldElement the element to sync the input value to
-   * @param {Element} newElement the element to sync the input value from
-   * @param {MorphContext} ctx the merge context
-   */
-  function syncInputValue(oldElement, newElement, ctx) {
-    if (
-      oldElement instanceof HTMLInputElement &&
-      newElement instanceof HTMLInputElement &&
-      newElement.type !== "file"
-    ) {
-      let newValue = newElement.value;
-      let oldValue = oldElement.value;
-
-      // sync boolean attributes
-      syncBooleanAttribute(oldElement, newElement, "checked", ctx);
-      syncBooleanAttribute(oldElement, newElement, "disabled", ctx);
-
-      if (!newElement.hasAttribute("value")) {
-        if (!ignoreAttribute("value", oldElement, "remove", ctx)) {
-          oldElement.value = "";
-          oldElement.removeAttribute("value");
-        }
-      } else if (oldValue !== newValue) {
-        if (!ignoreAttribute("value", oldElement, "update", ctx)) {
-          oldElement.setAttribute("value", newValue);
-          oldElement.value = newValue;
-        }
-      }
-      // TODO: QUESTION(1cg): this used to only check `newElement` unlike the other branches -- why?
-      // did I break something?
-    } else if (
-      oldElement instanceof HTMLOptionElement &&
-      newElement instanceof HTMLOptionElement
-    ) {
-      syncBooleanAttribute(oldElement, newElement, "selected", ctx);
-    } else if (
-      oldElement instanceof HTMLTextAreaElement &&
-      newElement instanceof HTMLTextAreaElement
-    ) {
-      let newValue = newElement.value;
-      let oldValue = oldElement.value;
-      if (ignoreAttribute("value", oldElement, "update", ctx)) {
-        return;
-      }
-      if (newValue !== oldValue) {
-        oldElement.value = newValue;
-      }
-      if (
-        oldElement.firstChild &&
-        oldElement.firstChild.nodeValue !== newValue
-      ) {
-        oldElement.firstChild.nodeValue = newValue;
-      }
-    }
-  }
-
-  /**
-   * @param {Element} oldElement element to sync the value to
-   * @param {Element} newElement element to sync the value from
-   * @param {string} attributeName the attribute name
-   * @param {MorphContext} ctx the merge context
-   */
-  function syncBooleanAttribute(oldElement, newElement, attributeName, ctx) {
-    // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
-    const newLiveValue = newElement[attributeName],
-      // @ts-ignore ditto
-      oldLiveValue = oldElement[attributeName];
-    if (newLiveValue !== oldLiveValue) {
-      const ignoreUpdate = ignoreAttribute(
-        attributeName,
-        oldElement,
-        "update",
-        ctx,
-      );
-      if (!ignoreUpdate) {
-        // update attribute's associated DOM property
-        // @ts-ignore this function is only used on boolean attrs that are reflected as dom properties
-        oldElement[attributeName] = newElement[attributeName];
-      }
-      if (newLiveValue) {
-        if (!ignoreUpdate) {
-          // TODO: do we really want this? tests say so but it feels wrong
-          oldElement.setAttribute(attributeName, newLiveValue);
-        }
-      } else {
-        if (!ignoreAttribute(attributeName, oldElement, "remove", ctx)) {
-          oldElement.removeAttribute(attributeName);
-        }
-      }
     }
   }
 
