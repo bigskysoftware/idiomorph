@@ -18,6 +18,7 @@ This PR is a proposal for the future of Idiomorph. Michael and I have done our b
 
 ## Future Work
 * Retain focus and selection natively in more cases, rather than restoring
+* Performance improvements
 * Investigate how Idiomorph works (or does not) with Shadow DOM, Iframes, and other likely troublesome cases
 
 # Details
@@ -39,7 +40,7 @@ Hooks are called in the order one would expect, and with the arguments one would
 
 ## Refactorings
 ### Reorganized and modularized internal architecture
-In v0.4.0, all the functions were in one IIFE, free to call each other. The call graph looked like a plate of spaghetti with many cycles. We've extracted four indepedent sub-IFFE from the main one, and now it looks a bit more like lasagna. :)
+In v0.4.0, all the functions were in one IIFE, free to call each other. The call graph looked like a plate of spaghetti with many cycles. We've extracted four indepedent sub-IIFEs from the main one, and now it looks a bit more like a lasagna. :)
 
 ### Simplified core algorithm
 This is the tasty meat of the PR. By removing the two-pass mode, and further leveraging the persistentId knowlegde, we've been able to greatly simplify the core algorithm. Here's the gist of it, copied from the `morphChildren` function:
@@ -71,6 +72,11 @@ Title says it all. We're feeling really good about the tests suite's ability to 
 
 ## Future Work
 ### Retain focus and selection natively in more cases, rather than restoring
-This is the last major remaining endeavour before we could consider Idiomorph to be more-or-less complete solution. Michael and I both have several promising ideas, but I want to get this PR merged and released before we dive into that. In the meantime, the `restoreFocus` option is a good stopgap.
+This is the last major remaining endeavour before we would consider Idiomorph to be more-or-less complete. Michael and I both have several promising ideas, but I want to get this PR merged and released before we dive into that. In the meantime, the `restoreFocus` option is a good stopgap.
+
+### Performance improvements
+According to `npm run perf` on my machine, this branch is ~0%-5% slower than v0.4.0, and ~10%-20% slower than v0.3.0. To me, this sees like an acceptable trade of minor performance loss for major correctness gains. That said, I'd like to spend some time with my perf hat on to see if we can't make it any faster.
+
 ### Investigate how Idiomorph works (or does not) with Shadow DOM, Iframes, and other likely troublesome cases
 Known unknowns. I'd like to at least be aware of the status quo before making any plans for v1.0.
+
