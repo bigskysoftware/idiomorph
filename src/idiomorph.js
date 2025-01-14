@@ -266,10 +266,12 @@ var Idiomorph = (function () {
       const morphedNodes = [...newParent.childNodes].map((newChild) => {
         // once we reach the end of the old parent content skip to the end and insert the rest
         if (insertionPoint && insertionPoint != endPoint) {
-          const bestMatch =
-            findIdSetMatch(newChild, insertionPoint, endPoint, ctx) ||
-            findSoftMatch(newChild, insertionPoint, endPoint, ctx);
-
+          const bestMatch = findBestMatch(
+            newChild,
+            insertionPoint,
+            endPoint,
+            ctx,
+          );
           if (bestMatch) {
             // if the node to morph is not at the insertion point then delete up to it
             if (bestMatch !== insertionPoint) {
@@ -336,102 +338,128 @@ var Idiomorph = (function () {
       }
     }
 
-    /**
-     *
-     * @param {Node} oldNode
-     * @param {Node} newNode
-     * @param {MorphContext} ctx
-     * @returns {boolean}
-     */
-    function isIdSetMatch(oldNode, newNode, ctx) {
-      if (
-        oldNode instanceof Element &&
-        newNode instanceof Element &&
-        oldNode.tagName === newNode.tagName
-      ) {
-        if (oldNode.id !== "" && oldNode.id === newNode.id) {
-          return true;
-        } else {
-          return getIdIntersectionCount(oldNode, newNode, ctx) > 0;
-        }
+    //=============================================================================
+    // Matching Functions
+    //=============================================================================
+    const findBestMatch = (function () {
+      /**
+       * Scans forward from the insertionPoint to the endPoint looking for a match
+       * for the newChild. It looks for an id set match first, then a soft match.
+       * @param {Node} newChild
+       * @param {Node | null} insertionPoint
+       * @param {Node | null} endPoint
+       * @param {MorphContext} ctx
+       * @returns {Node | null}
+       */
+      function findBestMatch(newChild, insertionPoint, endPoint, ctx) {
+        return (
+          findIdSetMatch(newChild, insertionPoint, endPoint, ctx) ||
+          findSoftMatch(newChild, insertionPoint, endPoint, ctx)
+        );
       }
-      return false;
-    }
 
-    /**
-     *
-     * @param {Node} oldNode
-     * @param {Node} newNode
-     * @returns {boolean}
-     */
-    function isSoftMatch(oldNode, newNode) {
-      // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
-      // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
-      if (
-        /** @type {Element} */ (oldNode).id &&
-        /** @type {Element} */ (oldNode).id !==
-          /** @type {Element} */ (newNode).id
-      ) {
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @param {MorphContext} ctx
+       * @returns {boolean}
+       */
+      function isIdSetMatch(oldNode, newNode, ctx) {
+        if (
+          oldNode instanceof Element &&
+          newNode instanceof Element &&
+          oldNode.tagName === newNode.tagName
+        ) {
+          if (oldNode.id !== "" && oldNode.id === newNode.id) {
+            return true;
+          } else {
+            return getIdIntersectionCount(oldNode, newNode, ctx) > 0;
+          }
+        }
         return false;
       }
-      return (
-        oldNode.nodeType === newNode.nodeType &&
-        /** @type {Element} */ (oldNode).tagName ===
-          /** @type {Element} */ (newNode).tagName
-      );
-    }
 
-    /**
-     * Scans forward from the insertionPoint in the old parent looking for a potential id match
-     * for the newChild.
-     * @param {Node} newChild
-     * @param {Node | null} insertionPoint
-     * @param {Node | null} endPoint
-     * @param {MorphContext} ctx
-     * @returns {Node | null}
-     */
-    function findIdSetMatch(newChild, insertionPoint, endPoint, ctx) {
-      const newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
-
-      // only search forward if there is a possibility of an id match
-      if (newChildPotentialIdCount > 0) {
-        let potentialMatch = insertionPoint;
-        while (potentialMatch && potentialMatch != endPoint) {
-          // If we have an id match, return the current potential match
-          if (isIdSetMatch(potentialMatch, newChild, ctx)) {
-            return potentialMatch;
-          }
-          potentialMatch = potentialMatch.nextSibling;
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @returns {boolean}
+       */
+      function isSoftMatch(oldNode, newNode) {
+        // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
+        // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
+        if (
+          /** @type {Element} */ (oldNode).id &&
+          /** @type {Element} */ (oldNode).id !==
+            /** @type {Element} */ (newNode).id
+        ) {
+          return false;
         }
+        return (
+          oldNode.nodeType === newNode.nodeType &&
+          /** @type {Element} */ (oldNode).tagName ===
+            /** @type {Element} */ (newNode).tagName
+        );
       }
-      return null;
-    }
 
-    /**
-     * Scans forward from the insertionPoint in the old parent looking for a potential soft match
-     * for the newChild.
-     * @param {Node} newChild
-     * @param {Node | null} insertionPoint
-     * @param {Node | null} endPoint
-     * @param {MorphContext} ctx
-     * @returns {null | Node}
-     */
-    function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
-      let potentialSoftMatch = insertionPoint;
-      let nextSibling = newChild.nextSibling;
+      /**
+       * Scans forward from the insertionPoint in the old parent looking for a potential id match
+       * for the newChild.
+       * @param {Node} newChild
+       * @param {Node | null} insertionPoint
+       * @param {Node | null} endPoint
+       * @param {MorphContext} ctx
+       * @returns {Node | null}
+       */
+      function findIdSetMatch(newChild, insertionPoint, endPoint, ctx) {
+        const newChildPotentialIdCount = getPersistentIdNodeCount(
+          ctx,
+          newChild,
+        );
 
-      while (potentialSoftMatch && potentialSoftMatch != endPoint) {
-        // the current potential soft match has a id set match with the remaining new
-        // content so leave this one for the future
-        if (!hasPersistentIdNodes(ctx, potentialSoftMatch)) {
-          if (isSoftMatch(potentialSoftMatch, newChild)) {
-            return potentialSoftMatch;
+        // only search forward if there is a possibility of an id match
+        if (newChildPotentialIdCount > 0) {
+          let potentialMatch = insertionPoint;
+          while (potentialMatch && potentialMatch != endPoint) {
+            // If we have an id match, return the current potential match
+            if (isIdSetMatch(potentialMatch, newChild, ctx)) {
+              return potentialMatch;
+            }
+            potentialMatch = potentialMatch.nextSibling;
           }
         }
-        potentialSoftMatch = potentialSoftMatch.nextSibling;
+        return null;
       }
-      return null;
-    }
+
+      /**
+       * Scans forward from the insertionPoint in the old parent looking for a potential soft match
+       * for the newChild.
+       * @param {Node} newChild
+       * @param {Node | null} insertionPoint
+       * @param {Node | null} endPoint
+       * @param {MorphContext} ctx
+       * @returns {null | Node}
+       */
+      function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
+        let potentialSoftMatch = insertionPoint;
+        let nextSibling = newChild.nextSibling;
+
+        while (potentialSoftMatch && potentialSoftMatch != endPoint) {
+          // the current potential soft match has a id set match with the remaining new
+          // content so leave this one for the future
+          if (!hasPersistentIdNodes(ctx, potentialSoftMatch)) {
+            if (isSoftMatch(potentialSoftMatch, newChild)) {
+              return potentialSoftMatch;
+            }
+          }
+          potentialSoftMatch = potentialSoftMatch.nextSibling;
+        }
+        return null;
+      }
+
+      return findBestMatch;
+    })();
 
     //=============================================================================
     // DOM Manipulation Functions
