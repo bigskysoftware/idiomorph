@@ -338,7 +338,7 @@ describe("Hidden state preservation tests", function () {
     states.should.eql([true]);
   });
 
-  it("check moveBefore function falls back to insertBefore if moveBefore is missing", function () {
+  it("moveBefore function falls back to insertBefore if moveBefore is missing", function () {
     getWorkArea().append(
       make(`
             <div>
@@ -349,7 +349,6 @@ describe("Hidden state preservation tests", function () {
     );
     // disable moveBefore function to force it to use insertBefore
     document.getElementById("first").parentNode.moveBefore = undefined;
-    document.getElementById("second").parentNode.moveBefore = undefined;
 
     let finalSrc = `
             <div>
@@ -362,6 +361,34 @@ describe("Hidden state preservation tests", function () {
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
-    document.activeElement.outerHTML.should.equal(document.body.outerHTML);
+  });
+
+  it("moveBefore is used if it exists", function () {
+    const div = make(`
+            <div>
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
+            </div>
+        `);
+    getWorkArea().append(div);
+
+    let called = false;
+    div.moveBefore = function(element, after) {
+      called = true;
+      return div.insertBefore(element, after);
+    }
+
+    let finalSrc = `
+            <div>
+              <input type="checkbox" id="second">
+              <input type="checkbox" id="first">
+            </div>
+        `;
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    called.should.be.true;
   });
 });
