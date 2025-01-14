@@ -215,7 +215,8 @@ var Idiomorph = (function () {
       morphChildren(normalizedOldNode, normalizedNewContent, ctx, oldNode);
       ctx.pantry.remove();
       let added = [];
-      let nextSibling = startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
+      let nextSibling =
+        startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
       while (nextSibling != null && nextSibling != endPoint) {
         added.push(nextSibling);
         nextSibling = nextSibling.nextSibling;
@@ -364,7 +365,9 @@ var Idiomorph = (function () {
       // @ts-ignore ditto
       newParent = newParent.content;
     }
-    let insertionPoint = /** @type {Node | null} */ (onlyNode || oldParent.firstChild);
+    let insertionPoint = /** @type {Node | null} */ (
+      onlyNode || oldParent.firstChild
+    );
     let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
 
     // run through all the new content
@@ -734,65 +737,175 @@ var Idiomorph = (function () {
 
   function noOp() {}
 
-  /**
-   * Deep merges the config object and the Idiomoroph.defaults object to
-   * produce a final configuration object
-   * @param {Config} config
-   * @returns {ConfigInternal}
-   */
-  function mergeDefaults(config) {
+  const createMorphContext = (function () {
     /**
-     * @type {ConfigInternal}
+     *
+     * @param {Element} oldNode
+     * @param {Element} newContent
+     * @param {Config} config
+     * @returns {MorphContext}
      */
-    let finalConfig = Object.assign({}, defaults);
+    function createMorphContext(oldNode, newContent, config) {
+      const mergedConfig = mergeDefaults(config);
+      const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
+      return {
+        target: oldNode,
+        newContent: newContent,
+        config: mergedConfig,
+        morphStyle: mergedConfig.morphStyle,
+        ignoreActive: mergedConfig.ignoreActive,
+        ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        idMap: idMap,
+        persistentIds: persistentIds,
+        pantry: createPantry(),
+        callbacks: mergedConfig.callbacks,
+        head: mergedConfig.head,
+      };
+    }
 
-    // copy top level stuff into final config
-    Object.assign(finalConfig, config);
+    /**
+     * Deep merges the config object and the Idiomorph.defaults object to
+     * produce a final configuration object
+     * @param {Config} config
+     * @returns {ConfigInternal}
+     */
+    function mergeDefaults(config) {
+      /**
+       * @type {ConfigInternal}
+       */
+      let finalConfig = Object.assign({}, defaults);
 
-    // copy callbacks into final config (do this to deep merge the callbacks)
-    finalConfig.callbacks = Object.assign(
-      {},
-      defaults.callbacks,
-      config.callbacks,
-    );
+      // copy top level stuff into final config
+      Object.assign(finalConfig, config);
 
-    // copy head config into final config  (do this to deep merge the head)
-    finalConfig.head = Object.assign({}, defaults.head, config.head);
+      // copy callbacks into final config (do this to deep merge the callbacks)
+      finalConfig.callbacks = Object.assign(
+        {},
+        defaults.callbacks,
+        config.callbacks,
+      );
 
-    return finalConfig;
-  }
+      // copy head config into final config  (do this to deep merge the head)
+      finalConfig.head = Object.assign({}, defaults.head, config.head);
 
-  /**
-   *
-   * @param {Element} oldNode
-   * @param {Element} newContent
-   * @param {Config} config
-   * @returns {MorphContext}
-   */
-  function createMorphContext(oldNode, newContent, config) {
-    const mergedConfig = mergeDefaults(config);
-    const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
-    return {
-      target: oldNode,
-      newContent: newContent,
-      config: mergedConfig,
-      morphStyle: mergedConfig.morphStyle,
-      ignoreActive: mergedConfig.ignoreActive,
-      ignoreActiveValue: mergedConfig.ignoreActiveValue,
-      idMap: idMap,
-      persistentIds: persistentIds,
-      pantry: createPantry(),
-      callbacks: mergedConfig.callbacks,
-      head: mergedConfig.head,
-    };
-  }
+      return finalConfig;
+    }
 
-  function createPantry() {
-    const pantry = document.createElement("div");
-    pantry.hidden = true;
-    document.body.insertAdjacentElement("afterend", pantry);
-    return pantry;
-  }
+    function createPantry() {
+      const pantry = document.createElement("div");
+      pantry.hidden = true;
+      document.body.insertAdjacentElement("afterend", pantry);
+      return pantry;
+    }
+
+    /**
+     * @param {Element} content
+     * @returns {Element[]}
+     */
+    function elementsWithIds(content) {
+      let elements = Array.from(content.querySelectorAll("[id]"));
+      if (content.id) {
+        elements.push(content);
+      }
+      return elements;
+    }
+
+    /**
+     * A bottom up algorithm that finds all elements with ids in the node
+     * argument and populates id sets for those nodes and all their parents, generating
+     * a set of ids contained within all nodes for the entire hierarchy in the DOM
+     *
+     * @param {Element|null} nodeParent
+     * @param {Element[]} nodes
+     * @param {Set<string>} persistentIds
+     * @param {Map<Node, Set<string>>} idMap
+     */
+    function populateIdMapForNode(nodeParent, nodes, persistentIds, idMap) {
+      for (const elt of nodes) {
+        if (persistentIds.has(elt.id)) {
+          /**
+           * @type {Element|null}
+           */
+          let current = elt;
+          // walk up the parent hierarchy of that element, adding the id
+          // of element to the parent's id set
+          while (current !== nodeParent && current != null) {
+            let idSet = idMap.get(current);
+            // if the id set doesn't exist, create it and insert it in the  map
+            if (idSet == null) {
+              idSet = new Set();
+              idMap.set(current, idSet);
+            }
+            idSet.add(elt.id);
+            current = current.parentElement;
+          }
+        }
+      }
+    }
+
+    /**
+     * This function computes a map of nodes to all ids contained within that node (inclusive of the
+     * node).  This map can be used to ask if two nodes have intersecting sets of ids, which allows
+     * for a looser definition of "matching" than tradition id matching, and allows child nodes
+     * to contribute to a parent nodes matching.
+     *
+     * @param {Element} oldContent  the old content that will be morphed
+     * @param {Element} newContent  the new content to morph to
+     * @returns {IdSets} a map of nodes to id sets for the
+     */
+    function createIdMaps(oldContent, newContent) {
+      // Calculate ids that persist between the two contents exculuding duplicates first
+      let oldIdMap = new Map();
+      let dupSet = new Set();
+      const oldElts = elementsWithIds(oldContent);
+      for (const oldElt of oldElts) {
+        const id = oldElt.id;
+        // if already in map then log duplicates to be skipped
+        if (oldIdMap.get(id)) {
+          dupSet.add(id);
+        } else {
+          oldIdMap.set(id, oldElt.tagName);
+        }
+      }
+      let persistentIds = new Set();
+      const newElts = elementsWithIds(newContent);
+      for (const newElt of newElts) {
+        const id = newElt.id;
+        const oldTagName = oldIdMap.get(id);
+        // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
+        if (
+          persistentIds.has(id) ||
+          (oldTagName && oldTagName !== newElt.tagName)
+        ) {
+          dupSet.add(id);
+          persistentIds.delete(id);
+        }
+        if (oldTagName === newElt.tagName && !dupSet.has(id)) {
+          persistentIds.add(id);
+        }
+      }
+      /**
+       *
+       * @type {Map<Node, Set<string>>}
+       */
+      let idMap = new Map();
+      populateIdMapForNode(
+        oldContent.parentElement,
+        newElts,
+        persistentIds,
+        idMap,
+      );
+      populateIdMapForNode(
+        newContent.parentElement,
+        oldElts,
+        persistentIds,
+        idMap,
+      );
+      return { persistentIds, idMap };
+    }
+
+    return createMorphContext;
+  })();
 
   /**
    *
@@ -855,12 +968,7 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx
    * @returns {Node | null}
    */
-  function findIdSetMatch(
-    newChild,
-    insertionPoint,
-    endPoint,
-    ctx,
-  ) {
+  function findIdSetMatch(newChild, insertionPoint, endPoint, ctx) {
     // max id matches we are willing to discard in our search
     let newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
 
@@ -1134,7 +1242,7 @@ var Idiomorph = (function () {
   function getIdIntersectionCount(oldNode, newNode, ctx) {
     let oldSet = ctx.idMap.get(oldNode) || EMPTY_SET;
     let newSet = ctx.idMap.get(newNode) || EMPTY_SET;
-    
+
     let matchCount = 0;
     for (const id of oldSet) {
       // a potential match is an id in the new and old nodes that
@@ -1146,112 +1254,6 @@ var Idiomorph = (function () {
       }
     }
     return matchCount;
-  }
-
-  /**
-   * @param {Element} content
-   * @returns {Element[]}
-   */
-  function elementsWithIds(content) {
-    let elements = Array.from(content.querySelectorAll("[id]"));
-    if (content.id) {
-      elements.push(content);
-    }
-    return elements;
-  }
-
-  /**
-   * A bottom up algorithm that finds all elements with ids in the node
-   * argument and populates id sets for those nodes and all their parents, generating
-   * a set of ids contained within all nodes for the entire hierarchy in the DOM
-   *
-   * @param {Element|null} nodeParent
-   * @param {Element[]} nodes
-   * @param {Set<string>} persistentIds
-   * @param {Map<Node, Set<string>>} idMap
-   */
-  function populateIdMapForNode(nodeParent, nodes, persistentIds, idMap) {
-    for (const elt of nodes) {
-      if (persistentIds.has(elt.id)) {
-        /**
-         * @type {Element|null}
-         */
-        let current = elt;
-        // walk up the parent hierarchy of that element, adding the id
-        // of element to the parent's id set
-        while (current !== nodeParent && current != null) {
-          let idSet = idMap.get(current);
-          // if the id set doesn't exist, create it and insert it in the  map
-          if (idSet == null) {
-            idSet = new Set();
-            idMap.set(current, idSet);
-          }
-          idSet.add(elt.id);
-          current = current.parentElement;
-        }
-      }
-    }
-  }
-
-  /**
-   * This function computes a map of nodes to all ids contained within that node (inclusive of the
-   * node).  This map can be used to ask if two nodes have intersecting sets of ids, which allows
-   * for a looser definition of "matching" than tradition id matching, and allows child nodes
-   * to contribute to a parent nodes matching.
-   *
-   * @param {Element} oldContent  the old content that will be morphed
-   * @param {Element} newContent  the new content to morph to
-   * @returns {IdSets} a map of nodes to id sets for the
-   */
-  function createIdMaps(oldContent, newContent) {
-    // Calculate ids that persist between the two contents exculuding duplicates first
-    let oldIdMap = new Map();
-    let dupSet = new Set();
-    const oldElts = elementsWithIds(oldContent);
-    for (const oldElt of oldElts) {
-      const id = oldElt.id;
-      // if already in map then log duplicates to be skipped
-      if (oldIdMap.get(id)) {
-        dupSet.add(id);
-      } else {
-        oldIdMap.set(id, oldElt.tagName);
-      }
-    }
-    let persistentIds = new Set();
-    const newElts = elementsWithIds(newContent);
-    for (const newElt of newElts) {
-      const id = newElt.id;
-      const oldTagName = oldIdMap.get(id);
-      // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
-      if (
-        persistentIds.has(id) ||
-        (oldTagName && oldTagName !== newElt.tagName)
-      ) {
-        dupSet.add(id);
-        persistentIds.delete(id);
-      }
-      if (oldTagName === newElt.tagName && !dupSet.has(id)) {
-        persistentIds.add(id);
-      }
-    }
-    /**
-     *
-     * @type {Map<Node, Set<string>>}
-     */
-    let idMap = new Map();
-    populateIdMapForNode(
-      oldContent.parentElement,
-      newElts,
-      persistentIds,
-      idMap,
-    );
-    populateIdMapForNode(
-      newContent.parentElement,
-      oldElts,
-      persistentIds,
-      idMap,
-    );
-    return { persistentIds, idMap };
   }
 
   //=============================================================================
