@@ -121,6 +121,16 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal("<ul><li>A</li><li>B</li></ul>");
   });
 
+  it("returning false to beforeNodeRemoved prevents removing the node with different tag types", function () {
+    let initial = make("<div><a>A</a><b>B</b><c>C</c></div>");
+    Idiomorph.morph(initial, "<div><b>B</b></div>", {
+      callbacks: {
+        beforeNodeRemoved: (node) => false,
+      },
+    });
+    initial.outerHTML.should.equal("<div><a>A</a><b>B</b><c>C</c></div>");
+  });
+
   it("calls afterNodeRemoved after a node is removed from the DOM", function () {
     let calls = [];
     let initial = make("<ul><li>A</li><li>B</li></ul>");
