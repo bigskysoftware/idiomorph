@@ -68,6 +68,7 @@
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
  */
@@ -180,28 +181,37 @@ var Idiomorph = (function () {
     });
   }
 
+  /**
+   * @param {MorphContext} ctx
+   * @param {Function} fn
+   * @returns {Promise<Node[]> | Node[]}
+   */
   function saveAndRestoreFocus(ctx, fn) {
     if (!ctx.config.restoreFocus) return fn();
 
     let activeElement = document.activeElement;
-    let activeElementId, selectionStart, selectionEnd;
 
+    // don't bother if the active element is not an input or textarea
     if (
-      activeElement &&
-      ["INPUT", "TEXTAREA"].includes(activeElement.tagName)
+      !(
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement
+      )
     ) {
-      activeElementId = activeElement.id;
-      selectionStart = activeElement.selectionStart;
-      selectionEnd = activeElement.selectionEnd;
+      return fn();
     }
+
+    const { id: activeElementId, selectionStart, selectionEnd } = activeElement;
 
     const results = fn();
 
     if (activeElementId && activeElementId !== document.activeElement?.id) {
       activeElement = ctx.target.querySelector(`#${activeElementId}`);
-      activeElement.focus();
+      // @ts-ignore we can assume this is focusable
+      activeElement?.focus();
     }
-    if(selectionStart, selectionEnd) {
+    if (activeElement && selectionStart && selectionEnd) {
+      // @ts-ignore we know this is an input element
       activeElement.setSelectionRange(selectionStart, selectionEnd);
     }
 

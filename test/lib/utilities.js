@@ -71,6 +71,10 @@ function setFocusAndSelection(elementId, selectedText) {
   element.setSelectionRange(index, index + selectedText.length);
 }
 
+function setFocus(elementId) {
+  document.getElementById(elementId).focus();
+}
+
 function assertFocusAndSelection(elementId, selectedText) {
   assertFocus(elementId);
   const activeElement = document.activeElement;
