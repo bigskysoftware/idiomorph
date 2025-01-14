@@ -228,12 +228,17 @@ var Idiomorph = (function () {
             findSoftMatch(newChild, insertionPoint, endPoint, ctx);
 
           if (bestMatch) {
-            insertionPoint = morphChild(bestMatch, newChild, insertionPoint, ctx);
+            // if the node to morph is not at the insertion point then we need to move it here
+            if (bestMatch !== insertionPoint) {
+              moveBefore(oldParent, bestMatch, insertionPoint);
+            }
+            morphNode(bestMatch, newChild, ctx);
+            insertionPoint = bestMatch.nextSibling;
             return bestMatch;
           }
         }
 
-        // if the matching node is in the upcoming old content
+        // if the matching node is elsewhere in the original content
         if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
           // move it and all its children here and morph
           const movedChild = moveBeforeById(
@@ -246,7 +251,7 @@ var Idiomorph = (function () {
           return movedChild;
         }
 
-        // last resort, insert a new node from scratch
+        // last resort: insert the new node from scratch
         return createNode(oldParent, newChild, insertionPoint, ctx);
       });
 
@@ -258,23 +263,6 @@ var Idiomorph = (function () {
       }
 
       return morphedNodes;
-    }
-
-    /**
-     * @param {Node} oldNode the node to be morphed
-     * @param {Node} newChild the new content
-     * @param {Node|null} insertionPoint the current point in the DOM we are morphing content at
-     * @param {MorphContext} ctx the merge context
-     * @returns {Node|null} returns the new insertion point after the merged node
-     */
-    function morphChild(oldNode, newChild, insertionPoint, ctx) {
-      // if the node to morph is not at the insertion point then we need to move it here by moving or removing nodes
-      if (oldNode !== insertionPoint) {
-        // @ts-ignore we know the Node has a valid parent
-        moveBefore(oldNode.parentElement, oldNode, insertionPoint);
-      }
-      morphNode(oldNode, newChild, ctx);
-      return oldNode.nextSibling;
     }
 
     function createNode(oldParent, newChild, insertionPoint, ctx) {
