@@ -195,9 +195,6 @@ var Idiomorph = (function () {
      *     - morph it and move on
      *   - create a new node from scratch as a last result
      *
-     * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
-     * with the current node.  See findIdSetMatch and findSoftMatch for details.
-     *
      * @param {MorphContext} ctx the merge context
      * @param {Element} oldParent the old content that we are merging the new content into
      * @param {Element} newParent the parent element of the new content
@@ -322,14 +319,11 @@ var Idiomorph = (function () {
 
     /**
      *
-     * @param {Node | null} oldNode
-     * @param {Node | null} newNode
+     * @param {Node} oldNode
+     * @param {Node} newNode
      * @returns {boolean}
      */
     function isSoftMatch(oldNode, newNode) {
-      if (oldNode == null || newNode == null) {
-        return false;
-      }
       // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
       // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
       if (
@@ -349,9 +343,7 @@ var Idiomorph = (function () {
     /**
      * =============================================================================
      *  Scans forward from the insertionPoint in the old parent looking for a potential id match
-     *  for the newChild.  We stop if we find a potential id match for the new child OR
-     *  if the number of potential id matches we are discarding is greater than the
-     *  potential id matches for the new child
+     *  for the newChild.
      * =============================================================================
      * @param {Node} newChild
      * @param {Node | null} insertionPoint
@@ -360,37 +352,16 @@ var Idiomorph = (function () {
      * @returns {Node | null}
      */
     function findIdSetMatch(newChild, insertionPoint, endPoint, ctx) {
-      // max id matches we are willing to discard in our search
-      let newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
-
-      /**
-       * @type {Node | null}
-       */
+      const newChildPotentialIdCount = getPersistentIdNodeCount(ctx, newChild);
 
       // only search forward if there is a possibility of an id match
       if (newChildPotentialIdCount > 0) {
         let potentialMatch = insertionPoint;
-        // if there is a possibility of an id match, scan forward
-        // keep track of the potential id match count we are discarding (the
-        // newChildPotentialIdCount must be greater than this to make it likely
-        // worth it)
-        let otherMatchCount = 0;
-        while (potentialMatch != null && potentialMatch != endPoint) {
+        while (potentialMatch && potentialMatch != endPoint) {
           // If we have an id match, return the current potential match
           if (isIdSetMatch(potentialMatch, newChild, ctx)) {
             return potentialMatch;
           }
-
-          // computer the other potential matches of this new content
-          otherMatchCount += getPersistentIdNodeCount(ctx, potentialMatch);
-
-          if (otherMatchCount > newChildPotentialIdCount) {
-            // if we have more potential id matches in _other_ content, we
-            // do not have a good candidate for an id match, so return null
-            return null;
-          }
-
-          // advanced to the next old content child
           potentialMatch = potentialMatch.nextSibling;
         }
       }
@@ -411,42 +382,19 @@ var Idiomorph = (function () {
      * @returns {null | Node}
      */
     function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
-      /**
-       * @type {Node | null}
-       */
       let potentialSoftMatch = insertionPoint;
-      /**
-       * @type {Node | null}
-       */
       let nextSibling = newChild.nextSibling;
-      let siblingSoftMatchCount = 0;
 
-      while (potentialSoftMatch != null && potentialSoftMatch != endPoint) {
+      while (potentialSoftMatch && potentialSoftMatch != endPoint) {
         if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
           // the current potential soft match has a potential id set match with the remaining new
           // content so bail out of looking
           return null;
         }
 
-        // if we have a soft match with the current node, return it
         if (isSoftMatch(potentialSoftMatch, newChild)) {
           return potentialSoftMatch;
         }
-
-        if (isSoftMatch(potentialSoftMatch, nextSibling)) {
-          // the next new node has a soft match with this node, so
-          // increment the count of future soft matches
-          siblingSoftMatchCount++;
-          // ok to cast: if it was null it couldn't be a soft match
-          nextSibling = /** @type {Node} */ (nextSibling).nextSibling;
-
-          // If there are two future soft matches, bail to allow the siblings to soft match
-          // so that we don't consume future soft matches for the sake of the current node
-          if (siblingSoftMatchCount >= 2) {
-            return null;
-          }
-        }
-        // advanced to the next old content child
         potentialSoftMatch = potentialSoftMatch.nextSibling;
       }
 
