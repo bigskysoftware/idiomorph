@@ -160,27 +160,21 @@ var Idiomorph = (function () {
     const ctx = createMorphContext(oldNode, newNode, config);
 
     return withHeadBlocking(ctx, oldNode, newNode, (ctx) => {
+      let morphedNodes;
       if (ctx.morphStyle === "innerHTML") {
-        morphChildren(oldNode, newNode, ctx);
-        ctx.pantry.remove();
-        return Array.from(oldNode.childNodes);
+        morphedNodes = morphChildren(ctx, oldNode, newNode);
       } else {
         // outerHTML
-        const oldNodeParent = normalizeParent(oldNode);
-        const startPoint = oldNode.previousSibling;
-        const endPoint = oldNode.nextSibling;
-        morphChildren(oldNodeParent, newNode, ctx, oldNode);
-        ctx.pantry.remove();
-
-        let added = [];
-        let nextSibling =
-          startPoint?.nextSibling || oldNode.parentNode?.firstChild || null;
-        while (nextSibling != null && nextSibling != endPoint) {
-          added.push(nextSibling);
-          nextSibling = nextSibling.nextSibling;
-        }
-        return added;
+        morphedNodes = morphChildren(
+          ctx,
+          normalizeParent(oldNode),
+          newNode,
+          oldNode,
+          oldNode.nextSibling,
+        );
       }
+      ctx.pantry.remove();
+      return morphedNodes;
     });
   }
 
@@ -204,13 +198,20 @@ var Idiomorph = (function () {
      * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
      * with the current node.  See findIdSetMatch and findSoftMatch for details.
      *
+     * @param {MorphContext} ctx the merge context
      * @param {Element} oldParent the old content that we are merging the new content into
      * @param {Element} newParent the parent element of the new content
-     * @param {MorphContext} ctx the merge context
-     * @param {Element} [onlyNode]
-     * @returns {void}
+     * @param {Element | null} insertionPoint the point in the DOM we start morphing at (defaults to first child)
+     * @param {Element | null} endPoint the point in the DOM we stop morphing at (defaults to after last child)
+     * @returns {Node[]}
      */
-    function morphChildren(oldParent, newParent, ctx, onlyNode) {
+    function morphChildren(
+      ctx,
+      oldParent,
+      newParent,
+      insertionPoint,
+      endPoint,
+    ) {
       if (
         oldParent instanceof HTMLTemplateElement &&
         newParent instanceof HTMLTemplateElement
@@ -220,24 +221,22 @@ var Idiomorph = (function () {
         // @ts-ignore ditto
         newParent = newParent.content;
       }
-      let insertionPoint = /** @type {Node | null} */ (
-        onlyNode || oldParent.firstChild
-      );
-      let endPoint = /** @type {Node | null} */ (onlyNode?.nextSibling || null);
+      insertionPoint ||= oldParent.firstChild;
 
       // run through all the new content
-      for (const newChild of newParent.childNodes) {
-        // once we reach the end of the old parent content skip to the end and insert
-        if (insertionPoint != null && insertionPoint != endPoint) {
+      const morphedNodes = [...newParent.childNodes].map((newChild) => {
+        // once we reach the end of the old parent content skip to the end and insert the rest
+        if (insertionPoint != endPoint) {
           // if the current node has an id set match then morph
           if (isIdSetMatch(insertionPoint, newChild, ctx)) {
+            const morphedNode = insertionPoint;
             insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
               ctx,
             );
-            continue;
+            return morphedNode;
           }
 
           // otherwise search forward in the existing old children for an id set match
@@ -254,18 +253,19 @@ var Idiomorph = (function () {
               insertionPoint,
               ctx,
             );
-            continue;
+            return idSetMatch;
           }
 
           // if the current point is already a soft match morph
           if (isSoftMatch(insertionPoint, newChild)) {
+            const morphedNode = insertionPoint;
             insertionPoint = morphChild(
               insertionPoint,
               newChild,
               insertionPoint,
               ctx,
             );
-            continue;
+            return morphedNode;
           }
 
           // search forward in the existing old children for a soft match for the current node
@@ -282,7 +282,7 @@ var Idiomorph = (function () {
               insertionPoint,
               ctx,
             );
-            continue;
+            return softMatch;
           }
         }
 
@@ -296,12 +296,12 @@ var Idiomorph = (function () {
             ctx,
           );
           morphNode(movedChild, newChild, ctx);
-          continue;
+          return movedChild;
         }
 
         // last resort, insert a new node from scratch
-        createNode(oldParent, newChild, insertionPoint, ctx);
-      }
+        return createNode(oldParent, newChild, insertionPoint, ctx);
+      });
 
       // remove any remaining old nodes that didn't match up with new content
       while (insertionPoint && insertionPoint != endPoint) {
@@ -309,6 +309,8 @@ var Idiomorph = (function () {
         insertionPoint = insertionPoint.nextSibling;
         removeNode(tempNode, ctx);
       }
+
+      return morphedNodes;
     }
 
     /**
@@ -336,11 +338,13 @@ var Idiomorph = (function () {
         oldParent.insertBefore(newEmptyChild, insertionPoint);
         morphNode(newEmptyChild, newChild, ctx);
         ctx.callbacks.afterNodeAdded(newEmptyChild);
+        return newEmptyChild;
       } else {
         // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
         const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
         oldParent.insertBefore(newClonedChild, insertionPoint);
         ctx.callbacks.afterNodeAdded(newClonedChild);
+        return newClonedChild;
       }
     }
 
@@ -659,7 +663,7 @@ var Idiomorph = (function () {
         morphAttributes(oldNode, newContent, ctx);
         if (!ignoreValueOfActiveElement(oldNode, ctx)) {
           // @ts-ignore newContent can be a node here because .firstChild will be null
-          morphChildren(oldNode, newContent, ctx);
+          morphChildren(ctx, oldNode, newContent);
         }
       }
       ctx.callbacks.afterNodeMorphed(oldNode, newContent);
