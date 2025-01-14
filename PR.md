@@ -56,7 +56,7 @@ This is the tasty meat of the PR. By removing the two-pass mode, and further lev
    - morph it and move on
  - create a new node from scratch as a last result
 
-We've also been able to simplify and improve findIdSetMatch and findSoftMatch as well, by no longer bailing early, since persisted nodes are no longer lost when they're removed. This means we can always find and morph the best match.
+We've also been able to simplify and improve findIdSetMatch and findSoftMatch as well, by no longer bailing early, since persisted nodes are no longer lost when they're removed. This means we can always find and morph the best match. Finally, there's just a lot less code! Less functions, less branches, less lines, less complexity.
 
 ### OuterHTML morph uses the same algorithm as innerHTML morph
 This was a big win. Until now, the outerHTML morph used a complex bespoke algorithm that was entirely separate from the core morphChildren loop. This meant it wasn't nearly as well-tested, and both algorithms had peculiar and subtle strengths and weaknesses. Now, they've been merged together into one smaller general algorithm, which has the best qualities of both.
