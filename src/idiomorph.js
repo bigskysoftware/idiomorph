@@ -183,16 +183,17 @@ var Idiomorph = (function () {
      * nodes as faithfully as possible.  We greedily match, which allows us to keep the algorithm fast, but
      * by using id sets, we are able to better match up with content deeper in the DOM.
      *
-     * Basic algorithm is, for each node in the new content:
-     *
-     * - if we have not reached the end of the old parent:
-     *   - if the new content has an id set match with the current insertion point, morph
-     *   - search for an id set match
-     *   - if id set match found, morph
-     *   - if the new content is a soft match with the current insertion point, morph
-     *   - otherwise search for a "soft" match
-     *   - if a soft match is found, morph
-     * - otherwise, prepend the new node before the current insertion point
+     * Basic algorithm:
+     * - for each node in the new content:
+     *   - if there could be a match among self and upcoming siblings
+     *     - search self and siblings for an id set match, falling back to a soft match
+     *     - if found
+     *       - remove any nodes inbetween (pantrying any persistent nodes)
+     *       - morph it and move on
+     *   - if no match and node is persistent
+     *     - move it and all its children here (looking in pantry too)
+     *     - morph it and move on
+     *   - create a new node from scratch as a last result
      *
      * The two search algorithms terminate if competing node matches appear to outweigh what can be achieved
      * with the current node.  See findIdSetMatch and findSoftMatch for details.
@@ -211,6 +212,7 @@ var Idiomorph = (function () {
       insertionPoint = null,
       endPoint = null,
     ) {
+      // normalize
       if (
         oldParent instanceof HTMLTemplateElement &&
         newParent instanceof HTMLTemplateElement
@@ -242,11 +244,11 @@ var Idiomorph = (function () {
         }
 
         // if the matching node is elsewhere in the original content
-        if (ctx.persistentIds.has(/** @type {Element} */ (newChild).id)) {
+        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
           // move it and all its children here and morph
           const movedChild = moveBeforeById(
             oldParent,
-            /** @type {Element} */ (newChild).id,
+            newChild.id,
             insertionPoint,
             ctx,
           );
