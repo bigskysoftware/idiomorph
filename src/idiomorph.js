@@ -115,12 +115,7 @@ var Idiomorph = (function () {
   // AND NOW IT BEGINS...
   //=============================================================================
 
-  /**
-   *
-   * @type {Set<string>}
-   */
-  let EMPTY_SET = new Set();
-
+  function noOp() {}
   /**
    * Default configuration values, updatable by users now
    * @type {ConfigInternal}
@@ -733,8 +728,6 @@ var Idiomorph = (function () {
   // Misc
   //=============================================================================
 
-  function noOp() {}
-
   const createMorphContext = (function () {
     /**
      *
@@ -1060,6 +1053,9 @@ var Idiomorph = (function () {
     return null;
   }
 
+  //=============================================================================
+  // HTML Normalization Functions
+  //=============================================================================
   const normalizeContent = (function() {
     /** @type {WeakSet<Node>} */
     const generatedByIdiomorph = new WeakSet();
@@ -1150,6 +1146,10 @@ var Idiomorph = (function () {
     return normalizeContent;
   })();
 
+  //=============================================================================
+  // DOM Manipulation Functions
+  //=============================================================================
+
   /**
    *
    * @param {Node} node
@@ -1214,6 +1214,12 @@ var Idiomorph = (function () {
   //=============================================================================
   // ID Set Functions
   //=============================================================================
+
+  /**
+   *
+   * @type {Set<string>}
+   */
+  let EMPTY_SET = new Set();
 
   /**
    *
