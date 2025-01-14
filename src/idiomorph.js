@@ -225,15 +225,15 @@ var Idiomorph = (function () {
       // run through all the new content
       const morphedNodes = [...newParent.childNodes].map((newChild) => {
         // once we reach the end of the old parent content skip to the end and insert the rest
-        if (insertionPoint != endPoint) {
+        if (insertionPoint && insertionPoint != endPoint) {
           const bestMatch =
             findIdSetMatch(newChild, insertionPoint, endPoint, ctx) ||
             findSoftMatch(newChild, insertionPoint, endPoint, ctx);
 
           if (bestMatch) {
-            // if the node to morph is not at the insertion point then we need to move it here
+            // if the node to morph is not at the insertion point then delete up to it
             if (bestMatch !== insertionPoint) {
-              moveBefore(oldParent, bestMatch, insertionPoint);
+              removeNodesBetween(insertionPoint, bestMatch, ctx);
             }
             morphNode(bestMatch, newChild, ctx);
             insertionPoint = bestMatch.nextSibling;
@@ -469,6 +469,24 @@ var Idiomorph = (function () {
         node.parentNode?.removeChild(node);
         ctx.callbacks.afterNodeRemoved(node);
       }
+    }
+
+    /**
+     *
+     * @param {Node} startInclusive
+     * @param {Node} endExclusive
+     * @param {MorphContext} ctx
+     * @returns {Node | null}
+     */
+    function removeNodesBetween(startInclusive, endExclusive, ctx) {
+      /** @type {Node | null} */ let cursor = startInclusive;
+      // remove nodes until it the end point
+      while (cursor && cursor !== endExclusive) {
+        let tempNode = /** @type {Node} */ (cursor);
+        cursor = cursor.nextSibling;
+        removeNode(tempNode, ctx);
+      }
+      return cursor;
     }
 
     /**
