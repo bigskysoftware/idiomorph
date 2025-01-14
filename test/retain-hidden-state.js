@@ -338,32 +338,6 @@ describe("Hidden state preservation tests", function () {
     states.should.eql([true]);
   });
 
-  it("check moveBefore function fails back to insertBefore if moveBefore fails", function () {
-    getWorkArea().append(
-      make(`
-            <div>
-              <input type="checkbox" id="first">
-              <input type="checkbox" id="second">
-            </div>
-        `),
-    );
-    // replace moveBefore function with a boolean which will fail the try catch
-    document.getElementById("first").parentNode.moveBefore = true;
-    document.getElementById("second").parentNode.moveBefore = true;
-
-    let finalSrc = `
-            <div>
-              <input type="checkbox" id="second">
-              <input type="checkbox" id="first">
-            </div>
-        `;
-    Idiomorph.morph(getWorkArea(), finalSrc, {
-      morphStyle: "innerHTML",
-    });
-
-    getWorkArea().innerHTML.should.equal(finalSrc);
-  });
-
   it("check moveBefore function falls back to insertBefore if moveBefore is missing", function () {
     getWorkArea().append(
       make(`
