@@ -40,32 +40,34 @@ Hooks are called in the order one would expect, and with the arguments one would
 
 ## Refactorings
 ### Reorganized and modularized internal architecture
-In v0.4.0, all the functions were in one IIFE, free to call each other. The call graph looked like a plate of spaghetti with many cycles. We've extracted four indepedent sub-IIFEs from the main one, and now it looks a bit more like a lasagna. :)
+In v0.4.0, all the functions were in one IIFE, free to call each other, and the call graph looked like a plate of spaghetti, with many cyclical relationships. We've untangled and extracted four indepedent sub-IIFEs from the main one, and now it looks a bit more like a lasagna. A DAG lasagna :)
 
 ### Simplified core algorithm
-This is the tasty meat of the PR. By removing the two-pass mode, and further leveraging the persistentId knowlegde, we've been able to greatly simplify the core algorithm. Here's the gist of it, copied from the `morphChildren` function:
+Speaking of lasagna, this is the tasty meat. By removing the two-pass mode, and further leveraging the persistentId knowledge, we've been able to significantly simplify the core algorithm. Here's the gist of it, copied from the `morphChildren` function:
 
 - for each node in the new content:
- - if there could be a match among self and upcoming siblings
-   - search self and siblings for an id set match, falling back to a soft match
-   - if found
-     - remove any nodes inbetween (pantrying any persistent nodes)
-     - morph it and move on
- - if no match and node is persistent
-   - move it and all its children here (looking in pantry too)
-   - morph it and move on
- - create a new node from scratch as a last result
+  - if there could be a match among self and upcoming siblings
+    - search self and siblings for an id set match, falling back to a soft match
+    - if match found
+      - remove any nodes inbetween (pantrying any persistent nodes)
+      - morph it and move on
+  - if no match found, and node is persistent
+    - move it and all its children here (looking in pantry too)
+    - morph it and move on
+  - create a new node from scratch as a last result
 
-We've also been able to simplify and improve findIdSetMatch and findSoftMatch as well, by no longer bailing early, since persisted nodes are no longer lost when they're removed. This means we can always find and morph the best match. Finally, there's just a lot less code! Less functions, less branches, less lines, less complexity.
+We've also been able to simplify and improve findIdSetMatch and findSoftMatch as well. Since persisted nodes are no longer lost when they're removed, there's no longer any need for a bail-early heuristic. This means we can always find and morph the best match.
+
+Finally, there's just a lot less code! Less functions, less branches, less lines, less complexity.
 
 ### OuterHTML morph uses the same algorithm as innerHTML morph
 This was a big win. Until now, the outerHTML morph used a complex bespoke algorithm that was entirely separate from the core morphChildren loop. This meant it wasn't nearly as well-tested, and both algorithms had peculiar and subtle strengths and weaknesses. Now, they've been merged together into one smaller general algorithm, which has the best qualities of both.
 
 ### Less internal state
-Michael found that the idSet code can be greatly simplified, now that we have persistentIds. We no longer need to track deadIds, for example, so that's gone. We also we able to to make the idMap smaller by only including ids that are persistent. There are likely even further wins here, in the future.
+Michael found that the idSet code can be greatly simplified, now that we have persistentIds. We no longer need to track deadIds, for example, so that's gone. Also, we were able to to make the idMap smaller by only including ids that are persistent. There are likely further wins here, in the future.
 
 ### Renamed functions and tweaked signatures for more consistency
-We've standardized on "old" vs "new", and always in that order, as opposed to "from" or "to" or "current" etc. There's a bit more to do here, perhaps with always passing `ctx` first, C-style.
+We've standardized on "old" vs "new", and always in that order, as opposed to "from" or "to" or "current" etc. There's a bit more to do here, perhaps always passing `ctx` first, C-style.
 
 ### 100% test coverage!
 Title says it all. We're feeling really good about the tests suite's ability to tell us when something regresses.
