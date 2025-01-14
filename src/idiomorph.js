@@ -382,10 +382,8 @@ var Idiomorph = (function () {
     }
 
     /**
-     * =============================================================================
-     *  Scans forward from the insertionPoint in the old parent looking for a potential id match
-     *  for the newChild.
-     * =============================================================================
+     * Scans forward from the insertionPoint in the old parent looking for a potential id match
+     * for the newChild.
      * @param {Node} newChild
      * @param {Node | null} insertionPoint
      * @param {Node | null} endPoint
@@ -410,12 +408,8 @@ var Idiomorph = (function () {
     }
 
     /**
-     * =============================================================================
-     *  Scans forward from the insertionPoint in the old parent looking for a potential soft match
-     *  for the newChild.  We stop if we find a potential soft match for the new child OR
-     *  if we find a potential id match in the old parents children OR if we find two
-     *  potential soft matches for the next two pieces of new content
-     * =============================================================================
+     * Scans forward from the insertionPoint in the old parent looking for a potential soft match
+     * for the newChild.
      * @param {Node} newChild
      * @param {Node | null} insertionPoint
      * @param {Node | null} endPoint
@@ -427,18 +421,15 @@ var Idiomorph = (function () {
       let nextSibling = newChild.nextSibling;
 
       while (potentialSoftMatch && potentialSoftMatch != endPoint) {
-        if (hasPersistentIdNodes(ctx, potentialSoftMatch)) {
-          // the current potential soft match has a potential id set match with the remaining new
-          // content so bail out of looking
-          return null;
-        }
-
-        if (isSoftMatch(potentialSoftMatch, newChild)) {
-          return potentialSoftMatch;
+        // the current potential soft match has a id set match with the remaining new
+        // content so leave this one for the future
+        if (!hasPersistentIdNodes(ctx, potentialSoftMatch)) {
+          if (isSoftMatch(potentialSoftMatch, newChild)) {
+            return potentialSoftMatch;
+          }
         }
         potentialSoftMatch = potentialSoftMatch.nextSibling;
       }
-
       return null;
     }
 
@@ -503,7 +494,7 @@ var Idiomorph = (function () {
 
     /**
      * Moves an element before another element within the same parent.
-     * Uses the proposed `moveBefore` API if available, otherwise falls back to `insertBefore`.
+     * Uses the proposed `moveBefore` API if available (and working), otherwise falls back to `insertBefore`.
      * This is essentialy a forward-compat wrapper.
      *
      * @param {Element} parentNode - The parent node containing the after element.
@@ -628,7 +619,7 @@ var Idiomorph = (function () {
     }
 
     /**
-     * syncs a given node with another node, copying over all attributes and
+     * syncs the oldNode to the newNode, copying over all attributes and
      * inner element state from the newNode to the oldNode
      *
      * @param {Node} oldNode the node to copy attributes & state to
@@ -746,8 +737,8 @@ var Idiomorph = (function () {
     }
 
     /**
-     * @param {Element} oldElement element to sync the value to
-     * @param {Element} newElement element to sync the value from
+     * @param {Element} oldElement element to write the value to
+     * @param {Element} newElement element to read the value from
      * @param {string} attributeName the attribute name
      * @param {MorphContext} ctx the merge context
      */
@@ -859,16 +850,10 @@ var Idiomorph = (function () {
    * @returns {Promise<void>[]}
    */
   function handleHeadElement(oldHead, newHead, ctx) {
-    /** @type {Node[]} */
     let added = [];
-    /** @type {Element[]} */
     let removed = [];
-    /** @type {Element[]} */
     let preserved = [];
-    /** @type {Element[]} */
     let nodesToAppend = [];
-
-    let headMergeStyle = ctx.head.style;
 
     // put all new head elements into a Map, by their outerHTML
     let srcToNewHeadNodes = new Map();
@@ -893,7 +878,7 @@ var Idiomorph = (function () {
           preserved.push(currentHeadElt);
         }
       } else {
-        if (headMergeStyle === "append") {
+        if (ctx.head.style === "append") {
           // we are appending and this existing element is not new content
           // so if and only if it is marked for re-append do we do anything
           if (isReAppended) {
@@ -999,9 +984,6 @@ var Idiomorph = (function () {
      * @returns {ConfigInternal}
      */
     function mergeDefaults(config) {
-      /**
-       * @type {ConfigInternal}
-       */
       let finalConfig = Object.assign({}, defaults);
 
       // copy top level stuff into final config
@@ -1020,6 +1002,9 @@ var Idiomorph = (function () {
       return finalConfig;
     }
 
+    /**
+     * @returns {HTMLDivElement}
+     */
     function createPantry() {
       const pantry = document.createElement("div");
       pantry.hidden = true;
@@ -1113,10 +1098,8 @@ var Idiomorph = (function () {
           persistentIds.add(id);
         }
       }
-      /**
-       *
-       * @type {Map<Node, Set<string>>}
-       */
+
+      /** @type {Map<Node, Set<string>>} */
       let idMap = new Map();
       populateIdMapForNode(
         oldContent.parentElement,
