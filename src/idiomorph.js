@@ -164,10 +164,6 @@ var Idiomorph = (function () {
       oldNode = oldNode.documentElement;
     }
 
-    if (typeof newContent === "string") {
-      newContent = parseContent(newContent);
-    }
-
     let normalizedContent = normalizeContent(newContent);
 
     let ctx = createMorphContext(oldNode, normalizedContent, config);
@@ -1062,89 +1058,95 @@ var Idiomorph = (function () {
     return null;
   }
 
-  /** @type {WeakSet<Node>} */
-  const generatedByIdiomorph = new WeakSet();
+  const normalizeContent = (function() {
+    /** @type {WeakSet<Node>} */
+    const generatedByIdiomorph = new WeakSet();
 
-  /**
-   *
-   * @param {string} newContent
-   * @returns {Node | null | DocumentFragment}
-   */
-  function parseContent(newContent) {
-    let parser = new DOMParser();
-
-    // remove svgs to avoid false-positive matches on head, etc.
-    let contentWithSvgsRemoved = newContent.replace(
-      /<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim,
-      "",
-    );
-
-    // if the newContent contains a html, head or body tag, we can simply parse it w/o wrapping
-    if (
-      contentWithSvgsRemoved.match(/<\/html>/) ||
-      contentWithSvgsRemoved.match(/<\/head>/) ||
-      contentWithSvgsRemoved.match(/<\/body>/)
-    ) {
-      let content = parser.parseFromString(newContent, "text/html");
-      // if it is a full HTML document, return the document itself as the parent container
-      if (contentWithSvgsRemoved.match(/<\/html>/)) {
-        generatedByIdiomorph.add(content);
-        return content;
-      } else {
-        // otherwise return the html element as the parent container
-        let htmlElement = content.firstChild;
-        if (htmlElement) {
-          generatedByIdiomorph.add(htmlElement);
-        }
-        return htmlElement;
-      }
-    } else {
-      // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help
-      // deal with touchy tags like tr, tbody, etc.
-      let responseDoc = parser.parseFromString(
-        "<body><template>" + newContent + "</template></body>",
-        "text/html",
-      );
-      let content = /** @type {HTMLTemplateElement} */ (
-        responseDoc.body.querySelector("template")
-      ).content;
-      generatedByIdiomorph.add(content);
-      return content;
-    }
-  }
-
-  /**
-   *
-   * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
-   * @returns {Element}
-   */
-  function normalizeContent(newContent) {
-    if (newContent == null) {
-      // noinspection UnnecessaryLocalVariableJS
-      const dummyParent = document.createElement("div");
-      return dummyParent;
-    } else if (generatedByIdiomorph.has(/** @type {Element} */ (newContent))) {
-      // the template tag created by idiomorph parsing can serve as a dummy parent
-      return /** @type {Element} */ (newContent);
-    } else if (newContent instanceof Node) {
-      if (newContent.parentNode) {
-        return /** @type {Element} */ (newContent.parentNode);
-      } else {
-        // a single node is added as a child to a dummy parent
+    /**
+     *
+     * @param {null | Node | HTMLCollection | Node[] | Document & {generatedByIdiomorph:boolean}} newContent
+     * @returns {Element}
+     */
+    function normalizeContent(newContent) {
+      if (newContent == null) {
+        // noinspection UnnecessaryLocalVariableJS
         const dummyParent = document.createElement("div");
-        dummyParent.append(newContent);
+        return dummyParent;
+      } else if (typeof newContent === "string") {
+        return normalizeContent(parseContent(newContent));
+      } else if (generatedByIdiomorph.has(/** @type {Element} */ (newContent))) {
+        // the template tag created by idiomorph parsing can serve as a dummy parent
+        return /** @type {Element} */ (newContent);
+      } else if (newContent instanceof Node) {
+        if (newContent.parentNode) {
+          return /** @type {Element} */ (newContent.parentNode);
+        } else {
+          // a single node is added as a child to a dummy parent
+          const dummyParent = document.createElement("div");
+          dummyParent.append(newContent);
+          return dummyParent;
+        }
+      } else {
+        // all nodes in the array or HTMLElement collection are consolidated under
+        // a single dummy parent element
+        const dummyParent = document.createElement("div");
+        for (const elt of [...newContent]) {
+          dummyParent.append(elt);
+        }
         return dummyParent;
       }
-    } else {
-      // all nodes in the array or HTMLElement collection are consolidated under
-      // a single dummy parent element
-      const dummyParent = document.createElement("div");
-      for (const elt of [...newContent]) {
-        dummyParent.append(elt);
-      }
-      return dummyParent;
     }
-  }
+
+    /**
+     *
+     * @param {string} newContent
+     * @returns {Node | null | DocumentFragment}
+     */
+    function parseContent(newContent) {
+      let parser = new DOMParser();
+
+      // remove svgs to avoid false-positive matches on head, etc.
+      let contentWithSvgsRemoved = newContent.replace(
+        /<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim,
+        "",
+      );
+
+      // if the newContent contains a html, head or body tag, we can simply parse it w/o wrapping
+      if (
+        contentWithSvgsRemoved.match(/<\/html>/) ||
+        contentWithSvgsRemoved.match(/<\/head>/) ||
+        contentWithSvgsRemoved.match(/<\/body>/)
+      ) {
+        let content = parser.parseFromString(newContent, "text/html");
+        // if it is a full HTML document, return the document itself as the parent container
+        if (contentWithSvgsRemoved.match(/<\/html>/)) {
+          generatedByIdiomorph.add(content);
+          return content;
+        } else {
+          // otherwise return the html element as the parent container
+          let htmlElement = content.firstChild;
+          if (htmlElement) {
+            generatedByIdiomorph.add(htmlElement);
+          }
+          return htmlElement;
+        }
+      } else {
+        // if it is partial HTML, wrap it in a template tag to provide a parent element and also to help
+        // deal with touchy tags like tr, tbody, etc.
+        let responseDoc = parser.parseFromString(
+          "<body><template>" + newContent + "</template></body>",
+          "text/html",
+        );
+        let content = /** @type {HTMLTemplateElement} */ (
+          responseDoc.body.querySelector("template")
+        ).content;
+        generatedByIdiomorph.add(content);
+        return content;
+      }
+    }
+
+    return normalizeContent;
+  })();
 
   /**
    *
