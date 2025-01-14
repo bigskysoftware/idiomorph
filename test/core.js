@@ -1,13 +1,27 @@
 describe("Core morphing tests", function () {
   setup();
 
+  it("morphs outerHTML by default", function () {
+    let initial = make("<button>Foo</button>");
+    let finalSrc = "<button>Bar</button>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
+  it("morphs outerHTML if morphStyle is missing", function () {
+    let initial = make("<button>Foo</button>");
+    let finalSrc = "<button>Bar</button>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: null });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
   it("morphs outerHTML as content properly when argument is null", function () {
     let initial = make("<button>Foo</button>");
     Idiomorph.morph(initial, null, { morphStyle: "outerHTML" });
     initial.isConnected.should.equal(false);
   });
 
-  it("morphs outerHTML as content properly when argument is single node string", function () {
+  it("morphs outerHTML as content properly when argument is single node", function () {
     let initial = make("<button>Foo</button>");
     let finalSrc = "<button>Bar</button>";
     let final = make(finalSrc);
