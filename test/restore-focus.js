@@ -231,4 +231,3 @@ describe("Option to forcibly restore focus after morph", function () {
     assertFocusAndSelection("focused", "b");
   });
 });
-

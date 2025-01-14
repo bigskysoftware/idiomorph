@@ -181,12 +181,15 @@ var Idiomorph = (function () {
   }
 
   function saveAndRestoreFocus(ctx, fn) {
-    if (!ctx.config.restoreFocus || document.body.moveBefore) return fn();
+    if (!ctx.config.restoreFocus) return fn();
 
     let activeElement = document.activeElement;
     let activeElementId, selectionStart, selectionEnd;
 
-    if (activeElement && ["INPUT", "TEXTAREA"].includes(activeElement.tagName)) {
+    if (
+      activeElement &&
+      ["INPUT", "TEXTAREA"].includes(activeElement.tagName)
+    ) {
       activeElementId = activeElement.id;
       selectionStart = activeElement.selectionStart;
       selectionEnd = activeElement.selectionEnd;
@@ -197,6 +200,8 @@ var Idiomorph = (function () {
     if (activeElementId && activeElementId !== document.activeElement?.id) {
       activeElement = ctx.target.querySelector(`#${activeElementId}`);
       activeElement.focus();
+    }
+    if(selectionStart, selectionEnd) {
       activeElement.setSelectionRange(selectionStart, selectionEnd);
     }
 

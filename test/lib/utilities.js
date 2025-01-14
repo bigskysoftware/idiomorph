@@ -72,12 +72,17 @@ function setFocusAndSelection(elementId, selectedText) {
 }
 
 function assertFocusAndSelection(elementId, selectedText) {
+  assertFocus(elementId);
   const activeElement = document.activeElement;
   activeElement.id.should.eql(elementId);
   activeElement.value.substring(activeElement.selectionStart, activeElement.selectionEnd).should.eql(selectedText);
 }
 
-function assertNoSelection() {
+function assertFocus(elementId) {
+  document.activeElement.id.should.eql(elementId);
+}
+
+function assertNoFocus() {
   document.activeElement.should.equal(document.body);
 }
 
