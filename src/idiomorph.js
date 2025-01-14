@@ -151,7 +151,7 @@ var Idiomorph = (function () {
 
   /**
    * =============================================================================
-   * Core Morphing Algorithm - morph, morphNormalizedContent, morphOldNodeTo, morphChildren
+   * Core Morphing Algorithm - morph, morphNormalizedContent, morphNode, morphChildren
    * =============================================================================
    *
    * @param {Element | Document} oldNode
@@ -255,14 +255,14 @@ var Idiomorph = (function () {
         insertionPoint,
         ctx,
       );
-      morphOldNodeTo(movedChild, newChild, ctx);
+      morphNode(movedChild, newChild, ctx);
     } else {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return;
       if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
         // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
         const newEmptyChild = document.createElement(newChild.tagName);
         oldParent.insertBefore(newEmptyChild, insertionPoint);
-        morphOldNodeTo(newEmptyChild, newChild, ctx);
+        morphNode(newEmptyChild, newChild, ctx);
         ctx.callbacks.afterNodeAdded(newEmptyChild);
       } else {
         // no id state to preserve so just insert a clone of the new data to avoid mutating newParent
@@ -279,7 +279,7 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx the merge context
    * @returns {Node | null} the element that ended up in the DOM
    */
-  function morphOldNodeTo(oldNode, newContent, ctx) {
+  function morphNode(oldNode, newContent, ctx) {
     if (ctx.ignoreActive && oldNode === document.activeElement) {
       // don't morph focused element
       return null;
@@ -302,7 +302,7 @@ var Idiomorph = (function () {
         ctx,
       );
     } else {
-      syncNode(oldNode, newContent, ctx);
+      morphAttributes(oldNode, newContent, ctx);
       if (!ignoreValueOfActiveElement(oldNode, ctx)) {
         // @ts-ignore newContent can be a node here because .firstChild will be null
         morphChildren(oldNode, newContent, ctx);
@@ -325,7 +325,7 @@ var Idiomorph = (function () {
       // @ts-ignore we know the Node has a valid parent
       moveBefore(oldNode.parentElement, oldNode, insertionPoint);
     }
-    morphOldNodeTo(oldNode, newChild, ctx);
+    morphNode(oldNode, newChild, ctx);
     return oldNode.nextSibling;
   }
 
@@ -469,7 +469,7 @@ var Idiomorph = (function () {
    * @param {MorphContext} ctx the merge context
    */
 
-  function syncNode(oldNode, newNode, ctx) {
+  function morphAttributes(oldNode, newNode, ctx) {
     let type = newNode.nodeType;
 
     // if is an element type, sync the attributes from the
