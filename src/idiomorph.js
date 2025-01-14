@@ -223,62 +223,13 @@ var Idiomorph = (function () {
       const morphedNodes = [...newParent.childNodes].map((newChild) => {
         // once we reach the end of the old parent content skip to the end and insert the rest
         if (insertionPoint != endPoint) {
-          // if the current node has an id set match then morph
-          if (isIdSetMatch(insertionPoint, newChild, ctx)) {
-            const morphedNode = insertionPoint;
-            insertionPoint = morphChild(
-              insertionPoint,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            return morphedNode;
-          }
+          const bestMatch =
+            findIdSetMatch(newChild, insertionPoint, endPoint, ctx) ||
+            findSoftMatch(newChild, insertionPoint, endPoint, ctx);
 
-          // otherwise search forward in the existing old children for an id set match
-          const idSetMatch = findIdSetMatch(
-            newChild,
-            insertionPoint,
-            endPoint,
-            ctx,
-          );
-          if (idSetMatch) {
-            insertionPoint = morphChild(
-              idSetMatch,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            return idSetMatch;
-          }
-
-          // if the current point is already a soft match morph
-          if (isSoftMatch(insertionPoint, newChild)) {
-            const morphedNode = insertionPoint;
-            insertionPoint = morphChild(
-              insertionPoint,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            return morphedNode;
-          }
-
-          // search forward in the existing old children for a soft match for the current node
-          const softMatch = findSoftMatch(
-            newChild,
-            insertionPoint,
-            endPoint,
-            ctx,
-          );
-          if (softMatch) {
-            insertionPoint = morphChild(
-              softMatch,
-              newChild,
-              insertionPoint,
-              ctx,
-            );
-            return softMatch;
+          if (bestMatch) {
+            insertionPoint = morphChild(bestMatch, newChild, insertionPoint, ctx);
+            return bestMatch;
           }
         }
 
