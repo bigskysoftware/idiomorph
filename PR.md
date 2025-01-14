@@ -40,10 +40,10 @@ Hooks are called in the order one would expect, and with the arguments one would
 
 ## Refactorings
 ### Reorganized and modularized internal architecture
-In v0.4.0, all the functions were in one IIFE, free to call each other, and the call graph looked like a plate of spaghetti, with many cyclical relationships. We've untangled and extracted four indepedent sub-IIFEs from the main one, and now it looks a bit more like a lasagna. A DAG lasagna :)
+In v0.4.0, all the functions were in one IIFE, free to call each other, and the call graph looked like a plate of spaghetti, with many cyclical relationships. We've untangled and extracted five independent sub-IIFEs from the main one, and now it looks a bit more like a lasagna. A DAG lasagna :)
 
 ### Simplified core algorithm
-Speaking of lasagna, this is the tasty meat. By removing the two-pass mode, and further leveraging the persistentId knowledge, we've been able to significantly simplify the core algorithm. Here's the gist of it, copied from the `morphChildren` function:
+Speaking of lasagna, here is the tasty meat. By removing the two-pass mode, and further leveraging the persistentId knowledge, we've been able to significantly improve the core algorithm, while also significantly simplifying it! Here's the gist of new algo, copied from the `morphChildren` function:
 
 - for each node in the new content:
   - if there could be a match among self and upcoming siblings
