@@ -354,10 +354,32 @@ var Idiomorph = (function () {
        * @returns {Node | null}
        */
       function findBestMatch(newChild, insertionPoint, endPoint, ctx) {
-        return (
-          findIdSetMatch(newChild, insertionPoint, endPoint, ctx) ||
-          findSoftMatch(newChild, insertionPoint, endPoint, ctx)
-        );
+        const newChildHasPersistentIds = hasPersistentIdNodes(ctx, newChild);
+
+        let softMatch = null;
+        let cursor = insertionPoint;
+        while (cursor && cursor != endPoint) {
+          // soft matching is a prerequisite for hard matching
+          if (isSoftMatch(cursor, newChild)) {
+            // if there is a possibility of an id match
+            if (newChildHasPersistentIds) {
+              if (isIdSetMatch(cursor, newChild, ctx)) {
+                return cursor; // found a hard match, we're done!
+              }
+            }
+
+            // we haven't yet saved the soft match fallback
+            if (!softMatch) {
+              // the current soft match will hard match something else in the future, leave it
+              if (!hasPersistentIdNodes(ctx, cursor)) {
+                softMatch = cursor; // save this as the fallback if we don't find a hard match
+              }
+            }
+          }
+          cursor = cursor.nextSibling;
+        }
+
+        return softMatch;
       }
 
       /**
@@ -368,9 +390,10 @@ var Idiomorph = (function () {
        * @returns {boolean}
        */
       function isIdSetMatch(oldNode, newNode, ctx) {
-        return oldNode instanceof Element &&
-          isSoftMatch(oldNode, newNode) &&
-          getIdIntersectionCount(oldNode, newNode, ctx) > 0;
+        return (
+          oldNode instanceof Element &&
+          getIdIntersectionCount(oldNode, newNode, ctx) > 0
+        );
       }
 
       /**
@@ -394,61 +417,6 @@ var Idiomorph = (function () {
           /** @type {Element} */ (oldNode).tagName ===
             /** @type {Element} */ (newNode).tagName
         );
-      }
-
-      /**
-       * Scans forward from the insertionPoint in the old parent looking for a potential id match
-       * for the newChild.
-       * @param {Node} newChild
-       * @param {Node | null} insertionPoint
-       * @param {Node | null} endPoint
-       * @param {MorphContext} ctx
-       * @returns {Node | null}
-       */
-      function findIdSetMatch(newChild, insertionPoint, endPoint, ctx) {
-        const newChildPotentialIdCount = getPersistentIdNodeCount(
-          ctx,
-          newChild,
-        );
-
-        // only search forward if there is a possibility of an id match
-        if (newChildPotentialIdCount > 0) {
-          let potentialMatch = insertionPoint;
-          while (potentialMatch && potentialMatch != endPoint) {
-            // If we have an id match, return the current potential match
-            if (isIdSetMatch(potentialMatch, newChild, ctx)) {
-              return potentialMatch;
-            }
-            potentialMatch = potentialMatch.nextSibling;
-          }
-        }
-        return null;
-      }
-
-      /**
-       * Scans forward from the insertionPoint in the old parent looking for a potential soft match
-       * for the newChild.
-       * @param {Node} newChild
-       * @param {Node | null} insertionPoint
-       * @param {Node | null} endPoint
-       * @param {MorphContext} ctx
-       * @returns {null | Node}
-       */
-      function findSoftMatch(newChild, insertionPoint, endPoint, ctx) {
-        let potentialSoftMatch = insertionPoint;
-        let nextSibling = newChild.nextSibling;
-
-        while (potentialSoftMatch && potentialSoftMatch != endPoint) {
-          // the current potential soft match has a id set match with the remaining new
-          // content so leave this one for the future
-          if (!hasPersistentIdNodes(ctx, potentialSoftMatch)) {
-            if (isSoftMatch(potentialSoftMatch, newChild)) {
-              return potentialSoftMatch;
-            }
-          }
-          potentialSoftMatch = potentialSoftMatch.nextSibling;
-        }
-        return null;
       }
 
       return findBestMatch;
@@ -580,7 +548,7 @@ var Idiomorph = (function () {
       let oldSet = ctx.idMap.get(oldNode);
       let newSet = ctx.idMap.get(newNode);
 
-      if(!newSet || !oldSet) return 0
+      if (!newSet || !oldSet) return 0;
 
       let matchCount = 0;
       for (const id of oldSet) {
