@@ -1056,13 +1056,11 @@ var Idiomorph = (function () {
     function populateIdMapForNode(nodeParent, nodes, persistentIds, idMap) {
       for (const elt of nodes) {
         if (persistentIds.has(elt.id)) {
-          /**
-           * @type {Element|null}
-           */
+          /** @type {Element|null} */
           let current = elt;
           // walk up the parent hierarchy of that element, adding the id
           // of element to the parent's id set
-          while (current !== nodeParent && current != null) {
+          while (current && current !== nodeParent) {
             let idSet = idMap.get(current);
             // if the id set doesn't exist, create it and insert it in the  map
             if (idSet == null) {
@@ -1094,7 +1092,7 @@ var Idiomorph = (function () {
       for (const oldElt of oldElts) {
         const id = oldElt.id;
         // if already in map then log duplicates to be skipped
-        if (oldIdMap.get(id)) {
+        if (oldIdMap.has(id)) {
           dupSet.add(id);
         } else {
           oldIdMap.set(id, oldElt.tagName);
