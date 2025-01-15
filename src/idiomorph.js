@@ -575,8 +575,10 @@ var Idiomorph = (function () {
      * @returns {number}
      */
     function getIdIntersectionCount(oldNode, newNode, ctx) {
-      let oldSet = ctx.idMap.get(oldNode) || EMPTY_SET;
-      let newSet = ctx.idMap.get(newNode) || EMPTY_SET;
+      let oldSet = ctx.idMap.get(oldNode);
+      let newSet = ctx.idMap.get(newNode);
+
+      if(!newSet || !oldSet) return 0
 
       let matchCount = 0;
       for (const id of oldSet) {
