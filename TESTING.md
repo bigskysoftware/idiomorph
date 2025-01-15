@@ -27,7 +27,7 @@ This will run the tests using Playwright’s headless browser setup across Chrom
 
 To run all tests against Chrome with experimental `moveBefore` support added, execute:
 ```bash
-npm run test-move-before
+npm run test:move-before
 ```
 This will start headless Chrome in a new profile with the `atomic-move` experimental flag set. This runs in a separate job in CI.
 
@@ -50,7 +50,7 @@ This runs all the tests in the browser using Mocha instead of web-test-runner fo
 
 If you really want to open web-test-runner in headed mode, you can run:
 ```bash
-npm run debug
+npm run test:debug
 ```
 This will start the server, and open the test runner in a browser. From there you can choose a test file to run.
 
