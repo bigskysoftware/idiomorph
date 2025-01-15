@@ -155,30 +155,44 @@ var Idiomorph = (function () {
     const newNode = normalizeParent(newContent);
     const ctx = createMorphContext(oldNode, newNode, config);
 
-    return saveAndRestoreFocus(ctx, () => {
+    const morphedNodes = saveAndRestoreFocus(ctx, () => {
       return withHeadBlocking(
         ctx,
         oldNode,
         newNode,
         /** @param {MorphContext} ctx */ (ctx) => {
-          let morphedNodes;
           if (ctx.morphStyle === "innerHTML") {
-            morphedNodes = morphChildren(ctx, oldNode, newNode);
+            morphChildren(ctx, oldNode, newNode);
+            return Array.from(oldNode.childNodes);
           } else {
             // outerHTML
-            morphedNodes = morphChildren(
+            const oldParent = normalizeParent(oldNode);
+
+            // basis for calulating which nodes were morphed
+            // since there maybe unmorphed sibling nodes
+            let childNodes = Array.from(oldParent.childNodes);
+            const index = childNodes.indexOf(oldNode);
+            // how many elements are to the right of the oldNode
+            const rightMargin = childNodes.length - (index + 1);
+
+            morphChildren(
               ctx,
-              normalizeParent(oldNode),
+              oldParent,
               newNode,
               oldNode,
               oldNode.nextSibling,
             );
+
+            // rebuild childNodes
+            childNodes = Array.from(oldParent.childNodes);
+            return childNodes.slice(index, childNodes.length - rightMargin);
           }
-          ctx.pantry.remove();
-          return morphedNodes;
         },
       );
     });
+
+    ctx.pantry.remove();
+    return morphedNodes;
   }
 
   /**
@@ -241,7 +255,6 @@ var Idiomorph = (function () {
      * @param {Element} newParent the parent element of the new content
      * @param {Node|null} [insertionPoint] the point in the DOM we start morphing at (defaults to first child)
      * @param {Node|null} [endPoint] the point in the DOM we stop morphing at (defaults to after last child)
-     * @returns {Node[]}
      */
     function morphChildren(
       ctx,
@@ -263,7 +276,7 @@ var Idiomorph = (function () {
       insertionPoint ||= oldParent.firstChild;
 
       // run through all the new content
-      const morphedNodes = [...newParent.childNodes].map((newChild) => {
+      for (const newChild of newParent.childNodes) {
         // once we reach the end of the old parent content skip to the end and insert the rest
         if (insertionPoint && insertionPoint != endPoint) {
           const bestMatch = findBestMatch(
@@ -279,7 +292,7 @@ var Idiomorph = (function () {
             }
             morphNode(bestMatch, newChild, ctx);
             insertionPoint = bestMatch.nextSibling;
-            return bestMatch;
+            continue;
           }
         }
 
@@ -293,12 +306,12 @@ var Idiomorph = (function () {
             ctx,
           );
           morphNode(movedChild, newChild, ctx);
-          return movedChild;
+          continue;
         }
 
         // last resort: insert the new node from scratch
-        return createNode(oldParent, newChild, insertionPoint, ctx);
-      });
+        createNode(oldParent, newChild, insertionPoint, ctx);
+      }
 
       // remove any remaining old nodes that didn't match up with new content
       while (insertionPoint && insertionPoint != endPoint) {
@@ -306,8 +319,6 @@ var Idiomorph = (function () {
         insertionPoint = insertionPoint.nextSibling;
         removeNode(tempNode, ctx);
       }
-
-      return morphedNodes.filter((e) => e != null);
     }
 
     /**
