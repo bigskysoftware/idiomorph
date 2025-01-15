@@ -296,6 +296,36 @@ describe("Hidden state preservation tests", function () {
     states.should.eql([true, true]);
   });
 
+  it("preserves all non-attribute element state and innerHTML morphStyle when morphing to two top level nodes with nesting", function () {
+    getWorkArea().innerHTML = `
+      <div>
+        <input type="checkbox" id="first">
+      </div>
+      <div></div><!-- here just to trigger for 100% code coverage getIdInterSectionCount -->
+      <div>
+        <input type="checkbox" id="second">
+      </div>
+    `;
+    document.getElementById("first").indeterminate = true;
+    document.getElementById("second").indeterminate = true;
+
+    let finalSrc = `
+      <div>
+        <input type="checkbox" id="second">
+      </div>
+      <div>
+        <input type="checkbox" id="first">
+      </div>
+    `;
+    Idiomorph.morph(getWorkArea(), finalSrc, { morphStyle: "innerHTML" });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    const states = Array.from(getWorkArea().querySelectorAll("input")).map(
+      (e) => e.indeterminate,
+    );
+    states.should.eql([true, true]);
+  });
+
   it("preserves all non-attribute element state when wrapping element changes tag", function () {
     // just changing the type from div to span of the wrapper causes softmatch to fail so it abandons all hope
     // of morphing and just inserts the node so we need to check this still handles preserving state here.
