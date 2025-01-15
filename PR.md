@@ -1,5 +1,6 @@
 # Overview
 This PR is a proposal for the future of Idiomorph. Michael and I have done our best to make this superior to v0.4.0 in every way. While there are further improvements that could be made, we think this is a solid stake in the ground to be merged into main, and perhaps released as v0.5.0.
+Normally, I try to optimize my PRs to be a concise, cohesive, and atomic unit of work, with an easily grokkable diff. This PR is rather the opposite of that, aiming to demonstrate a clear and total vision, instead.
 
 ## Behavior Changes
 * New `restoreFocus` option
