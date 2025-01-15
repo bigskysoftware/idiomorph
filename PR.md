@@ -71,7 +71,7 @@ Michael found that the idSet code can be greatly simplified, now that we have pe
 We've standardized on "old" vs "new", and always in that order, as opposed to "from" or "to" or "current" etc. There's a bit more to do here, perhaps always passing `ctx` first, C-style.
 
 ### 100% test coverage!
-Title says it all. We're feeling really good about the tests suite's ability to tell us when something regresses.
+Title says it all. We're feeling really good about the tests suite's ability to tell us when something regresses, and CI will now fail if it dips below 100%, to maintain this confidence moving forward. Big props to Michael for plugging the remaining holes, which was no small feat!
 
 ## Future Work
 ### Retain focus and selection natively in more cases, rather than restoring
