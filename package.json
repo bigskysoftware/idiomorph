@@ -20,7 +20,7 @@
   "unpkg": "dist/idiomorph.min.js",
   "scripts": {
     "test": "web-test-runner",
-    "test:coverage": "web-test-runner && node test/lib/ensure-full-coverage.js",
+    "test:coverage": "npm run ci && node test/lib/ensure-full-coverage.js",
     "test:debug": "web-test-runner --manual --open",
     "test:move-before": "USE_MOVE_BEFORE=1 web-test-runner",
     "ci": "web-test-runner --fail-only --playwright --browsers chromium firefox webkit",
