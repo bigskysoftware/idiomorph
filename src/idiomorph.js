@@ -366,18 +366,9 @@ var Idiomorph = (function () {
        * @returns {boolean}
        */
       function isIdSetMatch(oldNode, newNode, ctx) {
-        if (
-          oldNode instanceof Element &&
-          newNode instanceof Element &&
-          oldNode.tagName === newNode.tagName
-        ) {
-          if (oldNode.id !== "" && oldNode.id === newNode.id) {
-            return true;
-          } else {
-            return getIdIntersectionCount(oldNode, newNode, ctx) > 0;
-          }
-        }
-        return false;
+        return oldNode instanceof Element &&
+          isSoftMatch(oldNode, newNode) &&
+          getIdIntersectionCount(oldNode, newNode, ctx) > 0;
       }
 
       /**
