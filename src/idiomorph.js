@@ -167,27 +167,7 @@ var Idiomorph = (function () {
             morphChildren(ctx, oldNode, newNode);
             return Array.from(oldNode.childNodes);
           } else {
-            // outerHTML
-            const oldParent = normalizeParent(oldNode);
-
-            // basis for calulating which nodes were morphed
-            // since there maybe unmorphed sibling nodes
-            let childNodes = Array.from(oldParent.childNodes);
-            const index = childNodes.indexOf(oldNode);
-            // how many elements are to the right of the oldNode
-            const rightMargin = childNodes.length - (index + 1);
-
-            morphChildren(
-              ctx,
-              oldParent,
-              newNode,
-              oldNode,
-              oldNode.nextSibling,
-            );
-
-            // rebuild childNodes
-            childNodes = Array.from(oldParent.childNodes);
-            return childNodes.slice(index, childNodes.length - rightMargin);
+            return morphOuterHTML(ctx, oldNode, newNode);
           }
         },
       );
@@ -195,6 +175,38 @@ var Idiomorph = (function () {
 
     ctx.pantry.remove();
     return morphedNodes;
+  }
+
+  /**
+   * Morph just the outerHTML of the oldNode to the newContent
+   * We have to be careful because the oldNode could have siblings which need to be untouched
+   * @param {MorphContext} ctx
+   * @param {Element} oldNode
+   * @param {Element} newNode
+   * @returns {Node[]}
+   */
+  function morphOuterHTML(ctx, oldNode, newNode) {
+    const oldParent = normalizeParent(oldNode);
+
+    // basis for calulating which nodes were morphed
+    // since there may be unmorphed sibling nodes
+    let childNodes = Array.from(oldParent.childNodes);
+    const index = childNodes.indexOf(oldNode);
+    // how many elements are to the right of the oldNode
+    const rightMargin = childNodes.length - (index + 1);
+
+    morphChildren(
+      ctx,
+      oldParent,
+      newNode,
+      // these two optional params are the secret sauce
+      oldNode, // start point for iteration
+      oldNode.nextSibling, // end point for iteration
+    );
+
+    // return just the morphed nodes
+    childNodes = Array.from(oldParent.childNodes);
+    return childNodes.slice(index, childNodes.length - rightMargin);
   }
 
   /**
