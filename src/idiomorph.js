@@ -352,25 +352,22 @@ var Idiomorph = (function () {
        * @returns {Node | null}
        */
       function findBestMatch(newChild, insertionPoint, endPoint, ctx) {
-        const newChildHasPersistentIds = hasPersistentIdNodes(ctx, newChild);
-
         let softMatch = null;
+
         let cursor = insertionPoint;
         while (cursor && cursor != endPoint) {
-          // soft matching is a prerequisite for hard matching
+          // soft matching is a prerequisite for id set matching
           if (isSoftMatch(cursor, newChild)) {
-            // if there is a possibility of an id match
-            if (newChildHasPersistentIds) {
-              if (isIdSetMatch(cursor, newChild, ctx)) {
-                return cursor; // found a hard match, we're done!
-              }
+            if (getIdIntersectionCount(cursor, newChild, ctx) > 0) {
+              return cursor; // found an id set match, we're done!
             }
 
             // we haven't yet saved the soft match fallback
             if (!softMatch) {
               // the current soft match will hard match something else in the future, leave it
               if (!hasPersistentIdNodes(ctx, cursor)) {
-                softMatch = cursor; // save this as the fallback if we don't find a hard match
+                // save this as the fallback if we get through the loop without finding a hard match
+                softMatch = cursor;
               }
             }
           }
@@ -384,36 +381,20 @@ var Idiomorph = (function () {
        *
        * @param {Node} oldNode
        * @param {Node} newNode
-       * @param {MorphContext} ctx
-       * @returns {boolean}
-       */
-      function isIdSetMatch(oldNode, newNode, ctx) {
-        return (
-          oldNode instanceof Element &&
-          getIdIntersectionCount(oldNode, newNode, ctx) > 0
-        );
-      }
-
-      /**
-       *
-       * @param {Node} oldNode
-       * @param {Node} newNode
        * @returns {boolean}
        */
       function isSoftMatch(oldNode, newNode) {
-        // ok to cast: if one is not element, `id` or `tagName` will be undefined and we'll compare that
-        // If oldNode has an `id` with possible state and it doesn't match newNode.id then avoid morphing
-        if (
-          /** @type {Element} */ (oldNode).id &&
-          /** @type {Element} */ (oldNode).id !==
-            /** @type {Element} */ (newNode).id
-        ) {
-          return false;
-        }
+        // ok to cast: if one is not element, `id` and `tagName` will be undefined and we'll just compare that.
+        const oldElt = /** @type {Element} */ (oldNode);
+        const newElt = /** @type {Element} */ (newNode);
+
         return (
-          oldNode.nodeType === newNode.nodeType &&
-          /** @type {Element} */ (oldNode).tagName ===
-            /** @type {Element} */ (newNode).tagName
+          oldElt.nodeType === newElt.nodeType &&
+          oldElt.tagName === newElt.tagName &&
+          // If oldElt has an `id` with possible state and it doesn't match newElt.id then avoid morphing.
+          // We'll still match an anonymous node with an IDed newElt, though, because if it got this far,
+          // its not persistent, and new nodes can't have any hidden state.
+          (!oldElt.id || oldElt.id === newElt.id)
         );
       }
 
