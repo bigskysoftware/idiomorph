@@ -87,6 +87,6 @@ function assertFocus(elementId) {
 }
 
 function assertNoFocus() {
-  document.activeElement.should.equal(document.body);
+  document.activeElement.tagName.should.eql("BODY");
 }
 
