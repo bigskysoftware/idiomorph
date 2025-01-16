@@ -16,12 +16,16 @@ describe("Michael West temp tests", function () {
     //console.log(JSON.stringify(calls))
 
     calls.should.eql([
-      ["Added","<head></head>"],
-      ["Morphed","<body><h1></h1><h2></h2><div></div></body>","<body><div>Alert</div><h1></h1><h2></h2><div></div></body>"],
-      ["Added","<div>Alert</div>"],
-      ["Morphed","<h1></h1>","<h1></h1>"],
-      ["Morphed","<h2></h2>","<h2></h2>"],
-      ["Morphed","<div></div>","<div></div>"]
+      ["Added", "<head></head>"],
+      [
+        "Morphed",
+        "<body><h1></h1><h2></h2><div></div></body>",
+        "<body><div>Alert</div><h1></h1><h2></h2><div></div></body>",
+      ],
+      ["Added", "<div>Alert</div>"],
+      ["Morphed", "<h1></h1>", "<h1></h1>"],
+      ["Morphed", "<h2></h2>", "<h2></h2>"],
+      ["Morphed", "<div></div>", "<div></div>"],
     ]);
   });
 
@@ -33,38 +37,41 @@ describe("Michael West temp tests", function () {
     // allow better matching with less dom updates.
     let calls = [];
     const div = make(
-      `<div>`+
-        `<label>1</label><input id="first">`+
-        `<label>2</label><input id="second">`+
-        `<label>3</label><input id="third">`+
-      `</div>`
+      `<div>` +
+        `<label>1</label><input id="first">` +
+        `<label>2</label><input id="second">` +
+        `<label>3</label><input id="third">` +
+        `</div>`,
     );
     getWorkArea().append(div);
     let finalSrc =
-      `<div>`+
-        `<label>3</label><input id="third">`+
-        `<label>1</label><input id="first">`+
-        `<label>2</label><input id="second">`+
-      `</div>`
+      `<div>` +
+      `<label>3</label><input id="third">` +
+      `<label>1</label><input id="first">` +
+      `<label>2</label><input id="second">` +
+      `</div>`;
 
-      Idiomorph.morph(div, finalSrc, {
-        callbacks: callLogCallbacks(calls),
-      });
+    Idiomorph.morph(div, finalSrc, {
+      callbacks: callLogCallbacks(calls),
+    });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     //console.log(JSON.stringify(calls))
-    calls.should.eql(
-    [
-      ["Morphed","<div><label>1</label><input id=\"first\"><label>2</label><input id=\"second\"><label>3</label><input id=\"third\"></div>","<div><label>3</label><input id=\"third\"><label>1</label><input id=\"first\"><label>2</label><input id=\"second\"></div>"],
-      ["Morphed","<label>1</label>","<label>3</label>"],
-      ["Morphed","1","3"],
-      ["Morphed","<input id=\"third\">","<input id=\"third\">"],
-      ["Added","<label>1</label>"],
-      ["Morphed","<input id=\"first\">","<input id=\"first\">"],
-      ["Morphed","<label>2</label>","<label>2</label>"],
-      ["Morphed","2","2"],
-      ["Morphed","<input id=\"second\">","<input id=\"second\">"],
-      ["Removed","<label>3</label>"]
+    calls.should.eql([
+      [
+        "Morphed",
+        '<div><label>1</label><input id="first"><label>2</label><input id="second"><label>3</label><input id="third"></div>',
+        '<div><label>3</label><input id="third"><label>1</label><input id="first"><label>2</label><input id="second"></div>',
+      ],
+      ["Morphed", "<label>1</label>", "<label>3</label>"],
+      ["Morphed", "1", "3"],
+      ["Morphed", '<input id="third">', '<input id="third">'],
+      ["Added", "<label>1</label>"],
+      ["Morphed", '<input id="first">', '<input id="first">'],
+      ["Morphed", "<label>2</label>", "<label>2</label>"],
+      ["Morphed", "2", "2"],
+      ["Morphed", '<input id="second">', '<input id="second">'],
+      ["Removed", "<label>3</label>"],
     ]);
   });
 
@@ -89,7 +96,7 @@ describe("Michael West temp tests", function () {
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     document.activeElement.outerHTML.should.equal(
-        document.getElementById("first").outerHTML,
+      document.getElementById("first").outerHTML,
     );
   });
 
@@ -113,12 +120,12 @@ describe("Michael West temp tests", function () {
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     document.activeElement.outerHTML.should.equal(
-        document.getElementById("second").outerHTML,
+      document.getElementById("second").outerHTML,
     );
   });
   it.skip("preserves focus state when parents are reordered first", function () {
     getWorkArea().append(
-        make(`
+      make(`
             <div>
                 <div id="with-focus">
                 <input type="text" id="focus">
@@ -142,18 +149,18 @@ describe("Michael West temp tests", function () {
             </div>
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
-        morphStyle: "innerHTML",
+      morphStyle: "innerHTML",
     });
 
     document.activeElement.outerHTML.should.equal(
-        document.getElementById("focus").outerHTML,
+      document.getElementById("focus").outerHTML,
     );
     getWorkArea().innerHTML.should.equal(finalSrc);
   });
 
   it.skip("preserves focus state when parents are reordered second", function () {
     getWorkArea().append(
-        make(`
+      make(`
             <div>
                 <div id="with-other">
                 <input type="text" id="other">
@@ -177,11 +184,11 @@ describe("Michael West temp tests", function () {
             </div>
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
-        morphStyle: "innerHTML",
+      morphStyle: "innerHTML",
     });
 
     document.activeElement.outerHTML.should.equal(
-        document.getElementById("focus").outerHTML,
+      document.getElementById("focus").outerHTML,
     );
     getWorkArea().innerHTML.should.equal(finalSrc);
   });
@@ -216,18 +223,21 @@ describe("Michael West temp tests", function () {
   // tests for the old bestMatch outerHTML routine and showing how we can preserve this funciton and improve it as well for inner morphs
 
   it.skip("show bestMatch routine can match the best old node for morphing", function () {
-    const div = make(`
+    const div = make(
+      `
             <div>
               <input type="text" id="first">
               <input type="text" id="second">
               <input type="text" id="third">
             </div>
-        `.trim());
+        `.trim(),
+    );
     getWorkArea().append(div);
     document.getElementById("first").focus();
     // disable moveBefore to force it to follow bestMatch routine every time
     document.getElementById("first").parentNode.moveBefore = undefined;
-    document.getElementById("first").parentNode.parentNode.moveBefore = undefined;
+    document.getElementById("first").parentNode.parentNode.moveBefore =
+      undefined;
 
     let finalSrc = `
             <div>
@@ -246,7 +256,7 @@ describe("Michael West temp tests", function () {
       document.activeElement.outerHTML.should.equal(
         document.getElementById("first").outerHTML,
       );
-      } else {
+    } else {
       // but testing with no moveBefore we can test it
       // first input should have been discarded because it was not the best match for the final id'ed node in the source
       // It should instead moprh the div into the second node that contains 2 nodes that can be preserved
@@ -255,11 +265,13 @@ describe("Michael West temp tests", function () {
   });
 
   it.skip("show bestMatch routine can match the best old node for morphing and adding dummy div before", function () {
-    const div = make(`
+    const div = make(
+      `
             <div>
               <input type="text" id="focus">
             </div>
-        `.trim());
+        `.trim(),
+    );
     getWorkArea().append(div);
     document.getElementById("focus").focus();
 
@@ -273,15 +285,19 @@ describe("Michael West temp tests", function () {
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     // the bestMatch code should find that the second destination div is a better id match than the first empty div and retain focus here
-    document.activeElement.outerHTML.should.equal(document.getElementById("focus").outerHTML);
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("focus").outerHTML,
+    );
   });
 
   it.skip("show bestMatch routine disabled losing focus", function () {
-    const div = make(`
+    const div = make(
+      `
             <div>
               <input type="text" id="focus">
             </div>
-        `.trim());
+        `.trim(),
+    );
     getWorkArea().append(div);
     document.getElementById("focus").focus();
     // disable best match by tricking it into thinking moveBefore exists which prevents bestMatch function
@@ -309,16 +325,17 @@ describe("Michael West temp tests", function () {
     }
   });
 
-
   it.skip("show bestMatch routine can match the best old node for morphing with deeper content", function () {
     // the new routine also handles bestMatch checking on inner children scans while before it was only run on the top node
-    const div = make(`
+    const div = make(
+      `
             <div>
               <div>
                 <input type="text" id="focus">
               </div>
             </div>
-        `.trim());
+        `.trim(),
+    );
     getWorkArea().append(div);
     document.getElementById("focus").focus();
 
@@ -334,7 +351,8 @@ describe("Michael West temp tests", function () {
 
     getWorkArea().innerHTML.should.equal(finalSrc);
     // the bestMatch code should find that the second destination div is a better id match than the first empty div and retain focus here
-    document.activeElement.outerHTML.should.equal(document.getElementById("focus").outerHTML);
+    document.activeElement.outerHTML.should.equal(
+      document.getElementById("focus").outerHTML,
+    );
   });
-  
 });

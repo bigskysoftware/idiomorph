@@ -91,7 +91,7 @@ function assertNoFocus() {
 }
 
 function callLogCallbacks(calls) {
-    const callbacks = {
+  const callbacks = {
     beforeNodeMorphed: (oldNode, newNode) => {
       calls.push([ 
         'Morphed',
