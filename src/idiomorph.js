@@ -350,7 +350,7 @@ var Idiomorph = (function () {
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
-      if (hasPersistentIdNodes(ctx, newChild) && newChild instanceof Element) {
+      if (ctx.idMap.has(newChild) && newChild instanceof Element) {
         // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
         const newEmptyChild = document.createElement(newChild.tagName);
         oldParent.insertBefore(newEmptyChild, insertionPoint);
@@ -393,9 +393,9 @@ var Idiomorph = (function () {
             // we haven't yet saved a soft match fallback
             if (!softMatch) {
               // the current soft match will hard match something else in the future, leave it
-              if (!hasPersistentIdNodes(ctx, cursor)) {
+              if (!ctx.idMap.has(cursor)) {
                 // optimization: if node can't id set match, we can just return the soft match immediately
-                if (!hasPersistentIdNodes(ctx, node)) {
+                if (!ctx.idMap.has(node)) {
                   return cursor;
                 } else {
                   // save this as the fallback if we get through the loop without finding a hard match
@@ -447,7 +447,7 @@ var Idiomorph = (function () {
      */
     function removeNode(ctx, node) {
       // are we going to id set match this later?
-      if (hasPersistentIdNodes(ctx, node) && node instanceof Element) {
+      if (ctx.idMap.has(node) && node instanceof Element) {
         // skip callbacks and move to pantry
         moveBefore(ctx.pantry, node, null);
       } else {
@@ -526,33 +526,6 @@ var Idiomorph = (function () {
     //=============================================================================
     // ID Set Functions
     //=============================================================================
-
-    /**
-     *
-     * @type {Set<string>}
-     */
-    let EMPTY_SET = new Set();
-
-    /**
-     *
-     * @param {MorphContext} ctx
-     * @param {Node} node
-     * @returns {number}
-     */
-    function getPersistentIdNodeCount(ctx, node) {
-      let idSet = ctx.idMap.get(node) || EMPTY_SET;
-      return idSet.size;
-    }
-
-    /**
-     *
-     * @param {MorphContext} ctx
-     * @param {Node} node
-     * @returns {boolean}
-     */
-    function hasPersistentIdNodes(ctx, node) {
-      return getPersistentIdNodeCount(ctx, node) > 0;
-    }
 
     /**
      *
