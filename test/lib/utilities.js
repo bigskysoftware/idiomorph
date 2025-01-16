@@ -90,3 +90,21 @@ function assertNoFocus() {
   document.activeElement.should.equal(document.body);
 }
 
+function callLogCallbacks(calls) {
+    const callbacks = {
+    beforeNodeMorphed: (oldNode, newNode) => {
+      calls.push([ 
+        'Morphed',
+        oldNode.outerHTML || oldNode.textContent,
+        newNode.outerHTML || newNode.textContent,
+      ]);
+    },
+    beforeNodeRemoved: (node) => {
+      calls.push(['Removed', node.outerHTML || node.textContent]);
+    },
+    beforeNodeAdded: (node) => {
+      calls.push(['Added', node.outerHTML || node.textContent]);
+    },
+  };
+  return callbacks;
+}
