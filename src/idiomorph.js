@@ -254,15 +254,18 @@ var Idiomorph = (function () {
      *
      * Basic algorithm:
      * - for each node in the new content:
-     *   - if there could be a match among self and upcoming siblings
-     *     - search self and siblings for an id set match, falling back to a soft match
-     *     - if found
-     *       - remove any nodes inbetween (pantrying any persistent nodes)
-     *       - morph it and move on
-     *   - if no match and node is persistent
-     *     - move it and all its children here (looking in pantry too)
-     *     - morph it and move on
-     *   - create a new node from scratch as a last result
+     *   - search self and siblings for an id set match, falling back to a soft match
+     *   - if match found
+     *     - remove any nodes up to the match:
+     *       - pantry persistent nodes
+     *       - delete the rest
+     *     - morph the match
+     *   - elsif no match found, and node is persistent
+     *     - find its match by querying the old root (future) and pantry (past)
+     *     - move it and its children here
+     *     - morph it
+     *   - else
+     *     - create a new node from scratch as a last result
      *
      * @param {MorphContext} ctx the merge context
      * @param {Element} oldParent the old content that we are merging the new content into
@@ -294,15 +297,15 @@ var Idiomorph = (function () {
         // once we reach the end of the old parent content skip to the end and insert the rest
         if (insertionPoint && insertionPoint != endPoint) {
           const bestMatch = findBestMatch(
+            ctx,
             newChild,
             insertionPoint,
             endPoint,
-            ctx,
           );
           if (bestMatch) {
-            // if the node to morph is not at the insertion point then delete up to it
+            // if the node to morph is not at the insertion point then remove/move up to it
             if (bestMatch !== insertionPoint) {
-              removeNodesBetween(insertionPoint, bestMatch, ctx);
+              removeNodesBetween(ctx, insertionPoint, bestMatch);
             }
             morphNode(bestMatch, newChild, ctx);
             insertionPoint = bestMatch.nextSibling;
@@ -331,7 +334,7 @@ var Idiomorph = (function () {
       while (insertionPoint && insertionPoint != endPoint) {
         const tempNode = insertionPoint;
         insertionPoint = insertionPoint.nextSibling;
-        removeNode(tempNode, ctx);
+        removeNode(ctx, tempNode);
       }
     }
 
@@ -368,31 +371,36 @@ var Idiomorph = (function () {
     //=============================================================================
     const findBestMatch = (function () {
       /**
-       * Scans forward from the insertionPoint to the endPoint looking for a match
-       * for the newChild. It looks for an id set match first, then a soft match.
-       * @param {Node} newChild
-       * @param {Node | null} insertionPoint
-       * @param {Node | null} endPoint
+       * Scans forward from the startPoint to the endPoint looking for a match
+       * for the node. It looks for an id set match first, then a soft match.
+       * @param {Node} node
        * @param {MorphContext} ctx
+       * @param {Node | null} startPoint
+       * @param {Node | null} endPoint
        * @returns {Node | null}
        */
-      function findBestMatch(newChild, insertionPoint, endPoint, ctx) {
+      function findBestMatch(ctx, node, startPoint, endPoint) {
         let softMatch = null;
 
-        let cursor = insertionPoint;
+        let cursor = startPoint;
         while (cursor && cursor != endPoint) {
           // soft matching is a prerequisite for id set matching
-          if (isSoftMatch(cursor, newChild)) {
-            if (getIdIntersectionCount(cursor, newChild, ctx) > 0) {
+          if (isSoftMatch(cursor, node)) {
+            if (getIdIntersectionCount(cursor, node, ctx) > 0) {
               return cursor; // found an id set match, we're done!
             }
 
-            // we haven't yet saved the soft match fallback
+            // we haven't yet saved a soft match fallback
             if (!softMatch) {
               // the current soft match will hard match something else in the future, leave it
               if (!hasPersistentIdNodes(ctx, cursor)) {
-                // save this as the fallback if we get through the loop without finding a hard match
-                softMatch = cursor;
+                // optimization: if node can't id set match, we can just return the soft match immediately
+                if (!hasPersistentIdNodes(ctx, node)) {
+                  return cursor;
+                } else {
+                  // save this as the fallback if we get through the loop without finding a hard match
+                  softMatch = cursor;
+                }
               }
             }
           }
@@ -431,15 +439,19 @@ var Idiomorph = (function () {
     //=============================================================================
 
     /**
-     *
-     * @param {Node} node
+     * Gets rid of an unwanted DOM node; strategy depends on nature of its reuse:
+     * - Persistent nodes will be moved to the pantry for later reuse
+     * - Other nodes will have their hooks called, and then are removed
      * @param {MorphContext} ctx
+     * @param {Node} node
      */
-    function removeNode(node, ctx) {
-      // skip remove callbacks when we're going to be restoring this from the pantry later
+    function removeNode(ctx, node) {
+      // are we going to id set match this later?
       if (hasPersistentIdNodes(ctx, node) && node instanceof Element) {
+        // skip callbacks and move to pantry
         moveBefore(ctx.pantry, node, null);
       } else {
+        // remove for realsies
         if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
         node.parentNode?.removeChild(node);
         ctx.callbacks.afterNodeRemoved(node);
@@ -447,19 +459,20 @@ var Idiomorph = (function () {
     }
 
     /**
-     *
+     * Remove nodes between the start and end nodes
+     * @param {MorphContext} ctx
      * @param {Node} startInclusive
      * @param {Node} endExclusive
-     * @param {MorphContext} ctx
-     * @returns {Node | null}
+     * @returns {Node|null}
      */
-    function removeNodesBetween(startInclusive, endExclusive, ctx) {
-      /** @type {Node | null} */ let cursor = startInclusive;
-      // remove nodes until it the end point
+    function removeNodesBetween(ctx, startInclusive, endExclusive) {
+      /** @type {Node | null} */
+      let cursor = startInclusive;
+      // remove nodes until the endExclusive node
       while (cursor && cursor !== endExclusive) {
         let tempNode = /** @type {Node} */ (cursor);
         cursor = cursor.nextSibling;
-        removeNode(tempNode, ctx);
+        removeNode(ctx, tempNode);
       }
       return cursor;
     }
