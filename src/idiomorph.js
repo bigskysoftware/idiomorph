@@ -386,7 +386,7 @@ var Idiomorph = (function () {
         while (cursor && cursor != endPoint) {
           // soft matching is a prerequisite for id set matching
           if (isSoftMatch(cursor, node)) {
-            if (getIdIntersectionCount(cursor, node, ctx) > 0) {
+            if (isIdSetMatch(ctx, cursor, node)) {
               return cursor; // found an id set match, we're done!
             }
 
@@ -408,6 +408,31 @@ var Idiomorph = (function () {
         }
 
         return softMatch;
+      }
+
+      /**
+       *
+       * @param {MorphContext} ctx
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @returns {boolean}
+       */
+      function isIdSetMatch(ctx, oldNode, newNode) {
+        let oldSet = ctx.idMap.get(oldNode);
+        let newSet = ctx.idMap.get(newNode);
+
+        if (!newSet || !oldSet) return false;
+
+        for (const id of oldSet) {
+          // a potential match is an id in the new and old nodes that
+          // has not already been merged into the DOM
+          // But the newNode content we call this on has not been
+          // merged yet and we don't allow duplicate IDs so it is simple
+          if (newSet.has(id)) {
+            return true;
+          }
+        }
+        return false;
       }
 
       /**
@@ -521,36 +546,6 @@ var Idiomorph = (function () {
       } else {
         parentNode.insertBefore(element, after);
       }
-    }
-
-    //=============================================================================
-    // ID Set Functions
-    //=============================================================================
-
-    /**
-     *
-     * @param {Node} oldNode
-     * @param {Node} newNode
-     * @param {MorphContext} ctx
-     * @returns {number}
-     */
-    function getIdIntersectionCount(oldNode, newNode, ctx) {
-      let oldSet = ctx.idMap.get(oldNode);
-      let newSet = ctx.idMap.get(newNode);
-
-      if (!newSet || !oldSet) return 0;
-
-      let matchCount = 0;
-      for (const id of oldSet) {
-        // a potential match is an id in the new and old nodes that
-        // has not already been merged into the DOM
-        // But the newNode content we call this on has not been
-        // merged yet and we don't allow duplicate IDs so it is simple
-        if (newSet.has(id)) {
-          ++matchCount;
-        }
-      }
-      return matchCount;
     }
 
     return morphChildren;
