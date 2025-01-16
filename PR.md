@@ -61,7 +61,7 @@ Speaking of lasagna, here is the tasty meat. By removing the two-pass mode, and 
   - else
     - create a new node from scratch as a last result
 
-We've also been able to simplify and improve `findIdSetMatch` and `findSoftMatch` as well. Since persisted nodes are no longer lost when they're removed, there's no longer any need for a bail-early heuristic. This means we can always find and morph the best match. Those two functions and `isIdSetMatch` have also been merged into a single simpler `findBestMatch` function, which only traverses the children once instead of twice.
+We've also been able to simplify and improve `findIdSetMatch` and `findSoftMatch` as well. Since persisted nodes are no longer lost when they're removed, there's no longer any need for a bail-early heuristic. This means we can always find and morph the best match. Those two functions have also been merged into a single simpler `findBestMatch` function, which only traverses the children once instead of twice.
 
 Finally, there's just a lot less code! Less functions, less branches, less lines, less complexity.
 
