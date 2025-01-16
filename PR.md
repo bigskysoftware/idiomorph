@@ -49,18 +49,19 @@ Speaking of lasagna, here is the tasty meat. By removing the two-pass mode, and 
 - for each node in the new content:
   - search self and siblings for an id set match, falling back to a soft match
   - if match found
-    - remove any nodes up to match:
+    - remove any nodes up to the match:
       - pantry persistent nodes
       - shuffle soft matches to the end for later reuse
       - delete the rest
-    - morph it and move on
-  - if no match found, and node is persistent
-    - find its match by looking within the old document and pantry
+    - morph the match
+  - elsif no match found, and node is persistent
+    - find its match by querying the old root (future) and pantry (past)
     - move it and its children here
-    - morph it and move on
-  - create a new node from scratch as a last result
+    - morph it
+  - else
+    - create a new node from scratch as a last result
 
-We've also been able to simplify and improve findIdSetMatch and findSoftMatch as well. Since persisted nodes are no longer lost when they're removed, there's no longer any need for a bail-early heuristic. This means we can always find and morph the best match.
+We've also been able to simplify and improve `findIdSetMatch` and `findSoftMatch` as well. Since persisted nodes are no longer lost when they're removed, there's no longer any need for a bail-early heuristic. This means we can always find and morph the best match. Those two functions and `isIdSetMatch` have also been merged into a single simpler `findBestMatch` function, which only traverses the children once instead of twice.
 
 Finally, there's just a lot less code! Less functions, less branches, less lines, less complexity.
 
