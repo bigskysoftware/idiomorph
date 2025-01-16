@@ -47,13 +47,16 @@ In v0.4.0, all the functions were in one IIFE, free to call each other, and the 
 Speaking of lasagna, here is the tasty meat. By removing the two-pass mode, and further leveraging the persistentId knowledge, we've been able to significantly improve the core algorithm, while also significantly simplifying it! Here's the gist of new algo, copied from the `morphChildren` function:
 
 - for each node in the new content:
-  - if there could be a match among self and upcoming siblings
-    - search self and siblings for an id set match, falling back to a soft match
-    - if match found
-      - remove any nodes inbetween (pantrying any persistent nodes)
-      - morph it and move on
+  - search self and siblings for an id set match, falling back to a soft match
+  - if match found
+    - remove any nodes up to match:
+      - pantry persistent nodes
+      - shuffle soft matches to the end for later reuse
+      - delete the rest
+    - morph it and move on
   - if no match found, and node is persistent
-    - move it and all its children here (looking in pantry too)
+    - find its match by looking within the old document and pantry
+    - move it and its children here
     - morph it and move on
   - create a new node from scratch as a last result
 

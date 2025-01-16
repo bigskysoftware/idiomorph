@@ -5,28 +5,21 @@ describe("Michael West temp tests", function () {
     // when nodes can't be softMatched because they have different types it will scan ahead
     // but it aborts the scan ahead if it finds two nodes ahead in both the new and old content
     // that softmatch so it can just insert the mis matched node it is on and get to the matching.
-    let calls = [];
-    let initial = parseHTML("<body><h1></h1><h2></h2><div></div></body>");
-    let finalSrc = "<body><div>Alert</div><h1></h1><h2></h2><div></div></body>";
-    let final = parseHTML(finalSrc);
-    Idiomorph.morph(initial.body, final.body, {
-      callbacks: callLogCallbacks(calls),
-    });
-    initial.body.outerHTML.should.equal(finalSrc);
-    //console.log(JSON.stringify(calls))
-
-    calls.should.eql([
-      ["Added", "<head></head>"],
+    assertOps(
+      "<section><h1></h1><h2></h2><div></div></section>",
+      "<section><div>Alert</div><h1></h1><h2></h2><div></div></section>",
       [
-        "Morphed",
-        "<body><h1></h1><h2></h2><div></div></body>",
-        "<body><div>Alert</div><h1></h1><h2></h2><div></div></body>",
+        [
+          "Morphed",
+          "<section><h1></h1><h2></h2><div></div></section>",
+          "<section><div>Alert</div><h1></h1><h2></h2><div></div></section>",
+        ],
+        ["Added", "<div>Alert</div>"],
+        ["Morphed", "<h1></h1>", "<h1></h1>"],
+        ["Morphed", "<h2></h2>", "<h2></h2>"],
+        ["Morphed", "<div></div>", "<div></div>"],
       ],
-      ["Added", "<div>Alert</div>"],
-      ["Morphed", "<h1></h1>", "<h1></h1>"],
-      ["Morphed", "<h2></h2>", "<h2></h2>"],
-      ["Morphed", "<div></div>", "<div></div>"],
-    ]);
+    );
   });
 
   it.skip("findIdSetMatch rejects morphing node that would lose more IDs", function () {
@@ -35,44 +28,35 @@ describe("Michael West temp tests", function () {
     // how many id's in the content it would have to remove before it finds a match
     // if it finds more ids are going to match in-between nodes it aborts matching to
     // allow better matching with less dom updates.
-    let calls = [];
-    const div = make(
+    assertOps(
       `<div>` +
         `<label>1</label><input id="first">` +
         `<label>2</label><input id="second">` +
         `<label>3</label><input id="third">` +
         `</div>`,
-    );
-    getWorkArea().append(div);
-    let finalSrc =
+
       `<div>` +
-      `<label>3</label><input id="third">` +
-      `<label>1</label><input id="first">` +
-      `<label>2</label><input id="second">` +
-      `</div>`;
-
-    Idiomorph.morph(div, finalSrc, {
-      callbacks: callLogCallbacks(calls),
-    });
-
-    getWorkArea().innerHTML.should.equal(finalSrc);
-    //console.log(JSON.stringify(calls))
-    calls.should.eql([
+        `<label>3</label><input id="third">` +
+        `<label>1</label><input id="first">` +
+        `<label>2</label><input id="second">` +
+        `</div>`,
       [
-        "Morphed",
-        '<div><label>1</label><input id="first"><label>2</label><input id="second"><label>3</label><input id="third"></div>',
-        '<div><label>3</label><input id="third"><label>1</label><input id="first"><label>2</label><input id="second"></div>',
+        [
+          "Morphed",
+          '<div><label>1</label><input id="first"><label>2</label><input id="second"><label>3</label><input id="third"></div>',
+          '<div><label>3</label><input id="third"><label>1</label><input id="first"><label>2</label><input id="second"></div>',
+        ],
+        ["Morphed", "<label>1</label>", "<label>3</label>"],
+        ["Morphed", "1", "3"],
+        ["Morphed", '<input id="third">', '<input id="third">'],
+        ["Added", "<label>1</label>"],
+        ["Morphed", '<input id="first">', '<input id="first">'],
+        ["Morphed", "<label>2</label>", "<label>2</label>"],
+        ["Morphed", "2", "2"],
+        ["Morphed", '<input id="second">', '<input id="second">'],
+        ["Removed", "<label>3</label>"],
       ],
-      ["Morphed", "<label>1</label>", "<label>3</label>"],
-      ["Morphed", "1", "3"],
-      ["Morphed", '<input id="third">', '<input id="third">'],
-      ["Added", "<label>1</label>"],
-      ["Morphed", '<input id="first">', '<input id="first">'],
-      ["Morphed", "<label>2</label>", "<label>2</label>"],
-      ["Morphed", "2", "2"],
-      ["Morphed", '<input id="second">', '<input id="second">'],
-      ["Removed", "<label>3</label>"],
-    ]);
+    );
   });
 
   // five tests that show it is possible with the right activeElement preservation tricks you could preserve focus both ways
