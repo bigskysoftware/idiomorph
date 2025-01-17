@@ -202,7 +202,7 @@ var Idiomorph = (function () {
 
     const nodes = []
     // return array from the first node added to before the last node 
-    let cursor = beforeStartPoint ? beforeStartPoint.nextSibling : oldParent.firstChild;
+    let cursor = beforeStartPoint?.nextSibling || oldParent.firstChild;
     while (cursor && cursor != endPoint) {
       nodes.push(cursor);
       cursor = cursor.nextSibling;
