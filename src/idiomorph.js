@@ -373,6 +373,7 @@ var Idiomorph = (function () {
       /**
        * Scans forward from the startPoint to the endPoint looking for a match
        * for the node. It looks for an id set match first, then a soft match.
+       * We abort softmatching if we find two future soft matches, to reduce churn.
        * @param {Node} node
        * @param {MorphContext} ctx
        * @param {Node | null} startPoint
@@ -381,6 +382,8 @@ var Idiomorph = (function () {
        */
       function findBestMatch(ctx, node, startPoint, endPoint) {
         let softMatch = null;
+        let nextSibling = node.nextSibling;
+        let siblingSoftMatchCount = 0;
 
         let cursor = startPoint;
         while (cursor && cursor != endPoint) {
@@ -391,23 +394,36 @@ var Idiomorph = (function () {
             }
 
             // we haven't yet saved a soft match fallback
-            if (!softMatch) {
+            if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
-                // optimization: if node can't id set match, we can just return the soft match immediately
-                if (!ctx.idMap.has(node)) {
-                  return cursor;
-                } else {
-                  // save this as the fallback if we get through the loop without finding a hard match
-                  softMatch = cursor;
-                }
+                // save this as the fallback if we get through the loop without finding a hard match
+                softMatch = cursor;
               }
             }
           }
+          if (
+            softMatch === null &&
+            nextSibling &&
+            isSoftMatch(cursor, nextSibling)
+          ) {
+            // The next new node has a soft match with this node, so
+            // increment the count of future soft matches
+            siblingSoftMatchCount++;
+            nextSibling = nextSibling.nextSibling;
+
+            // If there are two future soft matches, block soft matching for this node to allow
+            // future siblings to soft match. This is to reduce churn in the DOM when an element
+            // is prepended.
+            if (siblingSoftMatchCount >= 2) {
+              softMatch = undefined;
+            }
+          }
+
           cursor = cursor.nextSibling;
         }
 
-        return softMatch;
+        return softMatch || null;
       }
 
       /**

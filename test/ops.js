@@ -167,4 +167,25 @@ describe("morphing operations", function () {
       ],
     );
   });
+
+  it("show softMatch aborting on two future soft matches", function () {
+    // when nodes can't be softMatched because they have different types it will scan ahead
+    // but it aborts the scan ahead if it finds two nodes ahead in both the new and old content
+    // that softmatch so it can just insert the mis matched node it is on and get to the matching.
+    assertOps(
+      "<section><h1></h1><h2></h2><div></div></section>",
+      "<section><div>Alert</div><h1></h1><h2></h2><div></div></section>",
+      [
+        [
+          "Morphed",
+          "<section><h1></h1><h2></h2><div></div></section>",
+          "<section><div>Alert</div><h1></h1><h2></h2><div></div></section>",
+        ],
+        ["Added", "<div>Alert</div>"],
+        ["Morphed", "<h1></h1>", "<h1></h1>"],
+        ["Morphed", "<h2></h2>", "<h2></h2>"],
+        ["Morphed", "<div></div>", "<div></div>"],
+      ],
+    );
+  });
 });
