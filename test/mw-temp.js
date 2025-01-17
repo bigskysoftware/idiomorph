@@ -1,7 +1,7 @@
 describe("Michael West temp tests", function () {
   setup();
 
-  it.skip("Show findSoftMatch aborting on two future soft matches", function () {
+  it("Show findSoftMatch aborting on two future soft matches", function () {
     // when nodes can't be softMatched because they have different types it will scan ahead
     // but it aborts the scan ahead if it finds two nodes ahead in both the new and old content
     // that softmatch so it can just insert the mis matched node it is on and get to the matching.

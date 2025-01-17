@@ -390,6 +390,8 @@ var Idiomorph = (function () {
        */
       function findBestMatch(ctx, node, startPoint, endPoint) {
         let softMatch = null;
+        let nextSibling = node.nextSibling; 
+        let siblingSoftMatchCount = 0;
 
         let cursor = startPoint;
         while (cursor && cursor != endPoint) {
@@ -400,7 +402,7 @@ var Idiomorph = (function () {
             }
 
             // we haven't yet saved a soft match fallback
-            if (!softMatch) {
+            if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
                 // optimization: if node can't id set match, we can just return the soft match immediately
@@ -413,10 +415,24 @@ var Idiomorph = (function () {
               }
             }
           }
+          if (nextSibling && isSoftMatch(cursor, nextSibling)) {
+            // the next new node has a soft match with this node, so
+            // increment the count of future soft matches
+            siblingSoftMatchCount++;
+            nextSibling =  nextSibling.nextSibling;
+    
+            // If there are two future soft matches, block soft matching allow the siblings to soft match
+            // so that we don't consume future soft matches for the sake of the current node
+            if (siblingSoftMatchCount >= 2) {
+              // set it undefined to block future softmatches
+              softMatch = undefined;
+            }
+          }
+  
           cursor = cursor.nextSibling;
         }
 
-        return softMatch;
+        return softMatch || null;
       }
 
       /**
