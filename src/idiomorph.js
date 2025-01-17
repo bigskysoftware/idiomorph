@@ -186,12 +186,10 @@ var Idiomorph = (function () {
   function morphOuterHTML(ctx, oldNode, newNode) {
     const oldParent = normalizeParent(oldNode);
 
-    // basis for calulating which nodes were morphed
-    // since there may be unmorphed sibling nodes
-    let childNodes = Array.from(oldParent.childNodes);
-    const index = childNodes.indexOf(oldNode);
-    // how many elements are to the right of the oldNode
-    const rightMargin = childNodes.length - (index + 1);
+    // store start and end points so we can find inbetween nodes to return later
+    // as we can avoid returning before or after siblings
+    const beforeStartPoint = oldNode.previousSibling;
+    const endPoint = oldNode.nextSibling;
 
     morphChildren(
       ctx,
@@ -199,12 +197,17 @@ var Idiomorph = (function () {
       newNode,
       // these two optional params are the secret sauce
       oldNode, // start point for iteration
-      oldNode.nextSibling, // end point for iteration
+      endPoint, // end point for iteration
     );
 
-    // return just the morphed nodes
-    childNodes = Array.from(oldParent.childNodes);
-    return childNodes.slice(index, childNodes.length - rightMargin);
+    const nodes = []
+    // return array from the first node added to before the last node 
+    let cursor = beforeStartPoint ? beforeStartPoint.nextSibling : oldParent.firstChild;
+    while (cursor && cursor != endPoint) {
+      nodes.push(cursor);
+      cursor = cursor.nextSibling;
+    }
+    return nodes;
   }
 
   /**
