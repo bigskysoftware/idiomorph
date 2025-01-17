@@ -419,14 +419,12 @@ var Idiomorph = (function () {
               }
             }
           }
-          // check for ids we may be discarding when matching nodes with ids
-          if (nodeMatchCount) {
-            discardMatchCount += ctx.idMap.get(cursor)?.size || 0;
-            if (discardMatchCount > nodeMatchCount) {
-              // if we are going to discard more ids than the node contains then
-              // we do not have a good candidate for an id match, so return
-              break;
-            }
+          // check for ids we may be discarding when matching
+          discardMatchCount += ctx.idMap.get(cursor)?.size || 0;
+          if (discardMatchCount > nodeMatchCount) {
+            // if we are going to discard more ids than the node contains then
+            // we do not have a good candidate for an id match, so return
+            break;
           }
 
           if (nextSibling && isSoftMatch(cursor, nextSibling)) {
