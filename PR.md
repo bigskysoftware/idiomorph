@@ -51,7 +51,6 @@ Speaking of lasagna, here is the tasty meat. By removing the two-pass mode, and 
   - if match found
     - remove any nodes up to the match:
       - pantry persistent nodes
-      - shuffle soft matches to the end for later reuse
       - delete the rest
     - morph the match
   - elsif no match found, and node is persistent

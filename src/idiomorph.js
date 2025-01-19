@@ -256,7 +256,6 @@ var Idiomorph = (function () {
      *   - if match found
      *     - remove any nodes up to the match:
      *       - pantry persistent nodes
-     *       - shuffle soft matches to the end for later reuse
      *       - delete the rest
      *     - morph the match
      *   - elsif no match found, and node is persistent
@@ -304,14 +303,7 @@ var Idiomorph = (function () {
           if (bestMatch) {
             // if the node to morph is not at the insertion point then remove/move up to it
             if (bestMatch !== insertionPoint) {
-              removeNodesBetween(
-                ctx,
-                insertionPoint,
-                bestMatch,
-                // additional args so that we can retain future soft matches
-                newChild.nextSibling,
-                endPoint,
-              );
+              removeNodesBetween(ctx, insertionPoint, bestMatch);
             }
             morphNode(bestMatch, newChild, ctx);
             insertionPoint = bestMatch.nextSibling;
@@ -471,26 +463,16 @@ var Idiomorph = (function () {
 
     /**
      * Gets rid of an unwanted DOM node; strategy depends on nature of its reuse:
-     * - Persistent nodes will be moved to the pantry for later reuse by removeNode
-     * - Future soft-matchable nodes will be moved to the end of the parent for later reuse
-     * - Finally, unreusable nodes will have the hooks called, and then are removed
+     * - Persistent nodes will be moved to the pantry for later reuse
+     * - Other nodes will have their hooks called, and then are removed
      * @param {MorphContext} ctx
      * @param {Node} node
-     * @param {Node|null} nextNewChild
-     * @param {Node|null} endPoint
      */
-    function removeNode(ctx, node, nextNewChild = null, endPoint = null) {
+    function removeNode(ctx, node) {
       // are we going to id set match this later?
       if (ctx.idMap.has(node) && node instanceof Element) {
         // skip callbacks and move to pantry
         moveBefore(ctx.pantry, node, null);
-
-        // will be soft-matched to an upcoming new sibling?
-      } else if (findBestMatch(ctx, node, nextNewChild, null)) {
-        // skip callbacks and move to the end of the parent for later soft matching
-        moveBefore(/** @type {Element} */ (node.parentNode), node, endPoint);
-
-        // unreusable
       } else {
         // remove for realsies
         if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
@@ -504,24 +486,16 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx
      * @param {Node} startInclusive
      * @param {Node} endExclusive
-     * @param {Node|null} nextNewChild
-     * @param {Node|null} endPoint
      * @returns {Node|null}
      */
-    function removeNodesBetween(
-      ctx,
-      startInclusive,
-      endExclusive,
-      nextNewChild,
-      endPoint,
-    ) {
+    function removeNodesBetween(ctx, startInclusive, endExclusive) {
       /** @type {Node | null} */
       let cursor = startInclusive;
       // remove nodes until the endExclusive node
       while (cursor && cursor !== endExclusive) {
         let tempNode = /** @type {Node} */ (cursor);
         cursor = cursor.nextSibling;
-        removeNode(ctx, tempNode, nextNewChild, endPoint);
+        removeNode(ctx, tempNode);
       }
       return cursor;
     }

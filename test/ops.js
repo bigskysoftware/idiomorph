@@ -61,7 +61,7 @@ describe("morphing operations", function () {
     );
   });
 
-  it.skip("prepending a new softmatchable node onto the beginning", function () {
+  it("prepending a new softmatchable node onto the beginning", function () {
     assertOps(
       "<section><a>A</a><a>B</a></section>",
       "<section><a>New</a><a>A</a><a>B</a></section>",
@@ -78,7 +78,7 @@ describe("morphing operations", function () {
     );
   });
 
-  it.skip("inserting a new softmatchable node into the middle", function () {
+  it("inserting a new softmatchable node into the middle", function () {
     assertOps(
       "<section><a>A</a><a>B</a><a>C</a><a>D</a></section>",
       "<section><a>A</a><a>B</a><a>New</a><a>C</a><a>D</a></section>",
@@ -114,7 +114,7 @@ describe("morphing operations", function () {
     );
   });
 
-  it.skip("removing a softmatchable node from the front", function () {
+  it("removing a softmatchable node from the front", function () {
     assertOps(
       "<section><a>A</a><a>B</a><a>C</a></section>",
       "<section><a>B</a><a>C</a></section>",
@@ -131,7 +131,7 @@ describe("morphing operations", function () {
     );
   });
 
-  it.skip("removing a softmatchable node from the middle", function () {
+  it("removing a softmatchable node from the middle", function () {
     assertOps(
       "<section><a>A</a><a>B</a><a>C</a></section>",
       "<section><a>A</a><a>C</a></section>",
