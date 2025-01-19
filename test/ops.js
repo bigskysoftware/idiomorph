@@ -66,53 +66,53 @@ describe("morphing operations", function () {
 
   it.skip("prepending a new softmatchable node onto the beginning", function () {
     assertOps(
-      "<section><div></div><div></div></section>",
-      "<section><div>New</div><div></div><div></div></section>",
+      "<section><a>A</a><a>B</a></section>",
+      "<section><a>New</a><a>A</a><a>B</a></section>",
       [
         [
           "Morphed",
-          "<section><div></div><div></div></section>",
-          "<section><div>New</div><div></div><div></div></section>",
+          "<section><a>A</a><a>B</a></section>",
+          "<section><a>New</a><a>A</a><a>B</a></section>",
         ],
-        ["Added", "<div>New</div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
+        ["Added", "<a>New</a>"],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
       ],
     );
   });
 
   it.skip("inserting a new softmatchable node into the middle", function () {
     assertOps(
-      "<section><div></div><div></div><div></div><div></div></section>",
-      "<section><div></div><div></div><div>New</div><div></div><div></div></section>",
+      "<section><a>A</a><a>B</a><a>C</a><a>D</a></section>",
+      "<section><a>A</a><a>B</a><a>New</a><a>C</a><a>D</a></section>",
       [
         [
           "Morphed",
-          "<section><div></div><div></div><div></div><div></div></section>",
-          "<section><div></div><div></div><div>New</div><div></div><div></div></section>",
+          "<section><a>A</a><a>B</a><a>C</a><a>D</a></section>",
+          "<section><a>A</a><a>B</a><a>New</a><a>C</a><a>D</a></section>",
         ],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Added", "<div>New</div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Added", "<a>New</a>"],
+        ["Morphed", "<a>C</a>", "<a>C</a>"],
+        ["Morphed", "<a>D</a>", "<a>D</a>"],
       ],
     );
   });
 
-  it("pushing a new softmatchable node onto the end", function () {
+  it("appending a new softmatchable node onto the end", function () {
     assertOps(
-      "<section><div></div><div></div></section>",
-      "<section><div></div><div></div><div>New</div></section>",
+      "<section><a>A</a><a>B</a></section>",
+      "<section><a>A</a><a>B</a><a>New</a></section>",
       [
         [
           "Morphed",
-          "<section><div></div><div></div></section>",
-          "<section><div></div><div></div><div>New</div></section>",
+          "<section><a>A</a><a>B</a></section>",
+          "<section><a>A</a><a>B</a><a>New</a></section>",
         ],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Morphed", "<div></div>", "<div></div>"],
-        ["Added", "<div>New</div>"],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Added", "<a>New</a>"],
       ],
     );
   });
