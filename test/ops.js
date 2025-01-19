@@ -60,4 +60,108 @@ describe("morphing operations", function () {
       ],
     );
   });
+
+  it.skip("prepending a new softmatchable node onto the beginning", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a></section>",
+      "<section><a>New</a><a>A</a><a>B</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a></section>",
+          "<section><a>New</a><a>A</a><a>B</a></section>",
+        ],
+        ["Added", "<a>New</a>"],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+      ],
+    );
+  });
+
+  it.skip("inserting a new softmatchable node into the middle", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a><a>C</a><a>D</a></section>",
+      "<section><a>A</a><a>B</a><a>New</a><a>C</a><a>D</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a><a>C</a><a>D</a></section>",
+          "<section><a>A</a><a>B</a><a>New</a><a>C</a><a>D</a></section>",
+        ],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Added", "<a>New</a>"],
+        ["Morphed", "<a>C</a>", "<a>C</a>"],
+        ["Morphed", "<a>D</a>", "<a>D</a>"],
+      ],
+    );
+  });
+
+  it("appending a new softmatchable node onto the end", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a></section>",
+      "<section><a>A</a><a>B</a><a>New</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a></section>",
+          "<section><a>A</a><a>B</a><a>New</a></section>",
+        ],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Added", "<a>New</a>"],
+      ],
+    );
+  });
+
+  it.skip("removing a softmatchable node from the front", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a><a>C</a></section>",
+      "<section><a>B</a><a>C</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a><a>C</a></section>",
+          "<section><a>B</a><a>C</a></section>",
+        ],
+        ["Removed", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Morphed", "<a>C</a>", "<a>C</a>"],
+      ],
+    );
+  });
+
+  it.skip("removing a softmatchable node from the middle", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a><a>C</a></section>",
+      "<section><a>A</a><a>C</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a><a>C</a></section>",
+          "<section><a>A</a><a>C</a></section>",
+        ],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Removed", "<a>B</a>"],
+        ["Morphed", "<a>C</a>", "<a>C</a>"],
+      ],
+    );
+  });
+
+  it("removing a softmatchable node from the end", function () {
+    assertOps(
+      "<section><a>A</a><a>B</a><a>C</a></section>",
+      "<section><a>A</a><a>B</a></section>",
+      [
+        [
+          "Morphed",
+          "<section><a>A</a><a>B</a><a>C</a></section>",
+          "<section><a>A</a><a>B</a></section>",
+        ],
+        ["Morphed", "<a>A</a>", "<a>A</a>"],
+        ["Morphed", "<a>B</a>", "<a>B</a>"],
+        ["Removed", "<a>C</a>"],
+      ],
+    );
+  });
 });
