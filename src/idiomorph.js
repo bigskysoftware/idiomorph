@@ -28,6 +28,7 @@
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacks} [callbacks]
  * @property {ConfigHead} [head]
  */
@@ -105,6 +106,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+   * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
    * @property {ConfigInternal['callbacks']} callbacks
@@ -972,6 +974,7 @@ var Idiomorph = (function () {
         morphStyle: morphStyle,
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        restoreFocus: mergedConfig.restoreFocus,
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
