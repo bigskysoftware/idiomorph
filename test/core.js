@@ -366,6 +366,51 @@ describe("Core morphing tests", function () {
     document.body.removeChild(parent);
   });
 
+  it("ignore input value change when ignoreValue is true", function () {
+    let parent = make("<div><input value='foo'></div>");
+    document.body.append(parent);
+
+    let initial = parent.querySelector("input");
+
+    // morph
+    let finalSrc = '<input value="bar">';
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal('<input value="bar">');
+
+    document.activeElement.should.equal(document.body);
+
+    let finalSrc2 = '<input class="foo" value="doh">';
+    Idiomorph.morph(initial, finalSrc2, {
+      morphStyle: "outerHTML",
+      ignoreValue: true,
+    });
+    initial.value.should.equal("bar");
+    initial.classList.value.should.equal("foo");
+
+    document.body.removeChild(parent);
+  });
+
+  it("ignores textarea value when ignoreValue is true", function () {
+    let parent = make("<div><textarea>foo</textarea></div>");
+    document.body.append(parent);
+    let initial = parent.querySelector("textarea");
+
+    let finalSrc = "<textarea>bar</textarea>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<textarea>bar</textarea>");
+
+    document.activeElement.should.equal(document.body);
+
+    let finalSrc2 = '<textarea class="foo">doh</textarea>';
+    Idiomorph.morph(initial, finalSrc2, {
+      morphStyle: "outerHTML",
+      ignoreValue: true,
+    });
+    initial.outerHTML.should.equal('<textarea class="foo">bar</textarea>');
+
+    document.body.removeChild(parent);
+  });
+
   it("can morph input value properly because value property is special and doesnt reflect", function () {
     let initial = make('<div><input value="foo"></div>');
     let final = make('<input value="foo">');
@@ -419,6 +464,70 @@ describe("Core morphing tests", function () {
     document.body.removeChild(parent);
   });
 
+  it("morph does not remove input checked with ignoreValue set", function () {
+    let parent = make('<div><input type="checkbox"></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = true;
+
+    let finalSrc = '<input type="checkbox">';
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML", ignoreValue: true });
+    initial.outerHTML.should.equal('<input type="checkbox">');
+    initial.checked.should.equal(true);
+    document.body.removeChild(parent);
+  });
+
+  it("morph does not reset input checked with ignoreValue set", function () {
+    let parent = make('<div><input type="checkbox" checked></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = false;
+
+    let finalSrc = '<input type="checkbox" checked>';
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML", ignoreValue: true });
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+    initial.checked.should.equal(false);
+    document.body.removeChild(parent);
+  });
+
+  it("morph does still set input checked when checked attribute added even with ignoreValue set", function () {
+    let parent = make('<div><input type="checkbox" checked></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+
+    let MiddleSrc = '<input type="checkbox">';
+    Idiomorph.morph(initial, MiddleSrc, { morphStyle: "outerHTML"});
+
+    initial.outerHTML.should.equal('<input type="checkbox">');
+    initial.checked.should.equal(false);
+
+    let finalSrc = '<input type="checkbox" checked>';
+
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML", ignoreValue: true});
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+    initial.checked.should.equal(true);
+    document.body.removeChild(parent);
+  });
+
+  it("morph does still remove input checked when checked attribute removed even with ignoreValue set", function () {
+    let parent = make('<div><input type="checkbox"></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+
+    let MiddleSrc = '<input type="checkbox" checked>';
+    Idiomorph.morph(initial, MiddleSrc, { morphStyle: "outerHTML"});
+
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+    initial.checked.should.equal(true);
+
+    let finalSrc = '<input type="checkbox">';
+
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML", ignoreValue: true});
+    initial.outerHTML.should.equal('<input type="checkbox">');
+    initial.checked.should.equal(false);
+    document.body.removeChild(parent);
+  });
+
   it("can morph input checked properly, set checked property to true", function () {
     let parent = make('<div><input type="checkbox" checked></div>');
     document.body.append(parent);
@@ -427,7 +536,7 @@ describe("Core morphing tests", function () {
 
     let finalSrc = '<input type="checkbox" checked>';
     Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
-    initial.outerHTML.should.equal('<input type="checkbox" checked="true">');
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
     initial.checked.should.equal(true);
     document.body.removeChild(parent);
   });
@@ -474,7 +583,7 @@ describe("Core morphing tests", function () {
     // is this a problem at all?
     parent.innerHTML.should.equal(`
         <select>
-          <option selected="true">0</option>
+          <option selected="">0</option>
           <option>1</option>
         </select>
       `);
@@ -506,7 +615,7 @@ describe("Core morphing tests", function () {
     let finalSrc = `
         <select>
           <option>0</option>
-          <option selected="true">1</option>
+          <option selected="">1</option>
         </select>
       `;
     Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });
