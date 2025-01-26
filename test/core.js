@@ -427,7 +427,7 @@ describe("Core morphing tests", function () {
 
     let finalSrc = '<input type="checkbox" checked>';
     Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
-    initial.outerHTML.should.equal('<input type="checkbox" checked="true">');
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
     initial.checked.should.equal(true);
     document.body.removeChild(parent);
   });
@@ -474,7 +474,7 @@ describe("Core morphing tests", function () {
     // is this a problem at all?
     parent.innerHTML.should.equal(`
         <select>
-          <option selected="true">0</option>
+          <option selected="">0</option>
           <option>1</option>
         </select>
       `);
@@ -506,7 +506,7 @@ describe("Core morphing tests", function () {
     let finalSrc = `
         <select>
           <option>0</option>
-          <option selected="true">1</option>
+          <option selected="">1</option>
         </select>
       `;
     Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });

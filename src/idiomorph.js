@@ -737,8 +737,9 @@ var Idiomorph = (function () {
         }
         if (newLiveValue) {
           if (!ignoreUpdate) {
-            // TODO: do we really want this? tests say so but it feels wrong
-            oldElement.setAttribute(attributeName, newLiveValue);
+            // https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML
+            // this is the correct way to set a boolean attribute to "true"
+            oldElement.setAttribute(attributeName, "");
           }
         } else {
           if (!ignoreAttribute(attributeName, oldElement, "remove", ctx)) {
