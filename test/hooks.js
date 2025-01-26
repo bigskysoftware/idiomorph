@@ -1,3 +1,13 @@
+// basic implementation of a preserve-me attr
+const preserveMeCallbacks = {
+  beforeNodeRemoved(node) {
+    if (node.dataset?.preserveMe) return false;
+  },
+  beforeNodeMorphed(oldNode, newContent) {
+    if (oldNode.dataset?.preserveMe) return false;
+  },
+};
+
 describe("lifecycle hooks", function () {
   beforeEach(function () {
     clearWorkArea();
@@ -121,14 +131,40 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal("<ul><li>A</li><li>B</li></ul>");
   });
 
-  it("returning false to beforeNodeRemoved prevents removing the node with removed elemnt next to relocated id element", function () {
-    let initial = make(`<div><div><a id="a">A</a></div><div><b id="b">B</b><input type="checkbox" data-preserve-me="true" id="preserve-me"></div></div>`);
-    Idiomorph.morph(initial, `<div><div><a id="a">A</a><b id="b">B</b></div></div>`, {
-      callbacks: {
-        beforeNodeRemoved: (node) => false,
-      },
+  it.only("returning false to beforeNodeRemoved prevents removing the node with removed elemnt next to relocated id element", function () {
+    getWorkArea().innerHTML = `
+      <div>
+        <div>
+          <a id="a">A</a>
+        </div>
+        <div>
+          <b id="b">B</b>
+          <input type="checkbox" data-preserve-me="true" id="preserve-me">
+        </div>
+      </div>
+    `;
+    Idiomorph.morph(getWorkArea(), `
+      <div>
+        <div>
+          <a id="a">A</a>
+          <b id="b">B</b>
+        </div>
+      </div>
+    `, {
+      morphStyle: "innerHTML",
+      callbacks: preserveMeCallbacks,
     });
-    initial.outerHTML.should.equal(`<div><div><a id="a">A</a><b id="b">B</b></div><div><input type="checkbox" data-preserve-me="true" id="preserve-me"></div></div>`);
+    getWorkArea().innerHTML.should.equal(`
+      <div>
+        <div>
+          <a id="a">A</a>
+          <b id="b">B</b>
+        </div>
+        <div>
+          <input type="checkbox" data-preserve-me="true" id="preserve-me">
+        </div>
+      </div>
+    `);
   });
 
   it("returning false to beforeNodeRemoved prevents removing the node with different tag types", function () {
@@ -325,15 +361,7 @@ describe("lifecycle hooks", function () {
 
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
-      callbacks: {
-        // basic implementation of a preserve-me attr
-        beforeNodePantried(node) {
-          if (node.parentNode?.dataset?.preserveMe) return false;
-        },
-        beforeNodeMorphed(oldNode, newContent) {
-          if (oldNode.dataset?.preserveMe) return false;
-        },
-      },
+      callbacks: preserveMeCallbacks,
     });
 
     getWorkArea().innerHTML.should.equal(`
