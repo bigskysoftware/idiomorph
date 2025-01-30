@@ -382,7 +382,7 @@ var Idiomorph = (function () {
        */
       function findBestMatch(ctx, node, startPoint, endPoint) {
         let softMatch = null;
-        let nextSibling = node.nextSibling; 
+        let nextSibling = node.nextSibling;
         let siblingSoftMatchCount = 0;
         let discardMatchCount = 0;
 
@@ -402,7 +402,7 @@ var Idiomorph = (function () {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
                 // optimization: if node can't id set match, we can just return the soft match immediately
-                if (!ctx.idMap.has(node)) {
+                if (!nodeMatchCount) {
                   return cursor;
                 } else {
                   // save this as the fallback if we get through the loop without finding a hard match
@@ -428,7 +428,7 @@ var Idiomorph = (function () {
             // increment the count of future soft matches
             siblingSoftMatchCount++;
             nextSibling = nextSibling.nextSibling;
-    
+
             // If there are two future soft matches, block soft matching for this node to allow
             // future siblings to soft match. This is to reduce churn in the DOM when an element
             // is prepended.
