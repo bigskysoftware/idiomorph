@@ -121,6 +121,16 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal("<ul><li>A</li><li>B</li></ul>");
   });
 
+  it("returning false to beforeNodeRemoved prevents removing the node with different tag types", function () {
+    let initial = make("<div><a>A</a><b>B</b><c>C</c></div>");
+    Idiomorph.morph(initial, "<div><b>B</b></div>", {
+      callbacks: {
+        beforeNodeRemoved: (node) => false,
+      },
+    });
+    initial.outerHTML.should.equal("<div><a>A</a><b>B</b><c>C</c></div>");
+  });
+
   it("calls afterNodeRemoved after a node is removed from the DOM", function () {
     let calls = [];
     let initial = make("<ul><li>A</li><li>B</li></ul>");
@@ -205,5 +215,122 @@ describe("lifecycle hooks", function () {
       },
     });
     initial.outerHTML.should.equal(`<a href="#"></a>`);
+  });
+
+  it("hooks work as expected", function () {
+    let beginSrc = `
+            <div>
+              <input type="checkbox" id="first">
+              <input type="checkbox" id="second">
+            </div>
+        `.trim();
+    getWorkArea().append(make(beginSrc));
+
+    let finalSrc = `
+            <div>
+              <input type="checkbox" id="second">
+              <input type="checkbox" id="first">
+            </div>
+        `.trim();
+
+    let wrongHookCalls = [];
+    let wrongHookHandler = (name) => {
+      return (node) => {
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        wrongHookCalls.push([name, node.outerHTML]);
+      };
+    };
+
+    let calls = [];
+
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+      callbacks: {
+        beforeNodeAdded: wrongHookHandler("beforeNodeAdded"),
+        afterNodeAdded: wrongHookHandler("afterNodeAdded"),
+        beforeNodeRemoved: wrongHookHandler("beforeNodeRemoved"),
+        afterNodeRemoved: wrongHookHandler("afterNodeRemoved"),
+        beforeNodeMorphed: (oldNode, newNode) => {
+          if (oldNode.nodeType !== Node.ELEMENT_NODE) return;
+          calls.push(["before", oldNode.outerHTML, newNode.outerHTML]);
+        },
+        afterNodeMorphed: (oldNode, newNode) => {
+          if (oldNode.nodeType !== Node.ELEMENT_NODE) return;
+          calls.push(["after", oldNode.outerHTML, newNode.outerHTML]);
+        },
+      },
+    });
+
+    getWorkArea().innerHTML.should.equal(finalSrc);
+
+    wrongHookCalls.should.eql([]);
+    calls.should.eql([
+      ["before", beginSrc, finalSrc],
+      [
+        "before",
+        `<input type="checkbox" id="second">`,
+        `<input type="checkbox" id="second">`,
+      ],
+      [
+        "after",
+        `<input type="checkbox" id="second">`,
+        `<input type="checkbox" id="second">`,
+      ],
+      [
+        "before",
+        `<input type="checkbox" id="first">`,
+        `<input type="checkbox" id="first">`,
+      ],
+      [
+        "after",
+        `<input type="checkbox" id="first">`,
+        `<input type="checkbox" id="first">`,
+      ],
+      [
+        "after",
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+        '<div>\n              <input type="checkbox" id="second">\n              <input type="checkbox" id="first">\n            </div>',
+      ],
+    ]);
+  });
+
+  it("beforeNodeMorphed hook also applies to nodes restored from the pantry", function () {
+    getWorkArea().append(
+      make(`
+            <div>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+            </div>
+        `),
+    );
+    document.getElementById("first").innerHTML = "First paragraph EDITED";
+    document.getElementById("second").innerHTML = "Second paragraph EDITED";
+
+    let finalSrc = `
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph</p>
+              <p data-preserve-me="true" id="first">First paragraph</p>
+            </div>
+        `;
+
+    Idiomorph.morph(getWorkArea(), finalSrc, {
+      morphStyle: "innerHTML",
+      callbacks: {
+        // basic implementation of a preserve-me attr
+        beforeNodePantried(node) {
+          if (node.parentNode?.dataset?.preserveMe) return false;
+        },
+        beforeNodeMorphed(oldNode, newContent) {
+          if (oldNode.dataset?.preserveMe) return false;
+        },
+      },
+    });
+
+    getWorkArea().innerHTML.should.equal(`
+            <div>
+              <p data-preserve-me="true" id="second">Second paragraph EDITED</p>
+              <p data-preserve-me="true" id="first">First paragraph EDITED</p>
+            </div>
+        `);
   });
 });
