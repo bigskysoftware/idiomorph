@@ -90,7 +90,7 @@ function assertNoFocus() {
   document.activeElement.tagName.should.eql("BODY");
 }
 
-function assertOps(before, after, expectedOps) {
+function assertOps(before, after, expectedOps, singleNode = true) {
   let ops = [];
   let initial = make(before);
   let final = make(after);
@@ -121,7 +121,7 @@ function assertOps(before, after, expectedOps) {
     console.log('test failing Operations is:');
     console.log(ops);
   }
-  initial.outerHTML.should.equal(finalCopy.outerHTML);
+  if(singleNode) initial.outerHTML.should.equal(finalCopy.outerHTML);
   ops.should.eql(expectedOps);
 }
 

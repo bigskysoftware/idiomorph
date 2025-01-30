@@ -290,6 +290,14 @@ var Idiomorph = (function () {
         // @ts-ignore ditto
         newParent = newParent.content;
       }
+
+      // find the last node with an id for better match lookup later
+      let lastIdNode = endPoint ? endPoint.previousSibling : oldParent.lastChild;
+      while (lastIdNode && !ctx.idMap.has(lastIdNode) && lastIdNode != insertionPoint) {
+        lastIdNode = lastIdNode.previousSibling
+      }
+      const matchInfo = {lastIdNode, futureBestMatch: null};
+
       insertionPoint ||= oldParent.firstChild;
 
       // run through all the new content
@@ -301,6 +309,7 @@ var Idiomorph = (function () {
             newChild,
             insertionPoint,
             endPoint,
+            matchInfo,
           );
           if (bestMatch) {
             // if the node to morph is not at the insertion point then remove/move up to it
@@ -372,24 +381,36 @@ var Idiomorph = (function () {
     const findBestMatch = (function () {
       /**
        * Scans forward from the startPoint to the endPoint looking for a match
-       * for the node. It looks for an id set match first, then a soft match.
-       * We abort softmatching if we find two future soft matches, to reduce churn.
+       * for the node. First checks if we are at the last node with id to find
+       * the very best match and then it looks for an id set match, then a soft match.
+       * Stops searching if there are better id or soft matches we would displace.
        * @param {Node} node
        * @param {MorphContext} ctx
-       * @param {Node | null} startPoint
+       * @param {Node} startPoint
        * @param {Node | null} endPoint
+       * @param {{lastIdNode: Node | null, futureBestMatch: Node | null}} matchInfo
        * @returns {Node | null}
        */
-      function findBestMatch(ctx, node, startPoint, endPoint) {
+      function findBestMatch(ctx, node, startPoint, endPoint, matchInfo) {
+        // when we get to the last old node with id find the best remaining match for it 
+        if (startPoint == matchInfo.lastIdNode) {
+          matchInfo.futureBestMatch ||= findBestNodeMatch(startPoint, node, ctx);
+          if (matchInfo.futureBestMatch && matchInfo.futureBestMatch != node) {
+            matchInfo.futureBestMatch = null;
+            // there is a better match later so let this node get inserted instead
+            return null;
+          }
+        }
+
         let softMatch = null;
-        let nextSibling = node.nextSibling;
+        let nextSibling = node.nextSibling; 
         let siblingSoftMatchCount = 0;
         let displaceMatchCount = 0;
 
         // max id matches we are willing to displace in our search
         const nodeMatchCount = ctx.idMap.get(node)?.size || 0;
 
-        let cursor = startPoint;
+        let cursor = /** @type {Node | null} */ (startPoint);
         while (cursor && cursor != endPoint) {
           // soft matching is a prerequisite for id set matching
           if (isSoftMatch(cursor, node)) {
@@ -428,7 +449,7 @@ var Idiomorph = (function () {
             // increment the count of future soft matches
             siblingSoftMatchCount++;
             nextSibling = nextSibling.nextSibling;
-
+    
             // If there are two future soft matches, block soft matching for this node to allow
             // future siblings to soft match. This is to reduce churn in the DOM when an element
             // is prepended.
@@ -487,6 +508,42 @@ var Idiomorph = (function () {
           // its not persistent, and new nodes can't have any hidden state.
           (!oldElt.id || oldElt.id === newElt.id)
         );
+      }
+
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newChild
+       * @param {MorphContext} ctx
+       * @returns {Node | null}
+       */
+      function findBestNodeMatch(oldNode, newChild, ctx) {
+        let currentNode = /** @type {Node | null} */ (newChild);
+        let bestNode = newChild;
+        let score = 0;
+        while (currentNode) {
+          let newScore = scoreElement(oldNode, currentNode, ctx);
+          if (newScore > score) {
+            bestNode = currentNode;
+            score = newScore;
+          }
+          currentNode = currentNode.nextSibling;
+        }
+        return bestNode;
+      } 
+
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @param {MorphContext} ctx
+       * @returns {number}
+       */
+      function scoreElement(oldNode, newNode, ctx) {
+        if (isSoftMatch(oldNode, newNode)) {
+          return 0.5 + (ctx.idMap.get(newNode)?.size || 0);
+        }
+        return 0;
       }
 
       return findBestMatch;
