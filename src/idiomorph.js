@@ -384,9 +384,9 @@ var Idiomorph = (function () {
         let softMatch = null;
         let nextSibling = node.nextSibling;
         let siblingSoftMatchCount = 0;
-        let discardMatchCount = 0;
+        let displaceMatchCount = 0;
 
-        // max id matches we are willing to discard in our search
+        // max id matches we are willing to displace in our search
         const nodeMatchCount = ctx.idMap.get(node)?.size || 0;
 
         let cursor = startPoint;
@@ -411,10 +411,10 @@ var Idiomorph = (function () {
               }
             }
           }
-          // check for ids we may be discarding when matching
-          discardMatchCount += ctx.idMap.get(cursor)?.size || 0;
-          if (discardMatchCount > nodeMatchCount) {
-            // if we are going to discard more ids than the node contains then
+          // check for ids we may be displaced when matching
+          displaceMatchCount += ctx.idMap.get(cursor)?.size || 0;
+          if (displaceMatchCount > nodeMatchCount) {
+            // if we are going to displace more ids than the node contains then
             // we do not have a good candidate for an id match, so return
             break;
           }
