@@ -403,7 +403,7 @@ var Idiomorph = (function () {
         }
 
         let softMatch = null;
-        let nextSibling = node.nextSibling; 
+        let nextSibling = node.nextSibling;
         let siblingSoftMatchCount = 0;
         let displaceMatchCount = 0;
 
@@ -449,7 +449,7 @@ var Idiomorph = (function () {
             // increment the count of future soft matches
             siblingSoftMatchCount++;
             nextSibling = nextSibling.nextSibling;
-    
+
             // If there are two future soft matches, block soft matching for this node to allow
             // future siblings to soft match. This is to reduce churn in the DOM when an element
             // is prepended.
