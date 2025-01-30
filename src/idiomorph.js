@@ -382,8 +382,12 @@ var Idiomorph = (function () {
        */
       function findBestMatch(ctx, node, startPoint, endPoint) {
         let softMatch = null;
-        let nextSibling = node.nextSibling;
+        let nextSibling = node.nextSibling; 
         let siblingSoftMatchCount = 0;
+        let discardMatchCount = 0;
+
+        // max id matches we are willing to discard in our search
+        const nodeMatchCount = ctx.idMap.get(node)?.size || 0;
 
         let cursor = startPoint;
         while (cursor && cursor != endPoint) {
@@ -397,11 +401,24 @@ var Idiomorph = (function () {
             if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
-                // save this as the fallback if we get through the loop without finding a hard match
-                softMatch = cursor;
+                // optimization: if node can't id set match, we can just return the soft match immediately
+                if (!ctx.idMap.has(node)) {
+                  return cursor;
+                } else {
+                  // save this as the fallback if we get through the loop without finding a hard match
+                  softMatch = cursor;
+                }
               }
             }
           }
+          // check for ids we may be discarding when matching
+          discardMatchCount += ctx.idMap.get(cursor)?.size || 0;
+          if (discardMatchCount > nodeMatchCount) {
+            // if we are going to discard more ids than the node contains then
+            // we do not have a good candidate for an id match, so return
+            break;
+          }
+
           if (
             softMatch === null &&
             nextSibling &&
@@ -411,7 +428,7 @@ var Idiomorph = (function () {
             // increment the count of future soft matches
             siblingSoftMatchCount++;
             nextSibling = nextSibling.nextSibling;
-
+    
             // If there are two future soft matches, block soft matching for this node to allow
             // future siblings to soft match. This is to reduce churn in the DOM when an element
             // is prepended.
@@ -519,6 +536,26 @@ var Idiomorph = (function () {
     }
 
     /**
+     * @param {Node | null} node - node being removed from consideration
+     * @param {string} id - The ID of the element to be moved.
+     * @param {MorphContext} ctx
+     */
+    function removeIdFromMap(node, id, ctx) {
+      while (node) {
+        let idSet = ctx.idMap.get(node);
+        if(idSet) {
+          idSet?.delete(id);
+          if (idSet.size == 0) {
+            ctx.idMap.delete(node)
+          } else {
+            ctx.idMap.set(node,idSet);
+          }
+        }
+        node = node.parentNode;
+      }
+    }
+
+    /**
      * Search for an element by id within the document and pantry, and move it using moveBefore.
      *
      * @param {Element} parentNode - The parent node to which the element will be moved.
@@ -535,6 +572,8 @@ var Idiomorph = (function () {
           ctx.target.querySelector(`#${id}`) ||
             ctx.pantry.querySelector(`#${id}`)
         );
+      // prevent this now relocated id from triggering pantry storage on remove
+      removeIdFromMap(target, id, ctx);
       moveBefore(parentNode, target, after);
       return target;
     }
