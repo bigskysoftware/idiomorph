@@ -169,7 +169,24 @@ describe("Tests for the htmx integration", function () {
     this.server.respondWith(
       "GET",
       "/test",
-      "<div id='d1' hx-swap-oob='innerMorph'><button id='b1'>Bar</button></button>",
+      "<div id='d1' hx-swap-oob='morph;;innerHTML'><button id='b1'>Bar</button></button>",
+    );
+    let div = makeForHtmxTest(
+      "<div id='d1' hx-get='/test' hx-swap='none'><button id='b1'>Foo</button></div>",
+    );
+    let initialBtn = document.getElementById("b1");
+    div.click();
+    this.server.respond();
+    let newBtn = document.getElementById("b1");
+    initialBtn.should.equal(newBtn);
+    initialBtn.innerHTML.should.equal("Bar");
+  });
+
+  it("keeps the element stable in an inner morph with oob-swap w/ long syntax", function () {
+    this.server.respondWith(
+      "GET",
+      "/test",
+      "<div id='d1' hx-swap-oob='morph;;{morphStyle;;\"innerHTML\"}'><button id='b1'>Bar</button></button>",
     );
     let div = makeForHtmxTest(
       "<div id='d1' hx-get='/test' hx-swap='none'><button id='b1'>Foo</button></div>",

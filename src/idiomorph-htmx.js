@@ -1,11 +1,14 @@
 (function () {
   function createMorphConfig(swapStyle) {
-    if (swapStyle === "morph" || swapStyle === "morph:outerHTML") {
-      return { morphStyle: "outerHTML" };
-    } else if (swapStyle === "innerMorph" || swapStyle === "morph:innerHTML") {
-      return { morphStyle: "innerHTML" };
-    } else if (swapStyle.startsWith("morph:")) {
-      return Function("return (" + swapStyle.slice(6) + ")")();
+    if (swapStyle.startsWith("morph")) {
+      swapStyle = swapStyle.replaceAll(';;',':').slice(5);
+      if (swapStyle === "" || swapStyle === ":outerHTML") {
+        return { morphStyle: "outerHTML" };
+      } else if (swapStyle === ":innerHTML") {
+        return { morphStyle: "innerHTML" };
+      } else if (swapStyle.startsWith(":")) {
+        return Function("return (" + swapStyle.slice(1) + ")")();
+      }
     }
   }
 
