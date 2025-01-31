@@ -121,6 +121,24 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal("<ul><li>A</li><li>B</li></ul>");
   });
 
+  it("returning false to beforeNodeRemoved prevents removing the node when an IDed child is moved elsewhere", function () {
+    let initial = make(
+      `<ul><li><a id="a">A</a></li><li><b id="b">B</b></li></ul>`,
+    );
+    Idiomorph.morph(
+      initial,
+      `<ul><li><a id="a">A</a><b id="b">B</b></li></ul>`,
+      {
+        callbacks: {
+          beforeNodeRemoved: (node) => false,
+        },
+      },
+    );
+    initial.outerHTML.should.equal(
+      `<ul><li><a id="a">A</a><b id="b">B</b></li><li></li></ul>`,
+    );
+  });
+
   it("returning false to beforeNodeRemoved prevents removing the node with different tag types", function () {
     let initial = make("<div><a>A</a><b>B</b><c>C</c></div>");
     Idiomorph.morph(initial, "<div><b>B</b></div>", {

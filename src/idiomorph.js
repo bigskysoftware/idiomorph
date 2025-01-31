@@ -535,8 +535,31 @@ var Idiomorph = (function () {
           ctx.target.querySelector(`#${id}`) ||
             ctx.pantry.querySelector(`#${id}`)
         );
+      removeElementFromAncestorsIdMaps(target, ctx);
       moveBefore(parentNode, target, after);
       return target;
+    }
+
+    /**
+     * Removes an element from its ancestors' id maps. This is needed when an element is moved from the
+     * "future" via `moveBeforeId`. Otherwise, its erstwhile ancestors could be mistakenly moved to the
+     * pantry rather than being deleted, preventing their removal hooks from being called.
+     *
+     * @param {Element} element - element to remove from its ancestors' id maps
+     * @param {MorphContext} ctx
+     */
+    function removeElementFromAncestorsIdMaps(element, ctx) {
+      const id = element.id;
+      /** @ts-ignore - safe to loop in this way **/
+      while ((element = element.parentNode)) {
+        let idSet = ctx.idMap.get(element);
+        if (idSet) {
+          idSet.delete(id);
+          if (!idSet.size) {
+            ctx.idMap.delete(element);
+          }
+        }
+      }
     }
 
     /**
