@@ -519,6 +519,26 @@ var Idiomorph = (function () {
     }
 
     /**
+     * @param {Node | null} node - node being removed from consideration
+     * @param {string} id - The ID of the element to be moved.
+     * @param {MorphContext} ctx
+     */
+    function removeIdFromMap(node, id, ctx) {
+      while (node) {
+        let idSet = ctx.idMap.get(node);
+        if(idSet) {
+          idSet?.delete(id);
+          if (idSet.size == 0) {
+            ctx.idMap.delete(node)
+          } else {
+            ctx.idMap.set(node,idSet);
+          }
+        }
+        node = node.parentNode;
+      }
+    }
+
+    /**
      * Search for an element by id within the document and pantry, and move it using moveBefore.
      *
      * @param {Element} parentNode - The parent node to which the element will be moved.
@@ -535,6 +555,8 @@ var Idiomorph = (function () {
           ctx.target.querySelector(`#${id}`) ||
             ctx.pantry.querySelector(`#${id}`)
         );
+      // prevent this now relocated id from triggering pantry storage on remove
+      removeIdFromMap(target, id, ctx);
       moveBefore(parentNode, target, after);
       return target;
     }
