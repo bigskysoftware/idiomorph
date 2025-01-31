@@ -400,11 +400,11 @@ var Idiomorph = (function () {
             if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
-                  // save this as the fallback if we get through the loop without finding a hard match
-                  softMatch = cursor;
-                }
+                // save this as the fallback if we get through the loop without finding a hard match
+                softMatch = cursor;
               }
             }
+          }
           if (
             softMatch === null &&
             nextSibling &&
