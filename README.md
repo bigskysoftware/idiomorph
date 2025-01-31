@@ -198,6 +198,7 @@ The Idiomorph extension for htmx supports three different syntaxes for specifyin
 * `hx-swap='morph'` - This will perform a morph on the outerHTML of the target
 * `hx-swap='morph:outerHTML'` - This will perform a morph on the outerHTML of the target (explicit)
 * `hx-swap='morph:innerHTML'` - This will perform a morph on the innerHTML of the target (i.e. the children)
+* `hx-swap='innerMorph'` - This will perform a morph on the innerHTML and is useful for oob swaps where `:` is a seperator
 * `hx-swap='morph:<expr>'` - In this form, `<expr>` can be any valid JavaScript expression.  The results of the expression
    will be passed into the `Idiomorph.morph()` method as the configuration.
 
