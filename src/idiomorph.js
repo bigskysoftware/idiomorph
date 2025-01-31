@@ -290,6 +290,14 @@ var Idiomorph = (function () {
         // @ts-ignore ditto
         newParent = newParent.content;
       }
+
+      // find the last node with an id for better match lookup later
+      let lastIdNode = endPoint ? endPoint.previousSibling : oldParent.lastChild;
+      while (lastIdNode && !ctx.idMap.has(lastIdNode) && lastIdNode != insertionPoint) {
+        lastIdNode = lastIdNode.previousSibling
+      }
+      const matchInfo = {lastIdNode, futureBestMatch: null};
+
       insertionPoint ||= oldParent.firstChild;
 
       // run through all the new content
@@ -301,6 +309,7 @@ var Idiomorph = (function () {
             newChild,
             insertionPoint,
             endPoint,
+            matchInfo,
           );
           if (bestMatch) {
             // if the node to morph is not at the insertion point then remove/move up to it
@@ -372,20 +381,36 @@ var Idiomorph = (function () {
     const findBestMatch = (function () {
       /**
        * Scans forward from the startPoint to the endPoint looking for a match
-       * for the node. It looks for an id set match first, then a soft match.
-       * We abort softmatching if we find two future soft matches, to reduce churn.
+       * for the node. First checks if we are at the last node with id to find
+       * the very best match and then it looks for an id set match, then a soft match.
+       * Stops searching if there are better id or soft matches we would displace.
        * @param {Node} node
        * @param {MorphContext} ctx
-       * @param {Node | null} startPoint
+       * @param {Node} startPoint
        * @param {Node | null} endPoint
+       * @param {{lastIdNode: Node | null, futureBestMatch: Node | null}} matchInfo
        * @returns {Node | null}
        */
-      function findBestMatch(ctx, node, startPoint, endPoint) {
+      function findBestMatch(ctx, node, startPoint, endPoint, matchInfo) {
+        // when we get to the last old node with id find the best remaining match for it 
+        if (startPoint == matchInfo.lastIdNode) {
+          matchInfo.futureBestMatch ||= findBestNodeMatch(startPoint, node, ctx);
+          if (matchInfo.futureBestMatch && matchInfo.futureBestMatch != node) {
+            matchInfo.futureBestMatch = null;
+            // there is a better match later so let this node get inserted instead
+            return null;
+          }
+        }
+
         let softMatch = null;
         let nextSibling = node.nextSibling;
         let siblingSoftMatchCount = 0;
+        let displaceMatchCount = 0;
 
-        let cursor = startPoint;
+        // max id matches we are willing to displace in our search
+        const nodeMatchCount = ctx.idMap.get(node)?.size || 0;
+
+        let cursor = /** @type {Node | null} */ (startPoint);
         while (cursor && cursor != endPoint) {
           // soft matching is a prerequisite for id set matching
           if (isSoftMatch(cursor, node)) {
@@ -397,11 +422,24 @@ var Idiomorph = (function () {
             if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
-                // save this as the fallback if we get through the loop without finding a hard match
-                softMatch = cursor;
+                // optimization: if node can't id set match, we can just return the soft match immediately
+                if (!nodeMatchCount) {
+                  return cursor;
+                } else {
+                  // save this as the fallback if we get through the loop without finding a hard match
+                  softMatch = cursor;
+                }
               }
             }
           }
+          // check for ids we may be displaced when matching
+          displaceMatchCount += ctx.idMap.get(cursor)?.size || 0;
+          if (displaceMatchCount > nodeMatchCount) {
+            // if we are going to displace more ids than the node contains then
+            // we do not have a good candidate for an id match, so return
+            break;
+          }
+
           if (
             softMatch === null &&
             nextSibling &&
@@ -472,6 +510,42 @@ var Idiomorph = (function () {
         );
       }
 
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newChild
+       * @param {MorphContext} ctx
+       * @returns {Node | null}
+       */
+      function findBestNodeMatch(oldNode, newChild, ctx) {
+        let currentNode = /** @type {Node | null} */ (newChild);
+        let bestNode = newChild;
+        let score = 0;
+        while (currentNode) {
+          let newScore = scoreElement(oldNode, currentNode, ctx);
+          if (newScore > score) {
+            bestNode = currentNode;
+            score = newScore;
+          }
+          currentNode = currentNode.nextSibling;
+        }
+        return bestNode;
+      } 
+
+      /**
+       *
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @param {MorphContext} ctx
+       * @returns {number}
+       */
+      function scoreElement(oldNode, newNode, ctx) {
+        if (isSoftMatch(oldNode, newNode)) {
+          return 0.5 + (ctx.idMap.get(newNode)?.size || 0);
+        }
+        return 0;
+      }
+
       return findBestMatch;
     })();
 
@@ -519,6 +593,26 @@ var Idiomorph = (function () {
     }
 
     /**
+     * @param {Node | null} node - node being removed from consideration
+     * @param {string} id - The ID of the element to be moved.
+     * @param {MorphContext} ctx
+     */
+    function removeIdFromMap(node, id, ctx) {
+      while (node) {
+        let idSet = ctx.idMap.get(node);
+        if(idSet) {
+          idSet?.delete(id);
+          if (idSet.size == 0) {
+            ctx.idMap.delete(node)
+          } else {
+            ctx.idMap.set(node,idSet);
+          }
+        }
+        node = node.parentNode;
+      }
+    }
+
+    /**
      * Search for an element by id within the document and pantry, and move it using moveBefore.
      *
      * @param {Element} parentNode - The parent node to which the element will be moved.
@@ -535,6 +629,8 @@ var Idiomorph = (function () {
           ctx.target.querySelector(`#${id}`) ||
             ctx.pantry.querySelector(`#${id}`)
         );
+      // prevent this now relocated id from triggering pantry storage on remove
+      removeIdFromMap(target, id, ctx);
       moveBefore(parentNode, target, after);
       return target;
     }
