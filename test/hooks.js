@@ -121,14 +121,22 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal("<ul><li>A</li><li>B</li></ul>");
   });
 
-  it("returning false to beforeNodeRemoved prevents removing the node with removed elemnt next to relocated id element", function () {
-    let initial = make(`<div><div><a id="a">A</a></div><div><b id="b">B</b><input type="checkbox" data-preserve-me="true" id="preserve-me"></div></div>`);
-    Idiomorph.morph(initial, `<div><div><a id="a">A</a><b id="b">B</b></div></div>`, {
-      callbacks: {
-        beforeNodeRemoved: (node) => false,
+  it("returning false to beforeNodeRemoved prevents removing the node when an IDed child is moved elsewhere", function () {
+    let initial = make(
+      `<ul><li><a id="a">A</a></li><li><b id="b">B</b></li></ul>`,
+    );
+    Idiomorph.morph(
+      initial,
+      `<ul><li><a id="a">A</a><b id="b">B</b></li></ul>`,
+      {
+        callbacks: {
+          beforeNodeRemoved: (node) => false,
+        },
       },
-    });
-    initial.outerHTML.should.equal(`<div><div><a id="a">A</a><b id="b">B</b></div><div><input type="checkbox" data-preserve-me="true" id="preserve-me"></div></div>`);
+    );
+    initial.outerHTML.should.equal(
+      `<ul><li><a id="a">A</a><b id="b">B</b></li><li></li></ul>`,
+    );
   });
 
   it("returning false to beforeNodeRemoved prevents removing the node with different tag types", function () {
