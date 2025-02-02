@@ -212,6 +212,14 @@ the input value in a given morph, you could use the following swap specification
   </button>
 ```
 
+When using `hx-swap-oob` the `:` character is already used as a seperator so to support this replace it with `;;` like:
+
+```html
+  <div hx-swap-oob="morph;;{morphStyle;;'innerHTML'}:#div">
+      Morph with inner swap style 
+  </div>
+```
+
 ## Performance
 
 Idiomorph is not designed to be as fast as either morphdom or nanomorph.  Rather, its goals are:
