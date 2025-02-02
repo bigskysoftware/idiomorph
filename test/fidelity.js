@@ -88,6 +88,24 @@ describe("Tests to ensure that idiomorph merges properly", function () {
     );
   });
 
+  it("move id node into div does not break insertion point", function () {
+    // when moving id item into an inner div it now uses moveBeforeById which can move the current insertion point node
+    // into the lower level causing issues if insertion point is not corrected
+    testFidelity(
+      `<div><input id="first"></div>`,
+      `<div><div><input id="first"></div></div>`,
+    );
+  });
+
+  it("move id node into div that has been restored from pantry does not break insertion point", function () {
+    // when displacing a node and putting it into the pantry and then restoring it later it can also then moveBeforeById the
+    // current insertion Point node into the node that has just been restored causing issues if insertion point not corrected
+    testFidelity(
+      `<div><div id="d1"></div><div id="d2"></div><div id="d3"></div></div>`,
+      `<div><div id="d2"></div><div id="d1"><div id="d3"></div></div></div>`,
+    );
+  });
+
   it("issue https://github.com/bigskysoftware/idiomorph/issues/11", function () {
     let el1 = make('<fieldset id="el"></fieldset>');
 
