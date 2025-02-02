@@ -307,8 +307,7 @@ var Idiomorph = (function () {
             if (bestMatch !== insertionPoint) {
               removeNodesBetween(ctx, insertionPoint, bestMatch);
             }
-            morphNode(bestMatch, newChild, ctx);
-            insertionPoint = bestMatch.nextSibling;
+            insertionPoint = morphNode(bestMatch, newChild, ctx);
             continue;
           }
         }
@@ -322,19 +321,17 @@ var Idiomorph = (function () {
             insertionPoint,
             ctx,
           );
-          morphNode(movedChild, newChild, ctx);
+          insertionPoint = morphNode(movedChild, newChild, ctx);
           continue;
         }
 
         // last resort: insert the new node from scratch
-        createNode(oldParent, newChild, insertionPoint, ctx);
+        insertionPoint = createNode(oldParent, newChild, insertionPoint, ctx);
       }
 
       // remove any remaining old nodes that didn't match up with new content
       while (insertionPoint && insertionPoint != endPoint) {
-        const tempNode = insertionPoint;
-        insertionPoint = insertionPoint.nextSibling;
-        removeNode(ctx, tempNode);
+        insertionPoint = removeNode(ctx, insertionPoint);
       }
     }
 
@@ -346,7 +343,7 @@ var Idiomorph = (function () {
      * @param {Node} newChild
      * @param {Node|null} insertionPoint
      * @param {MorphContext} ctx
-     * @returns {Node|null}
+     * @returns {Node|null} the next node to be processed
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
@@ -356,13 +353,13 @@ var Idiomorph = (function () {
         oldParent.insertBefore(newEmptyChild, insertionPoint);
         morphNode(newEmptyChild, newChild, ctx);
         ctx.callbacks.afterNodeAdded(newEmptyChild);
-        return newEmptyChild;
+        return newEmptyChild.nextSibling;
       } else {
         // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
         const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
         oldParent.insertBefore(newClonedChild, insertionPoint);
         ctx.callbacks.afterNodeAdded(newClonedChild);
-        return newClonedChild;
+        return newClonedChild.nextSibling;
       }
     }
 
@@ -485,18 +482,21 @@ var Idiomorph = (function () {
      * - Other nodes will have their hooks called, and then are removed
      * @param {MorphContext} ctx
      * @param {Node} node
+     * @return {Node | null} the next node to be processed
      */
     function removeNode(ctx, node) {
+      const nextNode = node.nextSibling;
       // are we going to id set match this later?
       if (ctx.idMap.has(node) && node instanceof Element) {
         // skip callbacks and move to pantry
         moveBefore(ctx.pantry, node, null);
       } else {
         // remove for realsies
-        if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
+        if (ctx.callbacks.beforeNodeRemoved(node) === false) return nextNode;
         node.parentNode?.removeChild(node);
         ctx.callbacks.afterNodeRemoved(node);
       }
+      return nextNode;
     }
 
     /**
@@ -504,18 +504,14 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx
      * @param {Node} startInclusive
      * @param {Node} endExclusive
-     * @returns {Node|null}
      */
     function removeNodesBetween(ctx, startInclusive, endExclusive) {
       /** @type {Node | null} */
       let cursor = startInclusive;
       // remove nodes until the endExclusive node
       while (cursor && cursor !== endExclusive) {
-        let tempNode = /** @type {Node} */ (cursor);
-        cursor = cursor.nextSibling;
-        removeNode(ctx, tempNode);
+        cursor = removeNode(ctx, cursor);
       }
-      return cursor;
     }
 
     /**
@@ -598,24 +594,20 @@ var Idiomorph = (function () {
      * @param {Node} oldNode root node to merge content into
      * @param {Node} newContent new content to merge
      * @param {MorphContext} ctx the merge context
-     * @returns {Node | null} the element that ended up in the DOM
+     * @returns {Node | null} the next node to be processed
      */
     function morphNode(oldNode, newContent, ctx) {
-      if (ctx.ignoreActive && oldNode === document.activeElement) {
-        // don't morph focused element
-        return null;
-      }
-
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
-        return oldNode;
+      if (
+        (ctx.ignoreActive && oldNode === document.activeElement) ||
+        ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false
+      ) {
+        // don't morph focused element or if callback denies it
+        return oldNode.nextSibling;
       }
 
       if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
         // ignore the head element
-      } else if (
-        oldNode instanceof HTMLHeadElement &&
-        ctx.head.style !== "morph"
-      ) {
+      } else if (oldNode instanceof HTMLHeadElement && ctx.head.style !== "morph") {
         // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
         handleHeadElement(
           oldNode,
@@ -630,7 +622,7 @@ var Idiomorph = (function () {
         }
       }
       ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-      return oldNode;
+      return oldNode.nextSibling;
     }
 
     /**
