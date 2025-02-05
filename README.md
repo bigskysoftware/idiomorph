@@ -103,15 +103,15 @@ Idiomorph supports the following options:
 Idiomorph provides the following callbacks, which can be used to intercept and, for some callbacks, modify the swapping behavior
 of the algorithm.
 
-| callback                                                     | description                                                                              | return value meaning                               |
-|--------------------------------------------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------|
-| beforeNodeAdded(node)                                        | Called before a new node is added to the DOM                                             | return false to not add the node                   |
-| afterNodeAdded(node)                                         | Called after a new node is added to the DOM                                              | none                                               |
-| beforeNodeMorphed(oldNode, newNode)                          | Called before a node is morphed in the DOM                                               | return false to skip morphing the node             |
-| afterNodeMorphed(oldNode, newNode)                           | Called after a node is morphed in the DOM                                                | none                                               |
-| beforeNodeRemoved(node)                                      | Called before a node is removed from the DOM                                             | return false to not remove the node                |
-| afterNodeRemoved(node)                                       | Called after a node is removed from the DOM                                              | none                                               |
-| beforeAttributeUpdated(attributeName, node, mutationType)    | Called before an attribute on an element. `mutationType` is either "update" or "remove"  | return false to not update or remove the attribute |
+| callback                                                     | description                                                                                                            | return value meaning                               |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| beforeNodeAdded(node)                                        | Called before a new node is added to the DOM                                                                           | return false to not add the node                   |
+| afterNodeAdded(node)                                         | Called after a new node is added to the DOM                                                                            | none                                               |
+| beforeNodeMorphed(oldNode, newNode)                          | Called before a node is morphed in the DOM                                                                             | return false to skip morphing the node             |
+| afterNodeMorphed(oldNode, newNode)                           | Called after a node is morphed in the DOM                                                                              | none                                               |
+| beforeNodeRemoved(node)                                      | Called before a node is removed from the DOM                                                                           | return false to not remove the node                |
+| afterNodeRemoved(node)                                       | Called after a node is removed from the DOM                                                                            | none                                               |
+| beforeAttributeUpdated(attributeName, node, mutationType)    | Called before an attribute on an element is updated or removed (`mutationType` is either "update" or "remove")  | return false to not update or remove the attribute |
 
 ### The `head` tag
 
