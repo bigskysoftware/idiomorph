@@ -32,7 +32,7 @@
     "dist": "cp -r src/* dist/ && cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js && npm run-script gen-modules && npm run-script uglify && gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz && exit",
     "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
     "format": "prettier --write .",
-    "format-check": "prettier --check .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc"
   },
   "repository": {
