@@ -323,11 +323,21 @@ var Idiomorph = (function () {
             ctx,
           );
           morphNode(movedChild, newChild, ctx);
+          insertionPoint = movedChild.nextSibling;
           continue;
         }
 
         // last resort: insert the new node from scratch
-        createNode(oldParent, newChild, insertionPoint, ctx);
+        const insertedNode = createNode(
+          oldParent,
+          newChild,
+          insertionPoint,
+          ctx,
+        );
+        // could be null if beforeNodeAdded prevented insertion
+        if (insertedNode) {
+          insertionPoint = insertedNode.nextSibling;
+        }
       }
 
       // remove any remaining old nodes that didn't match up with new content
