@@ -28,6 +28,7 @@
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [ignoreValue]
  * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacks} [callbacks]
  * @property {ConfigHead} [head]
@@ -69,6 +70,7 @@
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [ignoreValue]
  * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
@@ -106,6 +108,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+   * @property {ConfigInternal['ignoreValue']} ignoreValue
    * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
@@ -634,7 +637,8 @@ var Idiomorph = (function () {
         );
       } else {
         morphAttributes(oldNode, newContent, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+        if (!ignoreValueOfActiveElement(oldNode, ctx) && 
+          (!ctx.ignoreValue || !(oldNode instanceof HTMLTextAreaElement))) {
           // @ts-ignore newContent can be a node here because .firstChild will be null
           morphChildren(ctx, oldNode, newContent);
         }
@@ -686,7 +690,7 @@ var Idiomorph = (function () {
           }
         }
 
-        if (!ignoreValueOfActiveElement(oldElt, ctx)) {
+        if (!ctx.ignoreValue && !ignoreValueOfActiveElement(oldElt, ctx)) {
           syncInputValue(oldElt, newElt, ctx);
         }
       }
@@ -807,9 +811,8 @@ var Idiomorph = (function () {
      */
     function ignoreAttribute(attr, element, updateType, ctx) {
       if (
-        attr === "value" &&
-        ctx.ignoreActiveValue &&
-        element === document.activeElement
+        attr === "value" && (ctx.ignoreValue || 
+          (ctx.ignoreActiveValue && element === document.activeElement))
       ) {
         return true;
       }
@@ -995,6 +998,7 @@ var Idiomorph = (function () {
         morphStyle: morphStyle,
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        ignoreValue: mergedConfig.ignoreValue,
         restoreFocus: mergedConfig.restoreFocus,
         idMap: idMap,
         persistentIds: persistentIds,
