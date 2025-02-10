@@ -561,4 +561,30 @@ describe("Core morphing tests", function () {
     Idiomorph.morph(initial.body, final.body);
     initial.body.outerHTML.should.equal(finalSrc);
   });
+
+  it("test pathlogical case of oldNode and newContent both being in the same document with siblings", function () {
+    let context = make(`
+      <div>
+        <p>ignore me</p>
+        <div>hello</div>
+        <div>world</div>
+        <p>ignore me</p>
+      </div>
+    `);
+
+    let [initial, final] = context.querySelectorAll("div");
+    let ret = Idiomorph.morph(initial, final);
+    initial.outerHTML.should.equal(final.outerHTML);
+    ret.map((e) => e.outerHTML).should.eql([final.outerHTML]);
+    context.outerHTML.should.equal(
+      `
+      <div>
+        <p>ignore me</p>
+        <div>world</div>
+        <div>world</div>
+        <p>ignore me</p>
+      </div>
+    `.trim(),
+    );
+  });
 });
