@@ -1128,13 +1128,13 @@ var Idiomorph = (function () {
       let idMap = new Map();
       populateIdMapForNode(
         oldContent.parentElement,
-        newElts,
+        oldElts,
         persistentIds,
         idMap,
       );
       populateIdMapForNode(
         newContent.parentElement,
-        oldElts,
+        newElts,
         persistentIds,
         idMap,
       );
