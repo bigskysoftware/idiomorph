@@ -1052,17 +1052,18 @@ var Idiomorph = (function () {
     }
 
     /**
-     * A bottom up algorithm that finds all elements with ids in the node
-     * argument and populates id sets for those nodes and all their parents, generating
-     * a set of ids contained within all nodes for the entire hierarchy in the DOM
+     * A bottom-up algorithm that populates a map of Element -> IdSet.
+     * The idSet for a given element is the set of all IDs contained within its subtree.
+     * As an optimzation, we filter these IDs through the given list of persistent IDs,
+     * because we don't need to bother considering IDed elements that won't be in the new content.
      *
-     * @param {Element|null} root
-     * @param {Element[]} nodes
-     * @param {Set<string>} persistentIds
      * @param {Map<Node, Set<string>>} idMap
+     * @param {Set<string>} persistentIds
+     * @param {Element} root
+     * @param {Element[]} elements
      */
-    function populateIdMapForNode(root, nodes, persistentIds, idMap) {
-      for (const elt of nodes) {
+    function populateIdMapWithTree(idMap, persistentIds, root, elements) {
+      for (const elt of elements) {
         if (persistentIds.has(elt.id)) {
           /** @type {Element|null} */
           let current = elt;
@@ -1092,43 +1093,52 @@ var Idiomorph = (function () {
      *
      * @param {Element} oldContent  the old content that will be morphed
      * @param {Element} newContent  the new content to morph to
-     * @returns {IdSets} a map of nodes to id sets for the
+     * @returns {IdSets}
      */
     function createIdMaps(oldContent, newContent) {
-      // Calculate ids that persist between the two contents exculuding duplicates first
-      let oldIdMap = new Map();
-      let dupSet = new Set();
-      const oldElts = elementsWithIds(oldContent);
-      for (const oldElt of oldElts) {
-        const id = oldElt.id;
+      // Calculate ids that persist between the two contents excluding duplicates first
+      /** @type {Map<string, string>} */
+      let oldIdTagNameMap = new Map();
+      let dupIds = new Set();
+      const oldElementsWithIds = elementsWithIds(oldContent);
+      for (const element of oldElementsWithIds) {
+        const id = element.id;
         // if already in map then log duplicates to be skipped
-        if (oldIdMap.has(id)) {
-          dupSet.add(id);
+        if (oldIdTagNameMap.has(id)) {
+          dupIds.add(id);
         } else {
-          oldIdMap.set(id, oldElt.tagName);
+          oldIdTagNameMap.set(id, element.tagName);
         }
       }
+
       let persistentIds = new Set();
-      const newElts = elementsWithIds(newContent);
-      for (const newElt of newElts) {
-        const id = newElt.id;
-        const oldTagName = oldIdMap.get(id);
-        // if already matched skip id as duplicate but also skip if tag types mismatch because it could match later
-        if (
-          persistentIds.has(id) ||
-          (oldTagName && oldTagName !== newElt.tagName)
-        ) {
-          dupSet.add(id);
+      const newElementsWithIds = elementsWithIds(newContent);
+      for (const element of newElementsWithIds) {
+        const id = element.id;
+        const oldTagName = oldIdTagNameMap.get(id);
+        if (persistentIds.has(id)) {
+          dupIds.add(id);
+        }
+        // skip if tag types mismatch because its not possible to morph one tag into another
+        if (oldTagName && oldTagName !== element.tagName) {
           persistentIds.delete(id);
         }
-        if (oldTagName === newElt.tagName && !dupSet.has(id)) {
+        if (oldTagName === element.tagName && !dupIds.has(id)) {
           persistentIds.add(id);
         }
+      }
+      for (const id of dupIds) {
+        persistentIds.delete(id);
       }
 
       /** @type {Map<Node, Set<string>>} */
       let idMap = new Map();
-      populateIdMapForNode(oldContent, oldElts, persistentIds, idMap);
+      populateIdMapWithTree(
+        idMap,
+        persistentIds,
+        oldContent,
+        oldElementsWithIds,
+      );
 
       let newRoot = newContent;
       // if newContent is a duck-typed parent, pass its single child node as the root to halt upwards iteration
@@ -1136,7 +1146,7 @@ var Idiomorph = (function () {
       if (newContent.__idiomorphDummyParent) {
         newRoot = /** @type {Element} */ (newContent.childNodes[0]);
       }
-      populateIdMapForNode(newRoot, newElts, persistentIds, idMap);
+      populateIdMapWithTree(idMap, persistentIds, newRoot, newElementsWithIds);
 
       return { persistentIds, idMap };
     }
