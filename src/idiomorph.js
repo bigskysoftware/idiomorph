@@ -1056,19 +1056,19 @@ var Idiomorph = (function () {
      * argument and populates id sets for those nodes and all their parents, generating
      * a set of ids contained within all nodes for the entire hierarchy in the DOM
      *
-     * @param {Element|null} nodeParent
+     * @param {Element|null} root
      * @param {Element[]} nodes
      * @param {Set<string>} persistentIds
      * @param {Map<Node, Set<string>>} idMap
      */
-    function populateIdMapForNode(nodeParent, nodes, persistentIds, idMap) {
+    function populateIdMapForNode(root, nodes, persistentIds, idMap) {
       for (const elt of nodes) {
         if (persistentIds.has(elt.id)) {
           /** @type {Element|null} */
           let current = elt;
           // walk up the parent hierarchy of that element, adding the id
           // of element to the parent's id set
-          while (current && current !== nodeParent) {
+          while (current) {
             let idSet = idMap.get(current);
             // if the id set doesn't exist, create it and insert it in the  map
             if (idSet == null) {
@@ -1076,6 +1076,8 @@ var Idiomorph = (function () {
               idMap.set(current, idSet);
             }
             idSet.add(elt.id);
+
+            if (current === root) break;
             current = current.parentElement;
           }
         }
@@ -1126,18 +1128,8 @@ var Idiomorph = (function () {
 
       /** @type {Map<Node, Set<string>>} */
       let idMap = new Map();
-      populateIdMapForNode(
-        oldContent.parentElement,
-        oldElts,
-        persistentIds,
-        idMap,
-      );
-      populateIdMapForNode(
-        newContent.parentElement,
-        newElts,
-        persistentIds,
-        idMap,
-      );
+      populateIdMapForNode(oldContent, oldElts, persistentIds, idMap);
+      populateIdMapForNode(newContent, newElts, persistentIds, idMap);
       return { persistentIds, idMap };
     }
 
