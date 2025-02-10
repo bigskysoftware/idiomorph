@@ -1129,7 +1129,15 @@ var Idiomorph = (function () {
       /** @type {Map<Node, Set<string>>} */
       let idMap = new Map();
       populateIdMapForNode(oldContent, oldElts, persistentIds, idMap);
-      populateIdMapForNode(newContent, newElts, persistentIds, idMap);
+
+      let newRoot = newContent;
+      // if newContent is a duck-typed parent, pass its single child node as the root to halt upwards iteration
+      /** @ts-ignore */
+      if (newContent.__idiomorphDummyParent) {
+        newRoot = /** @type {Element} */ (newContent.childNodes[0]);
+      }
+      populateIdMapForNode(newRoot, newElts, persistentIds, idMap);
+
       return { persistentIds, idMap };
     }
 
@@ -1173,7 +1181,28 @@ var Idiomorph = (function () {
         return /** @type {Element} */ (newContent);
       } else if (newContent instanceof Node) {
         if (newContent.parentNode) {
-          return /** @type {Element} */ (newContent.parentNode);
+          // we can't use the parent directly because newContent may have siblings
+          // that we don't want in the morph. we can't reparent either, because we
+          // want to preserve hidden state. so we create a duck-typed parent.
+          return /** @type {Element} */ (
+            /** @type {unknown} */ ({
+              childNodes: [newContent],
+              /** @ts-ignore - cover your eyes for a minute, tsc */
+              querySelectorAll: (s) => {
+                /** @ts-ignore */
+                const elements = newContent.querySelectorAll(s);
+                /** @ts-ignore */
+                return newContent.matches(s)
+                  ? [newContent, ...elements]
+                  : elements;
+              },
+              /** @ts-ignore */
+              insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
+              /** @ts-ignore */
+              moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
+              __idiomorphDummyParent: true,
+            })
+          );
         } else {
           // a single node is added as a child to a dummy parent
           const dummyParent = document.createElement("div");
