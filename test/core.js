@@ -587,4 +587,16 @@ describe("Core morphing tests", function () {
     `.trim(),
     );
   });
+
+  it("do not build id in new content parent into persistent id set", function () {
+    let initial = make("<span><div id='a'>Foo</div></span>");
+    let finalParent = make("<div id='a'><span>Bar</span></div>");
+    let finalSrc = finalParent.querySelector("span");
+
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+
+    // have to make sure the id located in the parent of the new content is not
+    // included in the persistent ID set or it will pantry the id'ed node in error
+    initial.outerHTML.should.equal("<span>Bar</span>");
+  });
 });
