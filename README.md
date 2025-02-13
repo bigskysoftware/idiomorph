@@ -42,7 +42,7 @@ Idiomorph is a small (2.1k min/gz'd), dependency free JavaScript library.  The `
 directly in a browser:
 
 ```html
-<script src="https://unpkg.com/idiomorph@0.5.0"></script>
+<script src="https://unpkg.com/idiomorph@0.6.0"></script>
 ```
 
 For production systems we recommend downloading and vendoring the library.
