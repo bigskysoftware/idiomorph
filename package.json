@@ -44,7 +44,7 @@
     "url": "git+https://github.com/bigskysoftware/idiomorph.git"
   },
   "devDependencies": {
-    "@web/test-runner": "^0.19.0",
+    "@web/test-runner": "^0.20.0",
     "@web/test-runner-playwright": "^0.11.0",
     "chai": "^4.3.6",
     "chai-dom": "^1.11.0",
@@ -57,7 +57,6 @@
     "sinon": "^9.2.4",
     "tachometer": "^0.7.1",
     "typescript": "^5.3.3",
-    "uglify-js": "^3.15.0",
-    "@rollup/rollup-darwin-arm64": "^4.34.6"
+    "uglify-js": "^3.15.0"
   }
 }
