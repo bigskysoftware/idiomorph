@@ -18,6 +18,10 @@
   "main": "dist/idiomorph.js",
   "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
+  "exports": {
+    "require": "./dist/idiomorph.cjs.js",
+    "import": "./dist/idiomorph.esm.js"
+  },
   "scripts": {
     "test": "web-test-runner",
     "test:coverage": "npm run ci && node test/lib/ensure-full-coverage.js",
