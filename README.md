@@ -89,30 +89,29 @@ This will replace the _inner_ content of the existing node with the new content.
 
 Idiomorph supports the following options:
 
-| option              | meaning                                                                                                     | example                                                                  |
-|---------------------|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
-| `morphStyle`        | The style of morphing to use, either `innerHTML` or `outerHTML`                                             | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
-| `ignoreActive`      | If set to `true`, idiomorph will skip the active element                                                    | `Idiomorph.morph(..., {ignoreActive:true})`                              |
-| `ignoreActiveValue` | If set to `true`, idiomorph will not update the active element's value                                      | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
-| `head`              | Allows you to control how the `head` tag is merged.  See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:merge}})`                             |
-| `callbacks`         | Allows you to insert callbacks when events occur in the morph life cycle, see the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
-| `twoPass`           | If set to `true`, idiomorph does a second pass to maintain more state. See [Two Pass Mode](#two-pass-mode)  | `Idiomorph.morph(..., {twoPass:true})`                                   |
+| option (with default)         | meaning                                                                                                    | example                                                                  |
+|-------------------------------|------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `morphStyle: 'outerHTML'`     | The style of morphing to use, either `outerHTML` or `innerHTML`                                            | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
+| `ignoreActive: false`         | If `true`, idiomorph will skip the active element                                                          | `Idiomorph.morph(..., {ignoreActive:true})`                              |
+| `ignoreActiveValue: false`    | If `true`, idiomorph will not update the active element's value                                            | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
+| `restoreFocus: true`          | If `true`, idiomorph will attempt to restore any lost focus and selection state after the morph.           | `Idiomorph.morph(..., {restoreFocus:true})`                              |
+| `head: {style: 'merge', ...}` | Allows you to control how the `head` tag is merged. See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:'merge'}})`                           |
+| `callbacks: {...}`            | Allows you to insert callbacks when events occur in the morph lifecycle. See the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
 
 #### Callbacks
 
 Idiomorph provides the following callbacks, which can be used to intercept and, for some callbacks, modify the swapping behavior
 of the algorithm.
 
-| callback                                                     | description                                                                              | return value meaning                               |
-|--------------------------------------------------------------|------------------------------------------------------------------------------------------|----------------------------------------------------|
-| beforeNodeAdded(node)                                        | Called before a new node is added to the DOM                                             | return false to not add the node                   |
-| afterNodeAdded(node)                                         | Called after a new node is added to the DOM                                              | none                                               |
-| beforeNodeMorphed(oldNode, newNode)                          | Called before a node is morphed in the DOM                                               | return false to skip morphing the node             |
-| afterNodeMorphed(oldNode, newNode)                           | Called after a node is morphed in the DOM                                                | none                                               |
-| beforeNodeRemoved(node)                                      | Called before a node is removed from the DOM                                             | return false to not remove the node                |
-| afterNodeRemoved(node)                                       | Called after a node is removed from the DOM                                              | none                                               |
-| beforeAttributeUpdated(attributeName, node, mutationType)    | Called before an attribute on an element. `mutationType` is either "updated" or "removed"| return false to not update or remove the attribute |
-| beforeNodePantried(node)                                     | Called before moving the node into the pantry during the second pass (if enabled)        | return false to not move the node into the pantry  |
+| callback                                                  | description                                                                                                    | return value meaning                               |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
+| beforeNodeAdded(node)                                     | Called before a new node is added to the DOM                                                                   | return false to not add the node                   |
+| afterNodeAdded(node)                                      | Called after a new node is added to the DOM                                                                    | none                                               |
+| beforeNodeMorphed(oldNode, newNode)                       | Called before a node is morphed in the DOM                                                                     | return false to skip morphing the node             |
+| afterNodeMorphed(oldNode, newNode)                        | Called after a node is morphed in the DOM                                                                      | none                                               |
+| beforeNodeRemoved(node)                                   | Called before a node is removed from the DOM                                                                   | return false to not remove the node                |
+| afterNodeRemoved(node)                                    | Called after a node is removed from the DOM                                                                    | none                                               |
+| beforeAttributeUpdated(attributeName, node, mutationType) | Called before an attribute on an element is updated or removed (`mutationType` is either "update" or "remove") | return false to not update or remove the attribute |
 
 ### The `head` tag
 
@@ -141,15 +140,6 @@ of the script.
 
 Similarly, you may wish to preserve an element even if it is not in `new`.  You can use the attribute `im-preserve='true'`
 in this case to retain the element.
-
-#### Two Pass Mode
-
-If the `twoPass` option is enabled, Idiomorph will try to maintain more state by temporarily moving some nodes into a
-hidden pantry div. After the initial morph is complete, it runs a second pass, moving the pantried nodes back into the
-document.  These are nodes that would otherwise have been removed and readded, losing identity and state. This is
-particularly useful for reordering morphs involving elements with non-attribute state, e.g. video elements, elements
-preserved with `data-turbo-permanent`, etc. Also, when this option is enabled, Idiomorph will use the upcoming
-`Element#moveBefore` API if it exists, falling back to `Element#insertBefore` if not.
 
 #### Additional Configuration
 

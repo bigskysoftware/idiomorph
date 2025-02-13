@@ -81,6 +81,33 @@ describe("Tests to ensure that idiomorph merges properly", function () {
     testFidelity("<main></main>", "<main><p>hello you</p></main>");
   });
 
+  it("moves a node from the future", function () {
+    testFidelity(
+      `<div><div id="container"><div id="item"></div></div></div>`,
+      `<div><div id="item"></div><div id="container"></div></div>`,
+    );
+  });
+
+  it("move id node into div does not break insertion point", function () {
+    // bug: https://github.com/bigskysoftware/idiomorph/pull/99
+    // when moving an IDed element into an inner div, moveBeforeById can
+    // move the parent's insertionPoint node, causing an incorrect morph result
+    testFidelity(
+      `<div><input id="first"></div>`,
+      `<div><div><input id="first"></div></div>`,
+    );
+  });
+
+  it("move id node into div that has been restored from pantry does not break insertion point", function () {
+    // bug: https://github.com/bigskysoftware/idiomorph/pull/99
+    // after restoring a node from the pantry, if its next sibling gets moved into it
+    // via moveBeforeById, thats the current insertionPoint, thus an incorrect morph
+    testFidelity(
+      `<div><a id="a"></a><br><b id="b"></b></div>`,
+      `<div><br><a id="a"><b id="b"></b></a></div>`,
+    );
+  });
+
   it("issue https://github.com/bigskysoftware/idiomorph/issues/11", function () {
     let el1 = make('<fieldset id="el"></fieldset>');
 

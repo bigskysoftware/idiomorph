@@ -1,6 +1,20 @@
 describe("Core morphing tests", function () {
   setup();
 
+  it("morphs outerHTML by default", function () {
+    let initial = make("<button>Foo</button>");
+    let finalSrc = "<button>Bar</button>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
+  it("morphs outerHTML if morphStyle is missing", function () {
+    let initial = make("<button>Foo</button>");
+    let finalSrc = "<button>Bar</button>";
+    Idiomorph.morph(initial, finalSrc, { morphStyle: null });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
   it("morphs outerHTML as content properly when argument is null", function () {
     let initial = make("<button>Foo</button>");
     Idiomorph.morph(initial, null, { morphStyle: "outerHTML" });
@@ -12,6 +26,14 @@ describe("Core morphing tests", function () {
     let finalSrc = "<button>Bar</button>";
     let final = make(finalSrc);
     Idiomorph.morph(initial, final, { morphStyle: "outerHTML" });
+    initial.outerHTML.should.equal("<button>Bar</button>");
+  });
+
+  it("morphs outerHTML as content properly when argument is single node", function () {
+    let initial = make("<button>Foo</button>");
+    let element = document.createElement("button");
+    element.innerText = "Bar";
+    Idiomorph.morph(initial, element, { morphStyle: "outerHTML" });
     initial.outerHTML.should.equal("<button>Bar</button>");
   });
 
@@ -105,11 +127,19 @@ describe("Core morphing tests", function () {
     initial.outerHTML.should.equal("<div></div>");
   });
 
-  it("morphs innerHTML as content properly when argument is single node", function () {
+  it("morphs innerHTML as content properly when argument is single node string", function () {
     let initial = make("<div>Foo</div>");
     let finalSrc = "<button>Bar</button>";
     let final = make(finalSrc);
     Idiomorph.morph(initial, final, { morphStyle: "innerHTML" });
+    initial.outerHTML.should.equal("<div><button>Bar</button></div>");
+  });
+
+  it("morphs innerHTML as content properly when argument is single node", function () {
+    let initial = make("<div>Foo</div>");
+    let element = document.createElement("button");
+    element.innerText = "Bar";
+    Idiomorph.morph(initial, element, { morphStyle: "innerHTML" });
     initial.outerHTML.should.equal("<div><button>Bar</button></div>");
   });
 
@@ -397,7 +427,7 @@ describe("Core morphing tests", function () {
 
     let finalSrc = '<input type="checkbox" checked>';
     Idiomorph.morph(initial, finalSrc, { morphStyle: "outerHTML" });
-    initial.outerHTML.should.equal('<input type="checkbox" checked="true">');
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
     initial.checked.should.equal(true);
     document.body.removeChild(parent);
   });
@@ -444,7 +474,7 @@ describe("Core morphing tests", function () {
     // is this a problem at all?
     parent.innerHTML.should.equal(`
         <select>
-          <option selected="true">0</option>
+          <option selected="">0</option>
           <option>1</option>
         </select>
       `);
@@ -476,7 +506,7 @@ describe("Core morphing tests", function () {
     let finalSrc = `
         <select>
           <option>0</option>
-          <option selected="true">1</option>
+          <option selected="">1</option>
         </select>
       `;
     Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });
@@ -518,5 +548,43 @@ describe("Core morphing tests", function () {
     } finally {
       Idiomorph.defaults.morphStyle = "outerHTML";
     }
+  });
+
+  it("add loc coverage for findSoftMatch aborting on two future soft matches", function () {
+    // when nodes can't be softMatched because they have different types it will scan ahead
+    // but it aborts the scan ahead if it finds two nodes ahead in both the new and old content
+    // that softmatch so it can just insert the mis matched node it is on and get to the matching.
+    // had no test coverage but not easy to test but at least it is called now.
+    let initial = parseHTML("<body><span></span><p></p><p></p></body>");
+    let finalSrc = "<body><div></div><p></p><p></p></body>";
+    let final = parseHTML(finalSrc);
+    Idiomorph.morph(initial.body, final.body);
+    initial.body.outerHTML.should.equal(finalSrc);
+  });
+
+  it("test pathlogical case of oldNode and newContent both being in the same document with siblings", function () {
+    let context = make(`
+      <div>
+        <p>ignore me</p>
+        <div>hello</div>
+        <div>world</div>
+        <p>ignore me</p>
+      </div>
+    `);
+
+    let [initial, final] = context.querySelectorAll("div");
+    let ret = Idiomorph.morph(initial, final);
+    initial.outerHTML.should.equal(final.outerHTML);
+    ret.map((e) => e.outerHTML).should.eql([final.outerHTML]);
+    context.outerHTML.should.equal(
+      `
+      <div>
+        <p>ignore me</p>
+        <div>world</div>
+        <div>world</div>
+        <p>ignore me</p>
+      </div>
+    `.trim(),
+    );
   });
 });

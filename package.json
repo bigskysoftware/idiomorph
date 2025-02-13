@@ -18,10 +18,15 @@
   "main": "dist/idiomorph.js",
   "module": "dist/idiomorph.esm.js",
   "unpkg": "dist/idiomorph.min.js",
+  "exports": {
+    "require": "./dist/idiomorph.cjs.js",
+    "import": "./dist/idiomorph.esm.js"
+  },
   "scripts": {
     "test": "web-test-runner",
-    "debug": "web-test-runner --manual --open",
-    "test-move-before": "USE_MOVE_BEFORE=1 web-test-runner",
+    "test:coverage": "npm run ci && node test/lib/ensure-full-coverage.js",
+    "test:debug": "web-test-runner --manual --open",
+    "test:move-before": "USE_MOVE_BEFORE=1 web-test-runner",
     "ci": "web-test-runner --fail-only --playwright --browsers chromium firefox webkit",
     "perf": "node perf/runner.js",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
@@ -31,7 +36,7 @@
     "dist": "cp -r src/* dist/ && cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js && npm run-script gen-modules && npm run-script uglify && gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz && exit",
     "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
     "format": "prettier --write .",
-    "format-check": "prettier --check .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc"
   },
   "repository": {
@@ -46,6 +51,7 @@
     "chromedriver": "^131.0.5",
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
+    "lcov-parse": "^1.0.0",
     "mocha": "^11.0.1",
     "prettier": "^3.4.2",
     "sinon": "^9.2.4",

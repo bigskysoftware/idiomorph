@@ -9,6 +9,10 @@ function setup() {
     });
 }
 
+function hasMoveBefore() {
+  return !!document.body.moveBefore;
+}
+
 function make(htmlStr) {
     let range = document.createRange();
     let fragment = range.createContextualFragment(htmlStr);
@@ -57,3 +61,67 @@ function print(elt) {
     getWorkArea().appendChild(text);
     return elt;
 }
+
+function setFocusAndSelection(elementId, selectedText) {
+  const element = document.getElementById(elementId);
+  const value = element.value
+  const index = value.indexOf(selectedText);
+  if(index === -1) throw `"${value}" does not contain "${selectedText}"`;
+  element.focus();
+  element.setSelectionRange(index, index + selectedText.length);
+}
+
+function setFocus(elementId) {
+  document.getElementById(elementId).focus();
+}
+
+function assertFocusAndSelection(elementId, selectedText) {
+  assertFocus(elementId);
+  const activeElement = document.activeElement;
+  activeElement.id.should.eql(elementId);
+  activeElement.value.substring(activeElement.selectionStart, activeElement.selectionEnd).should.eql(selectedText);
+}
+
+function assertFocus(elementId) {
+  document.activeElement.id.should.eql(elementId);
+}
+
+function assertNoFocus() {
+  document.activeElement.tagName.should.eql("BODY");
+}
+
+function assertOps(before, after, expectedOps) {
+  let ops = [];
+  let initial = make(before);
+  let final = make(after);
+  let finalCopy = document.importNode(final, true);
+  Idiomorph.morph(initial, final, {
+    callbacks: {
+      beforeNodeMorphed: (oldNode, newNode) => {
+        // Text node morphs are mostly noise
+        if (oldNode.nodeType === Node.TEXT_NODE) return;
+
+        ops.push([
+          "Morphed",
+          oldNode.outerHTML || oldNode.textContent,
+          newNode.outerHTML || newNode.textContent,
+        ]);
+      },
+      beforeNodeRemoved: (node) => {
+        ops.push(["Removed", node.outerHTML || node.textContent]);
+      },
+      beforeNodeAdded: (node) => {
+        ops.push(["Added", node.outerHTML || node.textContent]);
+      },
+    },
+  });
+  if (JSON.stringify(ops) != JSON.stringify(expectedOps)) {
+    console.log('test expected Operations is:');
+    console.log(expectedOps);
+    console.log('test failing Operations is:');
+    console.log(ops);
+  }
+  initial.outerHTML.should.equal(finalCopy.outerHTML);
+  ops.should.eql(expectedOps);
+}
+
