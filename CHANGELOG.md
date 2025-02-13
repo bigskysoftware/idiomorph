@@ -7,7 +7,7 @@
   * Remove `beforeNodePantried` callback option. This addition in v0.4.0 was an unfortunate necessity of the old `twoPass` mode, but is no longer needed with the new algorithm. (@botandrose)
 
 * Added:
-  * New `restoreFocus` option. On older browsers, moving the focused element (or one of its parents) can result in loss of focus and selection state. This option will restore this state for IDed elements, at the cost of firing extra `focus` and `selection` events. (@botandrose)
+  * New on-by-default `restoreFocus` option. On older browsers, moving the focused element (or one of its parents) can result in loss of focus and selection state. This option restores this state for IDed elements, at the cost of firing extra `focus` and `selection` events. (@botandrose)
 
 * Fixed:
   * Boolean attributes are now correctly set to `""` instead of `"true"`. https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML (@MichaelWest22)

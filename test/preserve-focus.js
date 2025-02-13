@@ -1,4 +1,4 @@
-describe("Preserves focus where possible", function () {
+describe("Preserves focus algorithmically where possible", function () {
   setup();
 
   function assertFocusPreservation(
@@ -12,6 +12,7 @@ describe("Preserves focus where possible", function () {
     setFocusAndSelection(focusId, selection);
     Idiomorph.morph(getWorkArea(), after, {
       morphStyle: "innerHTML",
+      restoreFocus: false,
     });
     getWorkArea().innerHTML.should.equal(after);
     // for when we fall short of the ideal
