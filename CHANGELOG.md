@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.7.0] - 2025-02-13
+## [0.7.1] - 2025-02-13
 
 * Removed:
   * Remove `twoPass` option. There is only one single morphing algorithm now, which is more correct than both previous versions. (@botandrose, @MichaelWest22)
