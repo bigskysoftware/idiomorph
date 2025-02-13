@@ -194,6 +194,7 @@ describe("Hidden state preservation tests", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
+      restoreFocus: false, // to capture current reality of focus loss
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);
@@ -231,6 +232,7 @@ describe("Hidden state preservation tests", function () {
         `;
     Idiomorph.morph(getWorkArea(), finalSrc, {
       morphStyle: "innerHTML",
+      restoreFocus: false, // to capture current reality of focus loss
     });
 
     getWorkArea().innerHTML.should.equal(finalSrc);

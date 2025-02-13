@@ -141,7 +141,7 @@ var Idiomorph = (function () {
       shouldRemove: noOp,
       afterHeadMorphed: noOp,
     },
-    restoreFocus: false,
+    restoreFocus: true,
   };
 
   /**
