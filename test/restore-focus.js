@@ -9,7 +9,7 @@ describe("Option to forcibly restore focus after morph", function () {
     restoreFocus = true,
   ) {
     getWorkArea().innerHTML = before;
-    for (const elt of getWorkArea().querySelectorAll('input')) {
+    for (const elt of getWorkArea().querySelectorAll("input")) {
       elt.parentElement.moveBefore = undefined;
     }
     setFocusAndSelection(focusId, selection);
