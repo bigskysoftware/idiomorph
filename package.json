@@ -26,7 +26,6 @@
     "test": "web-test-runner",
     "test:coverage": "npm run ci && node test/lib/ensure-full-coverage.js",
     "test:debug": "web-test-runner --manual --open",
-    "test:move-before": "USE_MOVE_BEFORE=1 web-test-runner",
     "ci": "web-test-runner --fail-only --playwright --browsers chromium firefox webkit",
     "perf": "node perf/runner.js",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
