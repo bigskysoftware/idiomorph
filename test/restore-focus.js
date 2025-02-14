@@ -1,6 +1,25 @@
 describe("Option to forcibly restore focus after morph", function () {
   setup();
 
+  function assertFocusPreservationWithoutMoveBefore(
+    before,
+    after,
+    focusId,
+    selection,
+    restoreFocus = true,
+  ) {
+    getWorkArea().innerHTML = before;
+    for (const elt of getWorkArea().querySelectorAll('input')) {
+      elt.parentElement.moveBefore = undefined;
+    }
+    setFocusAndSelection(focusId, selection);
+    Idiomorph.morph(getWorkArea(), after, {
+      morphStyle: "innerHTML",
+      restoreFocus: restoreFocus,
+    });
+    getWorkArea().innerHTML.should.equal(after);
+  }
+
   describe("defaults to on", function () {
     it("restores focus and selection state with outerHTML morphStyle", function () {
       const div = make(`
@@ -584,6 +603,182 @@ describe("Option to forcibly restore focus after morph", function () {
 
       getWorkArea().innerHTML.should.equal(finalSrc);
       assertNoFocus();
+    });
+  });
+
+  describe("with option on but moveBefore disabled", function () {
+    it("preserves focus state and outerHTML morphStyle", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="focused" value="abc">
+          <input type="text" id="other">
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+      );
+      assertFocus("focused");
+    });
+
+    it("preserves focus state when elements are moved to different levels of the DOM", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="other">
+          <div>
+            <input type="text" id="focused" value="abc">
+          </div>
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+      );
+      assertFocus("focused");
+    });
+
+    it("preserves focus state when focused element is moved between anonymous containers", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="other">
+        </div>
+        <div>
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+      );
+      assertFocus("focused");
+    });
+
+    it("preserves focus state when elements are moved between IDed containers", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <div id="left">
+            <input type="text" id="focused" value="abc">
+          </div>
+          <div id="right">
+            <input type="text" id="other">
+          </div>
+        </div>`,
+        `
+        <div>
+          <div id="left">
+            <input type="text" id="other">
+          </div>
+          <div id="right">
+            <input type="text" id="focused" value="abc">
+          </div>
+        </div>`,
+        "focused",
+        "b",
+      );
+      assertFocus("focused");
+    });
+  });
+
+  describe("with option off but moveBefore disabled", function () {
+    it("does not preserves focus state and outerHTML morphStyle", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="focused" value="abc">
+          <input type="text" id="other">
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+        false,
+      );
+      assertNoFocus("focused");
+    });
+
+    it("does not preserves focus state when elements are moved to different levels of the DOM", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="other">
+          <div>
+            <input type="text" id="focused" value="abc">
+          </div>
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+        false,
+      );
+      assertNoFocus("focused");
+    });
+
+    it("does not preserves focus state when focused element is moved between anonymous containers", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="other">
+        </div>
+        <div>
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="focused" value="abc">
+        </div>`,
+        "focused",
+        "b",
+        false,
+      );
+      assertNoFocus("focused");
+    });
+
+    it("does not preserves focus state when elements are moved between IDed containers", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <div id="left">
+            <input type="text" id="focused" value="abc">
+          </div>
+          <div id="right">
+            <input type="text" id="other">
+          </div>
+        </div>`,
+        `
+        <div>
+          <div id="left">
+            <input type="text" id="other">
+          </div>
+          <div id="right">
+            <input type="text" id="focused" value="abc">
+          </div>
+        </div>`,
+        "focused",
+        "b",
+        false,
+      );
+      assertNoFocus("focused");
     });
   });
 });
