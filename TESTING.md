@@ -25,12 +25,6 @@ npm run ci
 ```
 This will run the tests using Playwright’s headless browser setup across Chrome, Firefox, and WebKit (Safari-adjacent). This is ultimately what gets run in Github Actions to verify PRs. This build will fail if there is an `it.only` left in the codebase, thanks to a custom `--fail-only` command line argument.
 
-To run all tests against Chrome with experimental `moveBefore` support added, execute:
-```bash
-npm run test:move-before
-```
-This will start headless Chrome in a new profile with the `atomic-move` experimental flag set. This runs in a separate job in CI.
-
 ## Running Individual Tests
 
 ### Headless Mode
@@ -57,9 +51,10 @@ This will start the server, and open the test runner in a browser. From there yo
 ## GitHub Actions CI matrix
 On each push and PR, GitHub Actions runs the following test matrix:
 
-1. Normal baseline `npm run ci` run
-2. With experimental moveBefore enabled in the browser
-3. Typecheck
+1. `npm run ci` - Run all tests on Chrome, Firefox, and WebKit.
+2. `npm run test:coverage` - Run all tests, and fail if coverage is below 100%.
+3. `npm run typecheck` - Run TypeScript type checking.
+4. `npm run format:check`- Check that all files are formatted correctly.
 
 ## Code Coverage Report
 After a test run completes, you can open `coverage/lcov-report/index.html` to view the code coverage report. On Ubuntu you can run:
