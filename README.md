@@ -160,6 +160,26 @@ Idiomorph.morph(document.documentElement, newPageSource, {head:{style: 'morph'}}
 
 The `head` object also offers callbacks for configuring head merging specifics.
 
+### Plugins
+
+Idiomorph supports a plugin system that allows you to extend the functionality of the library, by registering an object of callbacks:
+
+```js
+Idiomorph.registerPlugin({
+    name: 'logger',
+    onBeforeNodeAdded: function(node) {
+        console.log('Node added:', node);
+    },
+    onBeforeNodeRemoved: function(node) {
+        console.log('Node removed:', node);
+    },
+});
+
+Idiomorph.plugins // { logger: { ...} };
+```
+
+These callbacks will be called in addition to any other callbacks that are registered in `Idiomorph.morph`. Multiple plugins can be registered.
+
 ### Setting Defaults
 
 All the behaviors specified above can be set to a different default by mutating the `Idiomorph.defaults` object, including

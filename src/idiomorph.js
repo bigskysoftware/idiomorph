@@ -144,6 +144,11 @@ var Idiomorph = (function () {
     restoreFocus: true,
   };
 
+  let plugins = {};
+  function addPlugin(plugin) {
+    plugins[plugin.name] = plugin;
+  }
+
   /**
    * Core idiomorph function for morphing one DOM tree to another
    *
@@ -348,6 +353,26 @@ var Idiomorph = (function () {
       }
     }
 
+    function withNodeCallbacks(ctx, name, node, fn) {
+      const allPlugins = [...Object.values(plugins), ctx.callbacks];
+
+      const shouldAbort = allPlugins.some((plugin) => {
+        const beforeFn = plugin[`beforeNode${name}`];
+        return beforeFn && beforeFn(node) === false;
+      });
+
+      if (shouldAbort) return;
+
+      const resultNode = fn();
+
+      allPlugins.reverse().forEach((plugin) => {
+        const afterFn = plugin[`afterNode${name}`];
+        afterFn && afterFn(resultNode);
+      });
+
+      return resultNode;
+    }
+
     /**
      * This performs the action of inserting a new node while handling situations where the node contains
      * elements with persistent ids and possible state info we can still preserve by moving in and then morphing
@@ -359,23 +384,22 @@ var Idiomorph = (function () {
      * @returns {Node|null}
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
-      if (ctx.idMap.has(newChild)) {
-        // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
-        const newEmptyChild = document.createElement(
-          /** @type {Element} */ (newChild).tagName,
-        );
-        oldParent.insertBefore(newEmptyChild, insertionPoint);
-        morphNode(newEmptyChild, newChild, ctx);
-        ctx.callbacks.afterNodeAdded(newEmptyChild);
-        return newEmptyChild;
-      } else {
-        // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
-        const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
-        oldParent.insertBefore(newClonedChild, insertionPoint);
-        ctx.callbacks.afterNodeAdded(newClonedChild);
-        return newClonedChild;
-      }
+      return withNodeCallbacks(ctx, "Added", newChild, () => {
+        if (ctx.idMap.has(newChild)) {
+          // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
+          const newEmptyChild = document.createElement(
+            /** @type {Element} */ (newChild).tagName,
+          );
+          oldParent.insertBefore(newEmptyChild, insertionPoint);
+          morphNode(newEmptyChild, newChild, ctx);
+          return newEmptyChild;
+        } else {
+          // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
+          const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
+          oldParent.insertBefore(newClonedChild, insertionPoint);
+          return newClonedChild;
+        }
+      });
     }
 
     //=============================================================================
@@ -505,9 +529,9 @@ var Idiomorph = (function () {
         moveBefore(ctx.pantry, node, null);
       } else {
         // remove for realsies
-        if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
-        node.parentNode?.removeChild(node);
-        ctx.callbacks.afterNodeRemoved(node);
+        withNodeCallbacks(ctx, "Removed", node, () => {
+          return node.parentNode?.removeChild(node);
+        });
       }
     }
 
@@ -1300,5 +1324,6 @@ var Idiomorph = (function () {
   return {
     morph,
     defaults,
+    addPlugin,
   };
 })();
