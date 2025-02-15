@@ -360,9 +360,11 @@ var Idiomorph = (function () {
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
-      if (ctx.idMap.has(newChild) && newChild instanceof Element) {
+      if (ctx.idMap.has(newChild)) {
         // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
-        const newEmptyChild = document.createElement(newChild.tagName);
+        const newEmptyChild = document.createElement(
+          /** @type {Element} */ (newChild).tagName,
+        );
         oldParent.insertBefore(newEmptyChild, insertionPoint);
         morphNode(newEmptyChild, newChild, ctx);
         ctx.callbacks.afterNodeAdded(newEmptyChild);
@@ -498,7 +500,7 @@ var Idiomorph = (function () {
      */
     function removeNode(ctx, node) {
       // are we going to id set match this later?
-      if (ctx.idMap.has(node) && node instanceof Element) {
+      if (ctx.idMap.has(node)) {
         // skip callbacks and move to pantry
         moveBefore(ctx.pantry, node, null);
       } else {
