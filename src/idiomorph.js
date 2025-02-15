@@ -1193,29 +1193,9 @@ var Idiomorph = (function () {
       } else if (newContent instanceof Node) {
         if (newContent.parentNode) {
           // we can't use the parent directly because newContent may have siblings
-          // that we don't want in the morph. we can't reparent either, because we
-          // want to preserve hidden state. so we create a duck-typed parent.
-          return /** @type {Element} */ (
-            /** @type {unknown} */ ({
-              childNodes: [newContent],
-              /** @ts-ignore - cover your eyes for a minute, tsc */
-              querySelectorAll: (s) => {
-                /** @ts-ignore */
-                const elements = newContent.querySelectorAll(s);
-                /** @ts-ignore */
-                return newContent.matches(s)
-                  ? [newContent, ...elements]
-                  : elements;
-              },
-              /** @ts-ignore */
-              insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
-              /** @ts-ignore */
-              moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
-              get __idiomorphRoot() {
-                return newContent;
-              },
-            })
-          );
+          // that we don't want in the morph, and reparenting might be expensive (TODO is it?),
+          // so we create a duck-typed parent node instead.
+          return createDuckTypedParent(newContent);
         } else {
           // a single node is added as a child to a dummy parent
           const dummyParent = document.createElement("div");
@@ -1231,6 +1211,36 @@ var Idiomorph = (function () {
         }
         return dummyParent;
       }
+    }
+
+    /**
+     * Creates a fake duck-typed parent element to wrap a single node, without actually reparenting it.
+     * "If it walks like a duck, and quacks like a duck, then it must be a duck!" -- James Whitcomb Riley (1849–1916)
+     *
+     * @param {Node} newContent
+     * @returns {Element}
+     */
+    function createDuckTypedParent(newContent) {
+      return /** @type {Element} */ (
+        /** @type {unknown} */ ({
+          childNodes: [newContent],
+          /** @ts-ignore - cover your eyes for a minute, tsc */
+          querySelectorAll: (s) => {
+            /** @ts-ignore */
+            const elements = newContent.querySelectorAll(s);
+            /** @ts-ignore */
+            return newContent.matches(s) ? [newContent, ...elements] : elements;
+          },
+          /** @ts-ignore */
+          insertBefore: (n, r) => newContent.parentNode.insertBefore(n, r),
+          /** @ts-ignore */
+          moveBefore: (n, r) => newContent.parentNode.moveBefore(n, r),
+          // for later use with populateIdMapWithTree to halt upwards iteration
+          get __idiomorphRoot() {
+            return newContent;
+          },
+        })
+      );
     }
 
     /**
