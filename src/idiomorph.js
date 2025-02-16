@@ -149,39 +149,6 @@ var Idiomorph = (function () {
     plugins[plugin.name] = plugin;
   }
 
-  function withNodeCallbacks(ctx, name, oldNode, newNode, fn) {
-    const allPlugins = [...Object.values(plugins), ctx.callbacks];
-
-    const shouldAbort = allPlugins.some((plugin) => {
-      const beforeFn = plugin[`beforeNode${name}`];
-      return beforeFn && beforeFn(oldNode, newNode) === false;
-    });
-
-    if (shouldAbort) {
-      return name === "Added" ? null : oldNode;
-    }
-
-    const resultNode = fn();
-
-    allPlugins.reverse().forEach((plugin) => {
-      const afterFn = plugin[`afterNode${name}`];
-      afterFn && afterFn(resultNode, newNode);
-    });
-
-    return resultNode;
-  }
-
-  function beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) {
-    const allPlugins = [...Object.values(plugins), ctx.callbacks];
-
-    const shouldAbort = allPlugins.some((plugin) => {
-      const beforeFn = plugin[`beforeAttributeUpdated`];
-      return beforeFn && beforeFn(attr, element, updateType) === false;
-    });
-
-    if (shouldAbort) return false;
-  }
-
   /**
    * Core idiomorph function for morphing one DOM tree to another
    *
@@ -193,7 +160,7 @@ var Idiomorph = (function () {
   function morph(oldNode, newContent, config = {}) {
     oldNode = normalizeElement(oldNode);
     const newNode = normalizeParent(newContent);
-    const ctx = createMorphContext(oldNode, newNode, config);
+    const ctx = createMorphContext(oldNode, newNode, config, plugins);
 
     const morphedNodes = saveAndRestoreFocus(ctx, () => {
       return withHeadBlocking(
@@ -872,6 +839,36 @@ var Idiomorph = (function () {
   })();
 
   //=============================================================================
+  // Callback Functions
+  //=============================================================================
+  function withNodeCallbacks(ctx, name, oldNode, newNode, fn) {
+    const shouldPrevent = ctx.callbacks.some((plugin) => {
+      return plugin[`beforeNode${name}`]?.(oldNode, newNode) === false;
+    });
+
+    if (shouldPrevent) {
+      return name === "Added" ? null : oldNode;
+    }
+
+    const resultNode = fn();
+
+    // iterate backwards without a new array or index allocation
+    ctx.callbacks.reduceRight((_, plugin) => {
+      plugin[`afterNode${name}`]?.(resultNode, newNode);
+    }, null);
+
+    return resultNode;
+  }
+
+  function beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) {
+    const shouldPrevent = ctx.callbacks.some((plugin) => {
+      return plugin[`beforeAttributeUpdated`]?.(attr, element, updateType) === false;
+    });
+
+    if (shouldPrevent) return false;
+  }
+
+  //=============================================================================
   // Head Management Functions
   //=============================================================================
   /**
@@ -1015,7 +1012,7 @@ var Idiomorph = (function () {
      * @param {Config} config
      * @returns {MorphContext}
      */
-    function createMorphContext(oldNode, newContent, config) {
+    function createMorphContext(oldNode, newContent, config, plugins) {
       const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
 
       const mergedConfig = mergeDefaults(config);
@@ -1023,6 +1020,7 @@ var Idiomorph = (function () {
       if (!["innerHTML", "outerHTML"].includes(morphStyle)) {
         throw `Do not understand how to morph style ${morphStyle}`;
       }
+      const callbacks = [...Object.values(plugins), mergedConfig.callbacks];
 
       return {
         target: oldNode,
@@ -1035,7 +1033,7 @@ var Idiomorph = (function () {
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
-        callbacks: mergedConfig.callbacks,
+        callbacks: callbacks,
         head: mergedConfig.head,
       };
     }
