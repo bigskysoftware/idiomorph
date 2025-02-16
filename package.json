@@ -24,9 +24,11 @@
   },
   "scripts": {
     "test": "web-test-runner",
-    "test:coverage": "npm run ci && node test/lib/ensure-full-coverage.js",
     "test:debug": "web-test-runner --manual --open",
-    "ci": "web-test-runner --fail-only --playwright --browsers chromium firefox webkit",
+    "test:chrome": "web-test-runner --playwright --browsers chromium",
+    "test:firefox": "web-test-runner --playwright --browsers firefox",
+    "test:webkit": "web-test-runner --playwright --browsers webkit",
+    "test:coverage": "npm run test:chrome && node test/lib/ensure-full-coverage.js",
     "perf": "node perf/runner.js",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",

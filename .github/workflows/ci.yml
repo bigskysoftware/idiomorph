@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  test:
+  test-chromium:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -14,10 +14,42 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm install
-      - name: Install browsers
-        run: npx playwright install --with-deps
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
       - name: Run tests
-        run: npm run ci
+        run: npm run test:chrome --fail-only
+
+  test-firefox:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Install browser
+        run: npx playwright install --with-deps firefox
+      - name: Run tests
+        run: npm run test:firefox --fail-only
+
+  test-webkit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Install browser
+        run: npx playwright install --with-deps webkit
+      - name: Run tests
+        run: npm run test:webkit --fail-only
 
   coverage:
     runs-on: ubuntu-latest
@@ -31,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install browsers
-        run: npx playwright install --with-deps
+        run: npx playwright install --with-deps chromium
       - name: Run tests
         run: npm run test:coverage
       - name: Upload coverage report
