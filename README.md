@@ -162,23 +162,21 @@ The `head` object also offers callbacks for configuring head merging specifics.
 
 ### Plugins
 
-Idiomorph supports a plugin system that allows you to extend the functionality of the library, by registering an object of callbacks:
+Idiomorph supports a plugin system that allows you to extend the functionality of the library, by adding an object of callbacks:
 
 ```js
-Idiomorph.registerPlugin({
+Idiomorph.addPlugin({
     name: 'logger',
-    onBeforeNodeAdded: function(node) {
+    beforeNodeAdded: function(node) {
         console.log('Node added:', node);
     },
-    onBeforeNodeRemoved: function(node) {
+    beforeNodeRemoved: function(node) {
         console.log('Node removed:', node);
     },
 });
-
-Idiomorph.plugins // { logger: { ...} };
 ```
 
-These callbacks will be called in addition to any other callbacks that are registered in `Idiomorph.morph`. Multiple plugins can be registered.
+These callbacks will be called in addition to any other callbacks that are registered in `Idiomorph.morph`. Multiple plugins can be added.
 
 ### Setting Defaults
 
