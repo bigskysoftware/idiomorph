@@ -233,13 +233,7 @@ describe("Preserves focus algorithmically where possible", function () {
       "b",
       false,
     );
-    if (hasMoveBefore()) {
-      assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
-      // expect will be fixed in future release
-      // assertFocusAndSelection("focused", "b");
-    } else {
-      assertNoFocus();
-    }
+
+    assertFocus("focused");
   });
 });

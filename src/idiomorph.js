@@ -396,6 +396,10 @@ var Idiomorph = (function () {
         let softMatch = null;
         let nextSibling = node.nextSibling;
         let siblingSoftMatchCount = 0;
+        let displaceMatchCount = 0;
+
+        // max id matches we are willing to displace in our search
+        const nodeMatchCount = ctx.idMap.get(node)?.size || 0;
 
         let cursor = startPoint;
         while (cursor && cursor != endPoint) {
@@ -409,11 +413,24 @@ var Idiomorph = (function () {
             if (softMatch === null) {
               // the current soft match will hard match something else in the future, leave it
               if (!ctx.idMap.has(cursor)) {
-                // save this as the fallback if we get through the loop without finding a hard match
-                softMatch = cursor;
+                // optimization: if node can't id set match, we can just return the soft match immediately
+                if (!nodeMatchCount) {
+                  return cursor;
+                } else {
+                  // save this as the fallback if we get through the loop without finding a hard match
+                  softMatch = cursor;
+                }
               }
             }
           }
+          // check for ids we may be displaced when matching
+          displaceMatchCount += ctx.idMap.get(cursor)?.size || 0;
+          if (displaceMatchCount > nodeMatchCount) {
+            // if we are going to displace more ids than the node contains then
+            // we do not have a good candidate for an id match, so return
+            break;
+          }
+
           if (
             softMatch === null &&
             nextSibling &&
