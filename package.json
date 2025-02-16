@@ -29,6 +29,7 @@
     "test:firefox": "web-test-runner --concurrency 1 --playwright --browsers firefox",
     "test:webkit": "web-test-runner --playwright --browsers webkit",
     "test:all": "web-test-runner --concurrency 1 --playwright --browsers chromium firefox webkit",
+    "test:ci": "npm run typecheck && npm run format:check && npm run test:all -- --fail-only && node test/lib/ensure-full-coverage.js",
     "test:coverage": "npm run test:chrome && node test/lib/ensure-full-coverage.js",
     "perf": "node perf/runner.js",
     "amd": "(echo \"define(() => {\n\" && cat src/idiomorph.js && echo \"\nreturn Idiomorph});\") > dist/idiomorph.amd.js",
