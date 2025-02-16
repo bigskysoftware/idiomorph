@@ -11,7 +11,7 @@
  */
 
 /**
- * @typedef {object} ConfigCallbacks
+ * @typedef {object} Callbacks
  *
  * @property {function(Node): boolean} [beforeNodeAdded]
  * @property {function(Node): void} [afterNodeAdded]
@@ -23,13 +23,17 @@
  */
 
 /**
+ * @typedef {Callbacks & { name: string }} IdiomorphPlugin
+ */
+
+/**
  * @typedef {object} Config
  *
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
- * @property {ConfigCallbacks} [callbacks]
+ * @property {Callbacks} [callbacks]
  * @property {ConfigHead} [head]
  */
 
@@ -52,25 +56,13 @@
  */
 
 /**
- * @typedef {object} ConfigCallbacksInternal
- *
- * @property {(function(Node): boolean) | NoOp} beforeNodeAdded
- * @property {(function(Node): void) | NoOp} afterNodeAdded
- * @property {(function(Node, Node): boolean) | NoOp} beforeNodeMorphed
- * @property {(function(Node, Node): void) | NoOp} afterNodeMorphed
- * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
- * @property {(function(Node): void) | NoOp} afterNodeRemoved
- * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
- */
-
-/**
  * @typedef {object} ConfigInternal
  *
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
- * @property {ConfigCallbacksInternal} callbacks
+ * @property {Callbacks} callbacks
  * @property {ConfigHeadInternal} head
  */
 
@@ -109,7 +101,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
-   * @property {ConfigInternal['callbacks']} callbacks
+   * @property {Array<Callbacks>} callbacks
    * @property {ConfigInternal['head']} head
    * @property {HTMLDivElement} pantry
    */
@@ -118,7 +110,6 @@ var Idiomorph = (function () {
   // AND NOW IT BEGINS...
   //=============================================================================
 
-  const noOp = () => {};
   /**
    * Default configuration values, updatable by users now
    * @type {ConfigInternal}
@@ -126,27 +117,36 @@ var Idiomorph = (function () {
   const defaults = {
     morphStyle: "outerHTML",
     callbacks: {
-      beforeNodeAdded: noOp,
-      afterNodeAdded: noOp,
-      beforeNodeMorphed: noOp,
-      afterNodeMorphed: noOp,
-      beforeNodeRemoved: noOp,
-      afterNodeRemoved: noOp,
-      beforeAttributeUpdated: noOp,
+      beforeNodeAdded: () => true,
+      afterNodeAdded: () => {},
+      beforeNodeMorphed: () => true,
+      afterNodeMorphed: () => {},
+      beforeNodeRemoved: () => true,
+      afterNodeRemoved: () => {},
+      beforeAttributeUpdated: () => true,
     },
     head: {
       style: "merge",
       shouldPreserve: (elt) => elt.getAttribute("im-preserve") === "true",
       shouldReAppend: (elt) => elt.getAttribute("im-re-append") === "true",
-      shouldRemove: noOp,
-      afterHeadMorphed: noOp,
+      shouldRemove: () => {},
+      afterHeadMorphed: () => {},
     },
     restoreFocus: true,
   };
 
-  let plugins = {};
+  /** @type {Map<string, Callbacks>} */
+  let plugins = new Map();
+  /**
+   * Add a plugin to the morphing system
+   * @param {IdiomorphPlugin} plugin
+   * @returns {void}
+   */
   function addPlugin(plugin) {
-    plugins[plugin.name] = plugin;
+    const name = plugin.name;
+    // @ts-ignore we can delete this property
+    delete plugin.name;
+    plugins.set(name, plugin);
   }
 
   /**
@@ -841,8 +841,17 @@ var Idiomorph = (function () {
   //=============================================================================
   // Callback Functions
   //=============================================================================
+  /**
+   * @param {MorphContext} ctx
+   * @param {string} name
+   * @param {Node | null} oldNode
+   * @param {Node | null | undefined} newNode
+   * @param {function} fn
+   * @returns {Node | null}
+   */
   function withNodeCallbacks(ctx, name, oldNode, newNode, fn) {
     const shouldPrevent = ctx.callbacks.some((plugin) => {
+      // @ts-ignore - we know this is a function
       return plugin[`beforeNode${name}`]?.(oldNode, newNode) === false;
     });
 
@@ -853,16 +862,27 @@ var Idiomorph = (function () {
     const resultNode = fn();
 
     // iterate backwards without a new array or index allocation
+    // @ts-ignore
     ctx.callbacks.reduceRight((_, plugin) => {
+      // @ts-ignore - we know this is a function
       plugin[`afterNode${name}`]?.(resultNode, newNode);
     }, null);
 
     return resultNode;
   }
 
+  /**
+   * @param {MorphContext} ctx
+   * @param {string} attr
+   * @param {Element} element
+   * @param {"update" | "remove"} updateType
+   * @returns {boolean | undefined}
+   */
   function beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) {
     const shouldPrevent = ctx.callbacks.some((plugin) => {
-      return plugin[`beforeAttributeUpdated`]?.(attr, element, updateType) === false;
+      return (
+        plugin[`beforeAttributeUpdated`]?.(attr, element, updateType) === false
+      );
     });
 
     if (shouldPrevent) return false;
@@ -909,6 +929,7 @@ var Idiomorph = (function () {
    * @returns {Promise<void>[]}
    */
   function handleHeadElement(oldHead, newHead, ctx) {
+    /** @type {Node[]} */
     let added = [];
     let removed = [];
     let preserved = [];
@@ -957,6 +978,7 @@ var Idiomorph = (function () {
     // nodes to append to the head tag
     nodesToAppend.push(...srcToNewHeadNodes.values());
 
+    /** @type {Promise<void>[]} */
     let promises = [];
     for (const newNode of nodesToAppend) {
       // TODO: This could theoretically be null, based on type
@@ -1010,6 +1032,7 @@ var Idiomorph = (function () {
      * @param {Element} oldNode
      * @param {Element} newContent
      * @param {Config} config
+     * @param {Map<string, Callbacks>} plugins
      * @returns {MorphContext}
      */
     function createMorphContext(oldNode, newContent, config, plugins) {
@@ -1020,7 +1043,7 @@ var Idiomorph = (function () {
       if (!["innerHTML", "outerHTML"].includes(morphStyle)) {
         throw `Do not understand how to morph style ${morphStyle}`;
       }
-      const callbacks = [...Object.values(plugins), mergedConfig.callbacks];
+      const callbacks = [...plugins.values(), mergedConfig.callbacks];
 
       return {
         target: oldNode,
