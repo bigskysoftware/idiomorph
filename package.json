@@ -26,7 +26,7 @@
     "test": "web-test-runner",
     "test:debug": "web-test-runner --manual --open",
     "test:chrome": "web-test-runner --playwright --browsers chromium",
-    "test:firefox": "web-test-runner --playwright --browsers firefox",
+    "test:firefox": "web-test-runner --concurrency 1 --playwright --browsers firefox",
     "test:webkit": "web-test-runner --playwright --browsers webkit",
     "test:coverage": "npm run test:chrome && node test/lib/ensure-full-coverage.js",
     "perf": "node perf/runner.js",
