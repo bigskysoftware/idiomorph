@@ -171,6 +171,17 @@ var Idiomorph = (function () {
     return resultNode;
   }
 
+  function beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) {
+    const allPlugins = [...Object.values(plugins), ctx.callbacks];
+
+    const shouldAbort = allPlugins.some((plugin) => {
+      const beforeFn = plugin[`beforeAttributeUpdated`];
+      return beforeFn && beforeFn(attr, element, updateType) === false;
+    });
+
+    if (shouldAbort) return false;
+  }
+
   /**
    * Core idiomorph function for morphing one DOM tree to another
    *
@@ -839,7 +850,7 @@ var Idiomorph = (function () {
         return true;
       }
       return (
-        ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) ===
+        beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) ===
         false
       );
     }
