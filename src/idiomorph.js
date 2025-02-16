@@ -149,6 +149,28 @@ var Idiomorph = (function () {
     plugins[plugin.name] = plugin;
   }
 
+  function withNodeCallbacks(ctx, name, oldNode, newNode, fn) {
+    const allPlugins = [...Object.values(plugins), ctx.callbacks];
+
+    const shouldAbort = allPlugins.some((plugin) => {
+      const beforeFn = plugin[`beforeNode${name}`];
+      return beforeFn && beforeFn(oldNode, newNode) === false;
+    });
+
+    if (shouldAbort) {
+      return name === "Added" ? null : oldNode;
+    }
+
+    const resultNode = fn();
+
+    allPlugins.reverse().forEach((plugin) => {
+      const afterFn = plugin[`afterNode${name}`];
+      afterFn && afterFn(resultNode, newNode);
+    });
+
+    return resultNode;
+  }
+
   /**
    * Core idiomorph function for morphing one DOM tree to another
    *
@@ -353,26 +375,6 @@ var Idiomorph = (function () {
       }
     }
 
-    function withNodeCallbacks(ctx, name, node, fn) {
-      const allPlugins = [...Object.values(plugins), ctx.callbacks];
-
-      const shouldAbort = allPlugins.some((plugin) => {
-        const beforeFn = plugin[`beforeNode${name}`];
-        return beforeFn && beforeFn(node) === false;
-      });
-
-      if (shouldAbort) return;
-
-      const resultNode = fn();
-
-      allPlugins.reverse().forEach((plugin) => {
-        const afterFn = plugin[`afterNode${name}`];
-        afterFn && afterFn(resultNode);
-      });
-
-      return resultNode;
-    }
-
     /**
      * This performs the action of inserting a new node while handling situations where the node contains
      * elements with persistent ids and possible state info we can still preserve by moving in and then morphing
@@ -384,7 +386,7 @@ var Idiomorph = (function () {
      * @returns {Node|null}
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
-      return withNodeCallbacks(ctx, "Added", newChild, () => {
+      return withNodeCallbacks(ctx, "Added", newChild, undefined, () => {
         if (ctx.idMap.has(newChild)) {
           // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
           const newEmptyChild = document.createElement(
@@ -529,7 +531,7 @@ var Idiomorph = (function () {
         moveBefore(ctx.pantry, node, null);
       } else {
         // remove for realsies
-        withNodeCallbacks(ctx, "Removed", node, () => {
+        withNodeCallbacks(ctx, "Removed", node, undefined, () => {
           return node.parentNode?.removeChild(node);
         });
       }
@@ -642,31 +644,28 @@ var Idiomorph = (function () {
         return null;
       }
 
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
-        return oldNode;
-      }
-
-      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
-        // ignore the head element
-      } else if (
-        oldNode instanceof HTMLHeadElement &&
-        ctx.head.style !== "morph"
-      ) {
-        // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
-        handleHeadElement(
-          oldNode,
-          /** @type {HTMLHeadElement} */ (newContent),
-          ctx,
-        );
-      } else {
-        morphAttributes(oldNode, newContent, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          // @ts-ignore newContent can be a node here because .firstChild will be null
-          morphChildren(ctx, oldNode, newContent);
+      return withNodeCallbacks(ctx, "Morphed", oldNode, newContent, () => {
+        if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+          // ignore the head element
+        } else if (
+          oldNode instanceof HTMLHeadElement &&
+          ctx.head.style !== "morph"
+        ) {
+          // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
+          handleHeadElement(
+            oldNode,
+            /** @type {HTMLHeadElement} */ (newContent),
+            ctx,
+          );
+        } else {
+          morphAttributes(oldNode, newContent, ctx);
+          if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+            // @ts-ignore newContent can be a node here because .firstChild will be null
+            morphChildren(ctx, oldNode, newContent);
+          }
         }
-      }
-      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-      return oldNode;
+        return oldNode;
+      });
     }
 
     /**
@@ -957,7 +956,7 @@ var Idiomorph = (function () {
         document.createRange().createContextualFragment(newNode.outerHTML)
           .firstChild
       );
-      if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+      withNodeCallbacks(ctx, "Added", newElt, undefined, () => {
         if (
           ("href" in newElt && newElt.href) ||
           ("src" in newElt && newElt.src)
@@ -972,18 +971,18 @@ var Idiomorph = (function () {
           promises.push(promise);
         }
         oldHead.appendChild(newElt);
-        ctx.callbacks.afterNodeAdded(newElt);
         added.push(newElt);
-      }
+        return newElt;
+      });
     }
 
     // remove all removed elements, after we have appended the new elements to avoid
     // additional network requests for things like style sheets
     for (const removedElement of removed) {
-      if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
+      withNodeCallbacks(ctx, "Removed", removedElement, undefined, () => {
         oldHead.removeChild(removedElement);
-        ctx.callbacks.afterNodeRemoved(removedElement);
-      }
+        return removedElement;
+      });
     }
 
     ctx.head.afterHeadMorphed(oldHead, {

@@ -1,277 +1,258 @@
+const toString = (node) => node.outerHTML || node.textContent;
+
+function buildLoggingPlugin(name, log) {
+  return {
+    name,
+    beforeNodeAdded: function (node) {
+      log.push([`${name}:beforeNodeAdded`, toString(node)]);
+    },
+    afterNodeAdded: function (node) {
+      log.push([`${name}:afterNodeAdded`, toString(node)]);
+    },
+    beforeNodeRemoved: function (node) {
+      log.push([`${name}:beforeNodeRemoved`, toString(node)]);
+    },
+    afterNodeRemoved: function (node) {
+      log.push([`${name}:afterNodeRemoved`, toString(node)]);
+    },
+    beforeNodeMorphed: function (oldNode, newNode) {
+      log.push([
+        `${name}:beforeNodeMorphed`,
+        toString(oldNode),
+        toString(newNode),
+      ]);
+    },
+    afterNodeMorphed: function (oldNode, newNode) {
+      log.push([
+        `${name}:afterNodeMorphed`,
+        toString(oldNode),
+        toString(newNode),
+      ]);
+    },
+  };
+}
+
 describe("Plugin system", function () {
   setup();
 
   it("can add plugins", function () {
-    let calls = [];
-
-    const plugin = {
-      name: "foo",
-      beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded", node.outerHTML]);
-      },
-      afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded", node.outerHTML]);
-      },
-      beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved", node.outerHTML]);
-      },
-      afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved", node.outerHTML]);
-      },
-    };
+    let log = [];
+    const plugin = buildLoggingPlugin("foo", log);
     Idiomorph.addPlugin(plugin);
 
-    Idiomorph.morph(make("<br>"), "<hr>");
+    Idiomorph.morph(make(`<p><br><a>A</a></p>`), `<hr><a>B</a>`, {
+      morphStyle: "innerHTML",
+    });
 
-    calls.should.eql([
-      ["beforeNodeAdded", "<hr>"],
-      ["afterNodeAdded", "<hr>"],
-      ["beforeNodeRemoved", "<br>"],
-      ["afterNodeRemoved", "<br>"],
+    log.should.eql([
+      ["foo:beforeNodeAdded", "<hr>"],
+      ["foo:afterNodeAdded", "<hr>"],
+      ["foo:beforeNodeRemoved", "<br>"],
+      ["foo:afterNodeRemoved", "<br>"],
+      ["foo:beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["foo:beforeNodeMorphed", "A", "B"],
+      ["foo:afterNodeMorphed", "B", "B"],
+      ["foo:afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
     ]);
   });
 
   it("can add multiple plugins", function () {
-    let calls = [];
+    let log = [];
+    const fooPlugin = buildLoggingPlugin("foo", log);
+    const barPlugin = buildLoggingPlugin("bar", log);
+    Idiomorph.addPlugin(fooPlugin);
+    Idiomorph.addPlugin(barPlugin);
 
-    const plugin1 = {
-      name: "foo",
-      beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded1", node.outerHTML]);
-      },
-      afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded1", node.outerHTML]);
-      },
-      beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved1", node.outerHTML]);
-      },
-      afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved1", node.outerHTML]);
-      },
-    };
-    Idiomorph.addPlugin(plugin1);
+    Idiomorph.morph(make(`<p><br><a>A</a></p>`), `<hr><a>B</a>`, {
+      morphStyle: "innerHTML",
+    });
 
-    const plugin2 = {
-      name: "bar",
-      beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded2", node.outerHTML]);
-      },
-      afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded2", node.outerHTML]);
-      },
-      beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved2", node.outerHTML]);
-      },
-      afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved2", node.outerHTML]);
-      },
-    };
-    Idiomorph.addPlugin(plugin2);
-
-    Idiomorph.morph(make("<br>"), "<hr>");
-
-    calls.should.eql([
-      ["beforeNodeAdded1", "<hr>"],
-      ["beforeNodeAdded2", "<hr>"],
-      ["afterNodeAdded2", "<hr>"],
-      ["afterNodeAdded1", "<hr>"],
-      ["beforeNodeRemoved1", "<br>"],
-      ["beforeNodeRemoved2", "<br>"],
-      ["afterNodeRemoved2", "<br>"],
-      ["afterNodeRemoved1", "<br>"],
+    log.should.eql([
+      ["foo:beforeNodeAdded", "<hr>"],
+      ["bar:beforeNodeAdded", "<hr>"],
+      ["bar:afterNodeAdded", "<hr>"],
+      ["foo:afterNodeAdded", "<hr>"],
+      ["foo:beforeNodeRemoved", "<br>"],
+      ["bar:beforeNodeRemoved", "<br>"],
+      ["bar:afterNodeRemoved", "<br>"],
+      ["foo:afterNodeRemoved", "<br>"],
+      ["foo:beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["bar:beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["foo:beforeNodeMorphed", "A", "B"],
+      ["bar:beforeNodeMorphed", "A", "B"],
+      ["bar:afterNodeMorphed", "B", "B"],
+      ["foo:afterNodeMorphed", "B", "B"],
+      ["bar:afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
+      ["foo:afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
     ]);
   });
 
   it("can add multiple plugins alongside callbacks", function () {
-    let calls = [];
+    let log = [];
+    const fooPlugin = buildLoggingPlugin("foo", log);
+    const barPlugin = buildLoggingPlugin("bar", log);
+    Idiomorph.addPlugin(fooPlugin);
+    Idiomorph.addPlugin(barPlugin);
 
-    const plugin1 = {
-      name: "foo",
-      beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded1", node.outerHTML]);
-      },
-      afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded1", node.outerHTML]);
-      },
-      beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved1", node.outerHTML]);
-      },
-      afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved1", node.outerHTML]);
-      },
-    };
-    Idiomorph.addPlugin(plugin1);
-
-    const plugin2 = {
-      name: "bar",
-      beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded2", node.outerHTML]);
-      },
-      afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded2", node.outerHTML]);
-      },
-      beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved2", node.outerHTML]);
-      },
-      afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved2", node.outerHTML]);
-      },
-    };
-    Idiomorph.addPlugin(plugin2);
-
-    Idiomorph.morph(make("<br>"), "<hr>", {
+    Idiomorph.morph(make(`<p><br><a>A</a></p>`), `<hr><a>B</a>`, {
+      morphStyle: "innerHTML",
       callbacks: {
         beforeNodeAdded: function (node) {
-          calls.push(["beforeNodeAddedCallback", node.outerHTML]);
+          log.push([`beforeNodeAdded`, toString(node)]);
         },
         afterNodeAdded: function (node) {
-          calls.push(["afterNodeAddedCallback", node.outerHTML]);
+          log.push([`afterNodeAdded`, toString(node)]);
         },
         beforeNodeRemoved: function (node) {
-          calls.push(["beforeNodeRemovedCallback", node.outerHTML]);
+          log.push([`beforeNodeRemoved`, toString(node)]);
         },
         afterNodeRemoved: function (node) {
-          calls.push(["afterNodeRemovedCallback", node.outerHTML]);
+          log.push([`afterNodeRemoved`, toString(node)]);
+        },
+        beforeNodeMorphed: function (oldNode, newNode) {
+          log.push([`beforeNodeMorphed`, toString(oldNode), toString(newNode)]);
+        },
+        afterNodeMorphed: function (oldNode, newNode) {
+          log.push([`afterNodeMorphed`, toString(oldNode), toString(newNode)]);
         },
       },
     });
 
-    calls.should.eql([
-      ["beforeNodeAdded1", "<hr>"],
-      ["beforeNodeAdded2", "<hr>"],
-      ["beforeNodeAddedCallback", "<hr>"],
-      ["afterNodeAddedCallback", "<hr>"],
-      ["afterNodeAdded2", "<hr>"],
-      ["afterNodeAdded1", "<hr>"],
-      ["beforeNodeRemoved1", "<br>"],
-      ["beforeNodeRemoved2", "<br>"],
-      ["beforeNodeRemovedCallback", "<br>"],
-      ["afterNodeRemovedCallback", "<br>"],
-      ["afterNodeRemoved2", "<br>"],
-      ["afterNodeRemoved1", "<br>"],
+    log.should.eql([
+      ["foo:beforeNodeAdded", "<hr>"],
+      ["bar:beforeNodeAdded", "<hr>"],
+      ["beforeNodeAdded", "<hr>"],
+      ["afterNodeAdded", "<hr>"],
+      ["bar:afterNodeAdded", "<hr>"],
+      ["foo:afterNodeAdded", "<hr>"],
+      ["foo:beforeNodeRemoved", "<br>"],
+      ["bar:beforeNodeRemoved", "<br>"],
+      ["beforeNodeRemoved", "<br>"],
+      ["afterNodeRemoved", "<br>"],
+      ["bar:afterNodeRemoved", "<br>"],
+      ["foo:afterNodeRemoved", "<br>"],
+      ["foo:beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["bar:beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["beforeNodeMorphed", "<a>A</a>", "<a>B</a>"],
+      ["foo:beforeNodeMorphed", "A", "B"],
+      ["bar:beforeNodeMorphed", "A", "B"],
+      ["beforeNodeMorphed", "A", "B"],
+      ["afterNodeMorphed", "B", "B"],
+      ["bar:afterNodeMorphed", "B", "B"],
+      ["foo:afterNodeMorphed", "B", "B"],
+      ["afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
+      ["bar:afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
+      ["foo:afterNodeMorphed", "<a>B</a>", "<a>B</a>"],
     ]);
   });
 
   it("the first beforeNodeAdded => false halts the entire operation", function () {
-    let calls = [];
+    let log = [];
 
-    const plugin1 = {
+    Idiomorph.addPlugin({
       name: "foo",
       beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded1", node.outerHTML]);
+        log.push(["foo:beforeNodeAdded", node.outerHTML]);
         return false;
       },
       afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded1", node.outerHTML]);
+        log.push(["foo:afterNodeAdded", node.outerHTML]);
       },
-    };
-    Idiomorph.addPlugin(plugin1);
+    });
 
-    const plugin2 = {
+    Idiomorph.addPlugin({
       name: "bar",
       beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded2", node.outerHTML]);
+        log.push(["bar:beforeNodeAdded", node.outerHTML]);
       },
       afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded2", node.outerHTML]);
+        log.push(["bar:afterNodeAdded", node.outerHTML]);
       },
-    };
-    Idiomorph.addPlugin(plugin2);
+    });
 
     Idiomorph.morph(make("<p>"), "<p><hr>", {
       callbacks: {
         beforeNodeAdded: function (node) {
-          calls.push(["beforeNodeAddedCallback", node.outerHTML]);
+          log.push(["beforeNodeAddedCallback", node.outerHTML]);
         },
         afterNodeAdded: function (node) {
-          calls.push(["afterNodeAddedCallback", node.outerHTML]);
+          log.push(["afterNodeAddedCallback", node.outerHTML]);
         },
       },
     });
 
-    calls.should.eql([
-      ["beforeNodeAdded1", "<hr>"]
-    ]);
+    log.should.eql([["foo:beforeNodeAdded", "<hr>"]]);
   });
 
   it("the first beforeNodeRemoved => false halts the entire operation", function () {
-    let calls = [];
+    let log = [];
 
-    const plugin1 = {
+    Idiomorph.addPlugin({
       name: "foo",
       beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved1", node.outerHTML]);
-        return false
+        log.push(["foo:beforeNodeRemoved", node.outerHTML]);
+        return false;
       },
       afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved1", node.outerHTML]);
+        log.push(["foo:afterNodeRemoved", node.outerHTML]);
       },
-    };
-    Idiomorph.addPlugin(plugin1);
+    });
 
-    const plugin2 = {
+    Idiomorph.addPlugin({
       name: "bar",
       beforeNodeRemoved: function (node) {
-        calls.push(["beforeNodeRemoved2", node.outerHTML]);
+        log.push(["bar:beforeNodeRemoved2", node.outerHTML]);
       },
       afterNodeRemoved: function (node) {
-        calls.push(["afterNodeRemoved2", node.outerHTML]);
+        log.push(["bar:afterNodeRemoved2", node.outerHTML]);
       },
-    };
-    Idiomorph.addPlugin(plugin2);
+    });
 
     Idiomorph.morph(make("<br>"), "<hr>", {
       callbacks: {
         beforeNodeRemoved: function (node) {
-          calls.push(["beforeNodeRemovedCallback", node.outerHTML]);
+          log.push(["beforeNodeRemoved", node.outerHTML]);
         },
         afterNodeRemoved: function (node) {
-          calls.push(["afterNodeRemovedCallback", node.outerHTML]);
+          log.push(["afterNodeRemoved", node.outerHTML]);
         },
       },
     });
 
-    calls.should.eql([
-      ["beforeNodeRemoved1", "<br>"]
-    ]);
+    log.should.eql([["foo:beforeNodeRemoved", "<br>"]]);
   });
 
   it("plugin callbacks are not all required to exist", function () {
-    let calls = [];
+    let log = [];
 
-    const plugin1 = {
+    Idiomorph.addPlugin({
       name: "foo",
       beforeNodeAdded: function (node) {
-        calls.push(["beforeNodeAdded1", node.outerHTML]);
+        log.push(["foo:beforeNodeAdded", node.outerHTML]);
       },
       afterNodeAdded: function (node) {
-        calls.push(["afterNodeAdded1", node.outerHTML]);
+        log.push(["foo:afterNodeAdded", node.outerHTML]);
       },
-    };
-    Idiomorph.addPlugin(plugin1);
+    });
 
-    const plugin2 = {
-      name: "bar",
-    };
-    Idiomorph.addPlugin(plugin2);
+    Idiomorph.addPlugin({ name: "bar" });
 
     Idiomorph.morph(make("<br>"), "<hr>", {
       callbacks: {
         beforeNodeAdded: function (node) {
-          calls.push(["beforeNodeAddedCallback", node.outerHTML]);
+          log.push(["beforeNodeAdded", node.outerHTML]);
         },
         afterNodeAdded: function (node) {
-          calls.push(["afterNodeAddedCallback", node.outerHTML]);
+          log.push(["afterNodeAdded", node.outerHTML]);
         },
       },
     });
 
-    calls.should.eql([
-      ["beforeNodeAdded1", "<hr>"],
-      ["beforeNodeAddedCallback", "<hr>"],
-      ["afterNodeAddedCallback", "<hr>"],
-      ["afterNodeAdded1", "<hr>"],
+    log.should.eql([
+      ["foo:beforeNodeAdded", "<hr>"],
+      ["beforeNodeAdded", "<hr>"],
+      ["afterNodeAdded", "<hr>"],
+      ["foo:afterNodeAdded", "<hr>"],
     ]);
   });
 });
-
