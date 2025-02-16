@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Removed:
+  * Remove AMD publish target since its EOL: https://github.com/requirejs/requirejs/issues/1816#issuecomment-707503323
+
 ## [0.7.2] - 2025-02-20
 
 * Fixed:
