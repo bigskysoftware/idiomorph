@@ -36,8 +36,8 @@
     "cjs": "(cat src/idiomorph.js && echo \"\nmodule.exports = Idiomorph;\") > dist/idiomorph.cjs.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
     "gen-modules": "npm run-script amd && npm run-script cjs && npm run-script esm",
-    "dist": "cp -r src/* dist/ && cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js && npm run-script gen-modules && npm run-script uglify && gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz && exit",
-    "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
+    "dist": "cp -r src/* dist/ && npm run gen-modules && npm run uglify && gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz && exit",
+    "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc"
@@ -53,7 +53,6 @@
     "chai-dom": "^1.11.0",
     "chromedriver": "^131.0.5",
     "fs-extra": "^9.1.0",
-    "htmx.org": "1.9.9",
     "lcov-parse": "^1.0.0",
     "mocha": "^11.0.1",
     "prettier": "^3.4.2",

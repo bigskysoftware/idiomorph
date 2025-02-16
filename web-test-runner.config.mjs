@@ -19,8 +19,6 @@ let config = {
       <script src="/node_modules/sinon/pkg/sinon.js"></script>
 
       <script src="/src/idiomorph.js"></script>
-      <script src="/node_modules/htmx.org/dist/htmx.js"></script>
-      <script src="/src/idiomorph-htmx.js"></script>
       <script src="/test/lib/morphdom.js"></script>
 
       <script type="module" src="${testFramework}"></script>
@@ -28,7 +26,7 @@ let config = {
     <body>
       <em>Work Area</em>
       <hr/>
-      <pre id="work-area" hx-ext="morph">
+      <pre id="work-area">
         Output Here...
       </pre>
     </body>
