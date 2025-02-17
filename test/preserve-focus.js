@@ -22,7 +22,7 @@ describe("Preserves focus algorithmically where possible", function () {
     }
   }
 
-  it("preserves focus state and outerHTML morphStyle", function () {
+  it("preserves focus state when elements are swapped", function () {
     assertFocusPreservation(
       `
       <div>
@@ -36,16 +36,24 @@ describe("Preserves focus algorithmically where possible", function () {
       </div>`,
       "focused",
       "b",
-      false, // skip assertion
     );
-    if (hasMoveBefore()) {
-      assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
-      // expect will be fixed in future release
-      // assertFocusAndSelection("focused", "b");
-    } else {
-      assertNoFocus();
-    }
+  });
+
+  it("preserves focus state when elements are swapped the other way", function () {
+    assertFocusPreservation(
+      `
+      <div>
+        <input type="text" id="other">
+        <input type="text" id="focused" value="abc">
+      </div>`,
+      `
+      <div>
+        <input type="text" id="focused" value="abc">
+        <input type="text" id="other">
+      </div>`,
+      "focused",
+      "b",
+    );
   });
 
   it("preserves focus state when previous element is replaced", function () {
@@ -85,7 +93,7 @@ describe("Preserves focus algorithmically where possible", function () {
     );
     if (hasMoveBefore()) {
       assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
+      // TODO moveBefore loses selection on Chrome 133
       // expect will be fixed in future release
       // assertFocusAndSelection("focused", "b");
     } else {
@@ -113,7 +121,7 @@ describe("Preserves focus algorithmically where possible", function () {
     );
     if (hasMoveBefore()) {
       assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
+      // TODO moveBefore loses selection on Chrome 133
       // expect will be fixed in future release
       // assertFocusAndSelection("focused", "b");
     } else {
@@ -147,7 +155,7 @@ describe("Preserves focus algorithmically where possible", function () {
     );
     if (hasMoveBefore()) {
       assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
+      // TODO moveBefore loses selection on Chrome 133
       // expect will be fixed in future release
       // assertFocusAndSelection("focused", "b");
     } else {
@@ -177,16 +185,7 @@ describe("Preserves focus algorithmically where possible", function () {
       </div>`,
       "focused",
       "b",
-      false, // skip assertion
     );
-    if (hasMoveBefore()) {
-      assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
-      // expect will be fixed in future release
-      // assertFocusAndSelection("focused", "b");
-    } else {
-      assertNoFocus();
-    }
   });
 
   it("preserves focus state when focus parent is moved up", function () {
@@ -231,15 +230,6 @@ describe("Preserves focus algorithmically where possible", function () {
       </div>`,
       "focused",
       "b",
-      false,
     );
-    if (hasMoveBefore()) {
-      assertFocus("focused");
-      // TODO moveBefore loses selection on Chrome 131.0.6778.264
-      // expect will be fixed in future release
-      // assertFocusAndSelection("focused", "b");
-    } else {
-      assertNoFocus();
-    }
   });
 });
