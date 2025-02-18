@@ -216,8 +216,10 @@ var Idiomorph = (function () {
    */
   function saveAndRestoreFocus(ctx, fn) {
     if (!ctx.config.restoreFocus) return fn();
-
-    let activeElement = document.activeElement;
+    let activeElement =
+      /** @type {HTMLInputElement|HTMLTextAreaElement|null} */ (
+        document.activeElement
+      );
 
     // don't bother if the active element is not an input or textarea
     if (
@@ -235,11 +237,9 @@ var Idiomorph = (function () {
 
     if (activeElementId && activeElementId !== document.activeElement?.id) {
       activeElement = ctx.target.querySelector(`#${activeElementId}`);
-      // @ts-ignore we can assume this is focusable
       activeElement?.focus();
     }
-    if (activeElement && selectionStart && selectionEnd) {
-      // @ts-ignore we know this is an input element
+    if (activeElement && !activeElement.selectionEnd && selectionEnd) {
       activeElement.setSelectionRange(selectionStart, selectionEnd);
     }
 
