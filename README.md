@@ -189,6 +189,12 @@ the `dist/idiomorph-ext.js` file in your HTML:
 </div>
 ```
 
+or by importing the "idiomorph/htmx" module:
+
+```html
+import "idiomorph/htmx";
+```
+
 Note that this file includes both Idiomorph and the htmx extension.
 
 #### Configuring Morphing Behavior in htmx
