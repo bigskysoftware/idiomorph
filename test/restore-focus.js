@@ -294,12 +294,12 @@ describe("Option to forcibly restore focus after morph", function () {
           <div>
             <input type="text" id="focused" value="abc">
             <input type="text" id="other">
-          </div>`
+          </div>`;
       const after = `
           <div>
             <input type="text" id="other">
             <input type="text" id="focused" value="abc">
-          </div>`
+          </div>`;
       setFocusAndSelection("focused", "b");
       Idiomorph.morph(getWorkArea(), after, {
         morphStyle: "innerHTML",
