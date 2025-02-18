@@ -54,7 +54,7 @@ describe("Option to forcibly restore focus after morph", function () {
           </div>
         </div>
       `;
-      setFocusAndSelection("focused", "b");
+      setFocusAndSelection("focused", "a");
 
       let finalSrc = `
         <div>
@@ -67,7 +67,7 @@ describe("Option to forcibly restore focus after morph", function () {
       });
 
       getWorkArea().innerHTML.should.equal(finalSrc);
-      assertFocusAndSelection("focused", "b");
+      assertFocusAndSelection("focused", "a");
     });
 
     it("restores focus and selection state when elements are moved between different containers", function () {
@@ -287,6 +287,32 @@ describe("Option to forcibly restore focus after morph", function () {
 
       getWorkArea().innerHTML.should.equal(finalSrc);
       assertNoFocus();
+    });
+
+    it("does not restore selection if selection still set or changed", function () {
+      getWorkArea().innerHTML = `
+          <div>
+            <input type="text" id="focused" value="abc">
+            <input type="text" id="other">
+          </div>`
+      const after = `
+          <div>
+            <input type="text" id="other">
+            <input type="text" id="focused" value="abc">
+          </div>`
+      setFocusAndSelection("focused", "b");
+      Idiomorph.morph(getWorkArea(), after, {
+        morphStyle: "innerHTML",
+        restoreFocus: true,
+        callbacks: {
+          beforeNodeMorphed: function () {
+            // simulate changing the focus selection during morphing
+            setFocusAndSelection("focused", "c");
+          },
+        },
+      });
+      getWorkArea().innerHTML.should.equal(after);
+      assertFocusAndSelection("focused", "c");
     });
   });
 
