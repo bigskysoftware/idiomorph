@@ -4,7 +4,7 @@
 
 * Fixed:
   * Restore direct imports and add named export for ESM htmx extension (@botandrose, @MichaelWest22)
-  * Update license key in package.json to match LICENSE.
+  * Update license key in package.json to match LICENSE. (@MichaelWest22)
   * Prevent unnecesary selection restoration when it wasn't actually lost (@MichaelWest22)
   * Prevent focus & selection loss in more situations (@MichaelWest22)
 
