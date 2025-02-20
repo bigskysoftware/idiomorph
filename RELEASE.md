@@ -1,0 +1,16 @@
+# Idiomorph Release Guide
+
+This guide outlines how to release Idiomorph, focusing on the steps to take to prepare a release, how to publish it, and other release concerns.
+
+## Steps
+
+1. `npm run test:ci`
+2. Update the version number in package.json
+2. `npm install`
+3. `npm run dist`
+4. Update the documented gzipped filesize and version number in README.md
+5. Update CHANGELOG.md
+6. `git add . && git commit -m"Release vX.Y.Z"`
+7. `git tag vX.Y.Z`
+8. `git push --tags`
+9. `npm publish`

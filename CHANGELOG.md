@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.2] - 2025-02-20
+
+* Fixed:
+  * Restore direct imports and add named export for ESM htmx extension (@botandrose, @MichaelWest22)
+  * Update license key in package.json to match LICENSE.
+  * Prevent unnecesary selection restoration when it wasn't actually lost (@MichaelWest22)
+  * Prevent focus & selection loss in more situations (@MichaelWest22)
+
 ## [0.7.1] - 2025-02-13
 
 * Removed:
