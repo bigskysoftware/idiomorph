@@ -57,6 +57,11 @@ three additional files:
 Idiomorph can be installed via NPM or your favorite dependency management system under the `idiomorph` dependency 
 name.
 
+```js
+require("idiomorph"); // CommonJS
+import "idiomorph"; // ESM
+```
+
 ## Usage
 
 Idiomorph has a very simple API:

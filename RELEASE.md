@@ -12,5 +12,6 @@ This guide outlines how to release Idiomorph, focusing on the steps to take to p
 5. Update CHANGELOG.md
 6. `git add . && git commit -m"Release vX.Y.Z"`
 7. `git tag vX.Y.Z`
-8. `git push --tags`
+8. `git push origin main --tags`
 9. `npm publish`
+10. Make announcement on Discord #announcements
