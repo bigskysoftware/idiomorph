@@ -1,20 +1,12 @@
 describe("Tests to ensure that idiomorph merges properly", function () {
   setup();
 
-  function expectFidelity(actual, expected) {
-    if (actual.outerHTML !== expected) {
-      console.log("HTML after morph: " + actual.outerHTML);
-      console.log("Expected:         " + expected);
-    }
-    actual.outerHTML.should.equal(expected);
-  }
-
   function testFidelity(start, end) {
-    let initial = make(start);
-    let final = make(end);
-    Idiomorph.morph(initial, final);
-
-    expectFidelity(initial, end);
+    getWorkArea().innerHTML = start;
+    let startElement = getWorkArea().firstElementChild;
+    let ret = Idiomorph.morph(startElement, end);
+    getWorkArea().innerHTML.should.equal(end);
+    ret.map((e) => e.outerHTML).should.eql([end]);
   }
 
   // bootstrap test
@@ -37,10 +29,10 @@ describe("Tests to ensure that idiomorph merges properly", function () {
     const initial = make(a);
 
     Idiomorph.morph(initial, expectedB);
-    expectFidelity(initial, b);
+    initial.outerHTML.should.equal(b);
 
     Idiomorph.morph(initial, expectedA);
-    expectFidelity(initial, a);
+    initial.outerHTML.should.equal(a);
   });
 
   it("morphs children", function () {
@@ -78,21 +70,11 @@ describe("Tests to ensure that idiomorph merges properly", function () {
   });
 
   it("should wrap an IDed node", function () {
-    getWorkArea().innerHTML = `<hr id="a">`;
-    let initial = getWorkArea().firstElementChild;
-    let finalSrc = `<div><hr id="a"></div>`;
-    let ret = Idiomorph.morph(initial, finalSrc);
-    getWorkArea().innerHTML.should.equal(finalSrc);
-    // ret.map(e=>e.outerHTML).should.eql([finalSrc]);
+    testFidelity(`<hr id="a">`, `<div><hr id="a"></div>`);
   });
 
   it("should wrap an anonymous node", function () {
-    getWorkArea().innerHTML = `<hr>`;
-    let initial = getWorkArea().firstElementChild;
-    let finalSrc = `<div><hr></div>`;
-    let ret = Idiomorph.morph(initial, finalSrc);
-    getWorkArea().innerHTML.should.equal(finalSrc);
-    // ret.map(e=>e.outerHTML).should.eql([finalSrc]);
+    testFidelity(`<hr>`, `<div><hr></div>`);
   });
 
   it("should append a node", function () {
