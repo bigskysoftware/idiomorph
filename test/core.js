@@ -185,6 +185,13 @@ describe("Core morphing tests", function () {
     initial.outerHTML.should.equal(final.outerHTML);
   });
 
+  it("can handle numeric ids", function () {
+    let initial = make(`<div><hr id="1"></div>`);
+    let final = `<div><div><hr id="1"></div></div>`;
+    Idiomorph.morph(initial, final);
+    initial.outerHTML.should.equal(final);
+  });
+
   it("ignores active element when ignoreActive set to true", function () {
     let initialSource = "<div><div id='d1'>Foo</div><input id='i1'></div>";
     getWorkArea().innerHTML = initialSource;
