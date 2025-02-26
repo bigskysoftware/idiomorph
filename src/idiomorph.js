@@ -236,7 +236,7 @@ var Idiomorph = (function () {
     const results = fn();
 
     if (activeElementId && activeElementId !== document.activeElement?.id) {
-      activeElement = ctx.target.querySelector(`#${activeElementId}`);
+      activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
     if (activeElement && !activeElement.selectionEnd && selectionEnd) {
