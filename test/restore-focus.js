@@ -651,6 +651,25 @@ describe("Option to forcibly restore focus after morph", function () {
       assertFocus("focused");
     });
 
+    it("restores focus state with reparented numeric id", function () {
+      assertFocusPreservationWithoutMoveBefore(
+        `
+        <div>
+          <input type="text" id="other">
+          <div>
+            <input type="text" id="1" value="abc">
+          </div>
+        </div>`,
+        `
+        <div>
+          <input type="text" id="other">
+          <input type="text" id="1" value="abc">
+        </div>`,
+        "1",
+        "b",
+      );
+    });
+
     it("preserves focus state when focused element is moved between anonymous containers", function () {
       assertFocusPreservationWithoutMoveBefore(
         `
