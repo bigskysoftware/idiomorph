@@ -77,6 +77,24 @@ describe("Tests to ensure that idiomorph merges properly", function () {
     );
   });
 
+  it("should wrap an IDed node", function () {
+    getWorkArea().innerHTML = `<hr id="a">`;
+    let initial = getWorkArea().firstElementChild;
+    let finalSrc = `<div><hr id="a"></div>`;
+    let ret = Idiomorph.morph(initial, finalSrc);
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    // ret.map(e=>e.outerHTML).should.eql([finalSrc]);
+  });
+
+  it("should wrap an anonymous node", function () {
+    getWorkArea().innerHTML = `<hr>`;
+    let initial = getWorkArea().firstElementChild;
+    let finalSrc = `<div><hr></div>`;
+    let ret = Idiomorph.morph(initial, finalSrc);
+    getWorkArea().innerHTML.should.equal(finalSrc);
+    // ret.map(e=>e.outerHTML).should.eql([finalSrc]);
+  });
+
   it("should append a node", function () {
     testFidelity("<main></main>", "<main><p>hello you</p></main>");
   });
