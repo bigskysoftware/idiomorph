@@ -548,7 +548,8 @@ var Idiomorph = (function () {
       const target =
         /** @type {Element} - will always be found */
         (
-          ctx.target.querySelector(`[id="${id}"]`) ||
+          (ctx.target.id === id && ctx.target) ||
+            ctx.target.querySelector(`[id="${id}"]`) ||
             ctx.pantry.querySelector(`[id="${id}"]`)
         );
       removeElementFromAncestorsIdMaps(target, ctx);
