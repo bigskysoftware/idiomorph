@@ -183,4 +183,33 @@ describe("Tests for the htmx integration", function () {
     initialBtn.innerHTML.should.equal("Bar");
   });
   */
+
+  it("keeps the element live in an outer morph when node type changes", function () {
+    this.server.respondWith(
+      "GET",
+      "/test",
+      "<div id='b1' hx-swap='morph' hx-get='/test2' class='bar'>Foo</div>",
+    );
+    this.server.respondWith(
+      "GET",
+      "/test2",
+      "<button id='b1' hx-swap='morph' hx-get='/test3' class='doh'>Foo</button>",
+    );
+    let initialBtn = makeForHtmxTest(
+      "<button id='b1' hx-swap='morph' hx-get='/test'>Foo</button>",
+    );
+
+    initialBtn.click();
+    this.server.respond();
+    let newDiv = document.getElementById("b1");
+
+    newDiv.classList.contains("bar").should.equal(true);
+    newDiv.classList.contains("doh").should.equal(false);
+
+    newDiv.click();
+    this.server.respond();
+    let newBtn = document.getElementById("b1");
+    newBtn.classList.contains("bar").should.equal(false);
+    newBtn.classList.contains("doh").should.equal(true);
+  });
 });
