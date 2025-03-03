@@ -187,14 +187,6 @@ var Idiomorph = (function () {
    */
   function morphOuterHTML(ctx, oldNode, newNode) {
     const oldParent = normalizeParent(oldNode);
-
-    // basis for calulating which nodes were morphed
-    // since there may be unmorphed sibling nodes
-    let childNodes = Array.from(oldParent.childNodes);
-    const index = childNodes.indexOf(oldNode);
-    // how many elements are to the right of the oldNode
-    const rightMargin = childNodes.length - (index + 1);
-
     morphChildren(
       ctx,
       oldParent,
@@ -203,10 +195,8 @@ var Idiomorph = (function () {
       oldNode, // start point for iteration
       oldNode.nextSibling, // end point for iteration
     );
-
-    // return just the morphed nodes
-    childNodes = Array.from(oldParent.childNodes);
-    return childNodes.slice(index, childNodes.length - rightMargin);
+    // this is safe even with siblings, because normalizeParent returns a SlicedParentNode if needed.
+    return Array.from(oldParent.childNodes);
   }
 
   /**
