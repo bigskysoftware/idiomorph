@@ -15,6 +15,7 @@ This document outlines the development roadmap for Idiomorph. It provides a high
 - [ ] Plugin system? https://github.com/bigskysoftware/idiomorph/issues/109
 - [ ] Move idiomorph/htmx.js out of tree into an htmx extension? https://github.com/bigskysoftware/idiomorph/issues/111
 - [ ] Narrow support for `newContent` types? https://github.com/bigskysoftware/idiomorph/issues/103
+- [ ] Warn if duplicate ids are detected in the new content
 - [ ] Restore or preserve scroll state? https://github.com/bigskysoftware/idiomorph/issues/26
 - [ ] Improve anonymous node matching, perhaps using Merkle trees, or fuzzy synthetic ids?
 - [ ] Natively preserve focus, selection, scroll state by morphing around currently focused element https://github.com/bigskysoftware/idiomorph/pull/85
