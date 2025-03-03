@@ -7,6 +7,7 @@
 
 * Fixed:
   * Fix error when morphing elements with numeric ids (@botandrose, @ksbrooksjr)
+  * Fix issue with outerHTML morphing an IDed node that gets moved (@botandrose, @MichaelWest22)
 
 ## [0.7.2] - 2025-02-20
 
