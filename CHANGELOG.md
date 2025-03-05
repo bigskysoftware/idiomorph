@@ -5,6 +5,8 @@
 * Removed:
   * Remove AMD publish target since its EOL: https://github.com/requirejs/requirejs/issues/1816#issuecomment-707503323
 
+## [0.7.3] - 2025-03-05
+
 * Fixed:
   * Fix error when morphing elements with numeric ids (@botandrose, @ksbrooksjr)
   * Fix issue with outerHTML morphing an IDed node that gets moved (@botandrose, @MichaelWest22)
