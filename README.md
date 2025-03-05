@@ -48,8 +48,9 @@ directly in a browser:
 For production systems we recommend downloading and vendoring the library.
 
 If you are using [JavaScript Modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules), we provide 
-two additional files:
+three additional files:
 
+* `dist/idiomorph.amd.js` - for [AMD-style modules](https://github.com/amdjs/amdjs-api/wiki/AMD)
 * `dist/idiomorph.cjs.js` - for [CommonJS-style modules](https://wiki.commonjs.org/wiki/Modules)
 * `dist/idiomorph.esm.js` - for [ESM-style modules](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)
 
