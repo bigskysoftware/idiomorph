@@ -15,4 +15,5 @@ This guide outlines how to release Idiomorph, focusing on the steps to take to p
 8. `git tag vX.Y.Z`
 9. `git push origin main --tags`
 10. `npm publish`
-11. Make announcement on Discord #announcements
+11. Update the Github Releases page: https://github.com/bigskysoftware/idiomorph/releases
+12. Make announcement on the htmx Discord in the #idiomorph and #announcements channels
