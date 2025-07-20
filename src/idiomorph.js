@@ -468,13 +468,20 @@ var Idiomorph = (function () {
         const oldElt = /** @type {Element} */ (oldNode);
         const newElt = /** @type {Element} */ (newNode);
 
+        const oldEltId =
+          /** @type {boolean | string} */
+          (oldElt instanceof Element) && oldElt.getAttribute("id");
+        const newEltId =
+          /** @type {boolean | string} */
+          (newElt instanceof Element) && newElt.getAttribute("id");
+
         return (
           oldElt.nodeType === newElt.nodeType &&
           oldElt.tagName === newElt.tagName &&
-          // If oldElt has an `id` with possible state and it doesn't match newElt.id then avoid morphing.
+          // If oldEltId is present with possible state and it doesn't match newEltId then avoid morphing.
           // We'll still match an anonymous node with an IDed newElt, though, because if it got this far,
           // its not persistent, and new nodes can't have any hidden state.
-          (!oldElt.id || oldElt.id === newElt.id)
+          (!oldEltId || oldEltId === newEltId)
         );
       }
 
