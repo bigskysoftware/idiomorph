@@ -156,4 +156,14 @@ describe("Tests to ensure that idiomorph merges properly", function () {
 
     element.outerHTML.should.equal(finalSrc);
   });
+
+  it("issue https://github.com/bigskysoftware/idiomorph/issues/135", function () {
+    // inputs with name="id" make their form's id property unreliable!
+    // form.id returns the <input>, not "myForm", breaking idiomorph's element persistence
+    let src = `<form id="myForm"><input name="id"></form>`;
+    getWorkArea().innerHTML = src;
+    let element = getWorkArea().querySelector("form");
+    Idiomorph.morph(getWorkArea(), src, { morphStyle: "innerHTML" });
+    should.equal(element, getWorkArea().querySelector("form"));
+  });
 });
