@@ -225,7 +225,7 @@ var Idiomorph = (function () {
 
     const results = fn();
 
-    if (activeElementId && activeElementId !== document.activeElement?.id) {
+    if (activeElementId && activeElementId !== id(document.activeElement)) {
       activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
@@ -304,11 +304,14 @@ var Idiomorph = (function () {
         }
 
         // if the matching node is elsewhere in the original content
-        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
+        if (
+          newChild instanceof Element &&
+          ctx.persistentIds.has(id(newChild))
+        ) {
           // move it and all its children here and morph
           const movedChild = moveBeforeById(
             oldParent,
-            newChild.id,
+            id(newChild),
             insertionPoint,
             ctx,
           );
@@ -474,7 +477,7 @@ var Idiomorph = (function () {
           // If oldElt has an `id` with possible state and it doesn't match newElt.id then avoid morphing.
           // We'll still match an anonymous node with an IDed newElt, though, because if it got this far,
           // its not persistent, and new nodes can't have any hidden state.
-          (!oldElt.id || oldElt.id === newElt.id)
+          (!id(oldElt) || id(oldElt) === id(newElt))
         );
       }
 
@@ -528,19 +531,19 @@ var Idiomorph = (function () {
      * Search for an element by id within the document and pantry, and move it using moveBefore.
      *
      * @param {Element} parentNode - The parent node to which the element will be moved.
-     * @param {string} id - The ID of the element to be moved.
+     * @param {string} elementId - The ID of the element to be moved.
      * @param {Node | null} after - The reference node to insert the element before.
      *                              If `null`, the element is appended as the last child.
      * @param {MorphContext} ctx
      * @returns {Element} The found element
      */
-    function moveBeforeById(parentNode, id, after, ctx) {
+    function moveBeforeById(parentNode, elementId, after, ctx) {
       const target =
         /** @type {Element} - will always be found */
         (
-          (ctx.target.id === id && ctx.target) ||
-            ctx.target.querySelector(`[id="${id}"]`) ||
-            ctx.pantry.querySelector(`[id="${id}"]`)
+          (id(ctx.target) === elementId && ctx.target) ||
+            ctx.target.querySelector(`[id="${elementId}"]`) ||
+            ctx.pantry.querySelector(`[id="${elementId}"]`)
         );
       removeElementFromAncestorsIdMaps(target, ctx);
       moveBefore(parentNode, target, after);
@@ -556,12 +559,12 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx
      */
     function removeElementFromAncestorsIdMaps(element, ctx) {
-      const id = element.id;
+      const elementId = id(element);
       /** @ts-ignore - safe to loop in this way **/
       while ((element = element.parentNode)) {
         let idSet = ctx.idMap.get(element);
         if (idSet) {
-          idSet.delete(id);
+          idSet.delete(elementId);
           if (!idSet.size) {
             ctx.idMap.delete(element);
           }
@@ -1044,7 +1047,7 @@ var Idiomorph = (function () {
      */
     function findIdElements(root) {
       let elements = Array.from(root.querySelectorAll("[id]"));
-      if (root.id) {
+      if (id(root)) {
         elements.push(root);
       }
       return elements;
@@ -1063,7 +1066,7 @@ var Idiomorph = (function () {
      */
     function populateIdMapWithTree(idMap, persistentIds, root, elements) {
       for (const elt of elements) {
-        if (persistentIds.has(elt.id)) {
+        if (persistentIds.has(id(elt))) {
           /** @type {Element|null} */
           let current = elt;
           // walk up the parent hierarchy of that element, adding the id
@@ -1075,7 +1078,7 @@ var Idiomorph = (function () {
               idSet = new Set();
               idMap.set(current, idSet);
             }
-            idSet.add(elt.id);
+            idSet.add(id(elt));
 
             if (current === root) break;
             current = current.parentElement;
@@ -1334,6 +1337,14 @@ var Idiomorph = (function () {
 
     return { normalizeElement, normalizeParent };
   })();
+
+  // @ts-ignore Nodeish is fine
+  function id(node) {
+    // node could be a <form> so we can't trust node.id:
+    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement#issues_with_naming_elements
+    // node could be a document-fragment which doesn't have getAttribute defined
+    return node.getAttribute && node.getAttribute("id");
+  }
 
   //=============================================================================
   // This is what ends up becoming the Idiomorph global object
