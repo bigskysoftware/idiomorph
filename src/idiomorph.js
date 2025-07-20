@@ -225,7 +225,10 @@ var Idiomorph = (function () {
 
     const results = fn();
 
-    if (activeElementId && activeElementId !== id(document.activeElement)) {
+    if (
+      activeElementId &&
+      activeElementId !== document.activeElement?.getAttribute("id")
+    ) {
       activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
@@ -304,20 +307,23 @@ var Idiomorph = (function () {
         }
 
         // if the matching node is elsewhere in the original content
-        if (
-          newChild instanceof Element &&
-          ctx.persistentIds.has(id(newChild))
-        ) {
-          // move it and all its children here and morph
-          const movedChild = moveBeforeById(
-            oldParent,
-            id(newChild),
-            insertionPoint,
-            ctx,
+        if (newChild instanceof Element) {
+          // we can pretend the id is non-null because the next `.has` line will reject it if not
+          const newChildId = /** @type {String} */ (
+            newChild.getAttribute("id")
           );
-          morphNode(movedChild, newChild, ctx);
-          insertionPoint = movedChild.nextSibling;
-          continue;
+          if (ctx.persistentIds.has(newChildId)) {
+            // move it and all its children here and morph
+            const movedChild = moveBeforeById(
+              oldParent,
+              newChildId,
+              insertionPoint,
+              ctx,
+            );
+            morphNode(movedChild, newChild, ctx);
+            insertionPoint = movedChild.nextSibling;
+            continue;
+          }
         }
 
         // last resort: insert the new node from scratch
@@ -477,7 +483,9 @@ var Idiomorph = (function () {
           // If oldElt has an `id` with possible state and it doesn't match newElt.id then avoid morphing.
           // We'll still match an anonymous node with an IDed newElt, though, because if it got this far,
           // its not persistent, and new nodes can't have any hidden state.
-          (!id(oldElt) || id(oldElt) === id(newElt))
+          // We can't use .id because of form input shadowing, and we can't count on .getAttribute's presence because it could be a document-fragment
+          (!oldElt.getAttribute?.("id") ||
+            oldElt.getAttribute?.("id") === newElt.getAttribute?.("id"))
         );
       }
 
@@ -531,19 +539,21 @@ var Idiomorph = (function () {
      * Search for an element by id within the document and pantry, and move it using moveBefore.
      *
      * @param {Element} parentNode - The parent node to which the element will be moved.
-     * @param {string} elementId - The ID of the element to be moved.
+     * @param {string} id - The ID of the element to be moved.
      * @param {Node | null} after - The reference node to insert the element before.
      *                              If `null`, the element is appended as the last child.
      * @param {MorphContext} ctx
      * @returns {Element} The found element
      */
-    function moveBeforeById(parentNode, elementId, after, ctx) {
+    function moveBeforeById(parentNode, id, after, ctx) {
       const target =
         /** @type {Element} - will always be found */
         (
-          (id(ctx.target) === elementId && ctx.target) ||
-            ctx.target.querySelector(`[id="${elementId}"]`) ||
-            ctx.pantry.querySelector(`[id="${elementId}"]`)
+          // ctx.target.id unsafe because of form input shadowing
+          // ctx.target could be a document fragment which doesn't have `getAttribute`
+          (ctx.target.getAttribute?.("id") === id && ctx.target) ||
+            ctx.target.querySelector(`[id="${id}"]`) ||
+            ctx.pantry.querySelector(`[id="${id}"]`)
         );
       removeElementFromAncestorsIdMaps(target, ctx);
       moveBefore(parentNode, target, after);
@@ -559,12 +569,13 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx
      */
     function removeElementFromAncestorsIdMaps(element, ctx) {
-      const elementId = id(element);
+      // we know id is non-null String, because this function is only called on elements with ids
+      const id = /** @type {String} */ (element.getAttribute("id"));
       /** @ts-ignore - safe to loop in this way **/
       while ((element = element.parentNode)) {
         let idSet = ctx.idMap.get(element);
         if (idSet) {
-          idSet.delete(elementId);
+          idSet.delete(id);
           if (!idSet.size) {
             ctx.idMap.delete(element);
           }
@@ -1047,7 +1058,8 @@ var Idiomorph = (function () {
      */
     function findIdElements(root) {
       let elements = Array.from(root.querySelectorAll("[id]"));
-      if (id(root)) {
+      // root could be a document fragment which doesn't have `getAttribute`
+      if (root.getAttribute?.("id")) {
         elements.push(root);
       }
       return elements;
@@ -1066,7 +1078,9 @@ var Idiomorph = (function () {
      */
     function populateIdMapWithTree(idMap, persistentIds, root, elements) {
       for (const elt of elements) {
-        if (persistentIds.has(id(elt))) {
+        // we can pretend id is non-null String, because the .has line will reject it immediately if not
+        const id = /** @type {String} */ (elt.getAttribute("id"));
+        if (persistentIds.has(id)) {
           /** @type {Element|null} */
           let current = elt;
           // walk up the parent hierarchy of that element, adding the id
@@ -1078,7 +1092,7 @@ var Idiomorph = (function () {
               idSet = new Set();
               idMap.set(current, idSet);
             }
-            idSet.add(id(elt));
+            idSet.add(id);
 
             if (current === root) break;
             current = current.parentElement;
@@ -1337,14 +1351,6 @@ var Idiomorph = (function () {
 
     return { normalizeElement, normalizeParent };
   })();
-
-  // @ts-ignore Nodeish is fine
-  function id(node) {
-    // node could be a <form> so we can't trust node.id:
-    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement#issues_with_naming_elements
-    // node could be a document-fragment which doesn't have getAttribute defined
-    return node.getAttribute && node.getAttribute("id");
-  }
 
   //=============================================================================
   // This is what ends up becoming the Idiomorph global object
