@@ -112,6 +112,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['callbacks']} callbacks
    * @property {ConfigInternal['head']} head
    * @property {HTMLDivElement} pantry
+   * @property {Element[]} activeElementAndParents
    */
 
   //=============================================================================
@@ -424,7 +425,8 @@ var Idiomorph = (function () {
 
           // if the current node contains active element, stop looking for better future matches,
           // because if one is found, this node will be moved to the pantry, reparenting it and thus losing focus
-          if (cursor.contains(document.activeElement)) break;
+          // @ts-ignore pretend cursor is Element rather than Node, we're just testing for array inclusion
+          if (ctx.activeElementAndParents.includes(cursor)) break;
 
           cursor = cursor.nextSibling;
         }
@@ -996,6 +998,7 @@ var Idiomorph = (function () {
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
+        activeElementAndParents: createActiveElementAndParents(oldNode),
         callbacks: mergedConfig.callbacks,
         head: mergedConfig.head,
       };
@@ -1034,6 +1037,21 @@ var Idiomorph = (function () {
       pantry.hidden = true;
       document.body.insertAdjacentElement("afterend", pantry);
       return pantry;
+    }
+
+    /**
+     * @param {Element} oldNode
+     * @returns {Element[]}
+     */
+    function createActiveElementAndParents(oldNode) {
+      /** @type {Element[]} */
+      let activeElementAndParents = [];
+      let elt = document.activeElement;
+      while (elt && elt !== oldNode) {
+        activeElementAndParents.push(elt);
+        elt = elt.parentElement;
+      }
+      return activeElementAndParents;
     }
 
     /**
