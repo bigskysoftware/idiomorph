@@ -1047,9 +1047,12 @@ var Idiomorph = (function () {
       /** @type {Element[]} */
       let activeElementAndParents = [];
       let elt = document.activeElement;
-      while (elt && elt !== oldNode) {
-        activeElementAndParents.push(elt);
-        elt = elt.parentElement;
+      if (elt?.tagName !== "BODY" && oldNode.contains(elt)) {
+        while (elt) {
+          activeElementAndParents.push(elt);
+          if (elt === oldNode) break;
+          elt = elt.parentElement;
+        }
       }
       return activeElementAndParents;
     }
