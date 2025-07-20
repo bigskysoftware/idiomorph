@@ -225,7 +225,10 @@ var Idiomorph = (function () {
 
     const results = fn();
 
-    if (activeElementId && activeElementId !== document.activeElement?.id) {
+    if (
+      activeElementId &&
+      activeElementId !== document.activeElement?.getAttribute("id")
+    ) {
       activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
@@ -304,17 +307,23 @@ var Idiomorph = (function () {
         }
 
         // if the matching node is elsewhere in the original content
-        if (newChild instanceof Element && ctx.persistentIds.has(newChild.id)) {
-          // move it and all its children here and morph
-          const movedChild = moveBeforeById(
-            oldParent,
-            newChild.id,
-            insertionPoint,
-            ctx,
+        if (newChild instanceof Element) {
+          // we can pretend the id is non-null because the next `.has` line will reject it if not
+          const newChildId = /** @type {String} */ (
+            newChild.getAttribute("id")
           );
-          morphNode(movedChild, newChild, ctx);
-          insertionPoint = movedChild.nextSibling;
-          continue;
+          if (ctx.persistentIds.has(newChildId)) {
+            // move it and all its children here and morph
+            const movedChild = moveBeforeById(
+              oldParent,
+              newChildId,
+              insertionPoint,
+              ctx,
+            );
+            morphNode(movedChild, newChild, ctx);
+            insertionPoint = movedChild.nextSibling;
+            continue;
+          }
         }
 
         // last resort: insert the new node from scratch
@@ -474,7 +483,9 @@ var Idiomorph = (function () {
           // If oldElt has an `id` with possible state and it doesn't match newElt.id then avoid morphing.
           // We'll still match an anonymous node with an IDed newElt, though, because if it got this far,
           // its not persistent, and new nodes can't have any hidden state.
-          (!oldElt.id || oldElt.id === newElt.id)
+          // We can't use .id because of form input shadowing, and we can't count on .getAttribute's presence because it could be a document-fragment
+          (!oldElt.getAttribute?.("id") ||
+            oldElt.getAttribute?.("id") === newElt.getAttribute?.("id"))
         );
       }
 
@@ -538,7 +549,9 @@ var Idiomorph = (function () {
       const target =
         /** @type {Element} - will always be found */
         (
-          (ctx.target.id === id && ctx.target) ||
+          // ctx.target.id unsafe because of form input shadowing
+          // ctx.target could be a document fragment which doesn't have `getAttribute`
+          (ctx.target.getAttribute?.("id") === id && ctx.target) ||
             ctx.target.querySelector(`[id="${id}"]`) ||
             ctx.pantry.querySelector(`[id="${id}"]`)
         );
@@ -556,7 +569,8 @@ var Idiomorph = (function () {
      * @param {MorphContext} ctx
      */
     function removeElementFromAncestorsIdMaps(element, ctx) {
-      const id = element.id;
+      // we know id is non-null String, because this function is only called on elements with ids
+      const id = /** @type {String} */ (element.getAttribute("id"));
       /** @ts-ignore - safe to loop in this way **/
       while ((element = element.parentNode)) {
         let idSet = ctx.idMap.get(element);
@@ -1044,7 +1058,8 @@ var Idiomorph = (function () {
      */
     function findIdElements(root) {
       let elements = Array.from(root.querySelectorAll("[id]"));
-      if (root.id) {
+      // root could be a document fragment which doesn't have `getAttribute`
+      if (root.getAttribute?.("id")) {
         elements.push(root);
       }
       return elements;
@@ -1063,7 +1078,9 @@ var Idiomorph = (function () {
      */
     function populateIdMapWithTree(idMap, persistentIds, root, elements) {
       for (const elt of elements) {
-        if (persistentIds.has(elt.id)) {
+        // we can pretend id is non-null String, because the .has line will reject it immediately if not
+        const id = /** @type {String} */ (elt.getAttribute("id"));
+        if (persistentIds.has(id)) {
           /** @type {Element|null} */
           let current = elt;
           // walk up the parent hierarchy of that element, adding the id
@@ -1075,7 +1092,7 @@ var Idiomorph = (function () {
               idSet = new Set();
               idMap.set(current, idSet);
             }
-            idSet.add(elt.id);
+            idSet.add(id);
 
             if (current === root) break;
             current = current.parentElement;
