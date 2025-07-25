@@ -11,7 +11,7 @@
  */
 
 /**
- * @typedef {object} ConfigCallbacks
+ * @typedef {object} Callbacks
  *
  * @property {function(Node): boolean} [beforeNodeAdded]
  * @property {function(Node): void} [afterNodeAdded]
@@ -23,13 +23,17 @@
  */
 
 /**
+ * @typedef {Callbacks & { name: string }} IdiomorphPlugin
+ */
+
+/**
  * @typedef {object} Config
  *
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
- * @property {ConfigCallbacks} [callbacks]
+ * @property {Callbacks} [callbacks]
  * @property {ConfigHead} [head]
  */
 
@@ -52,25 +56,13 @@
  */
 
 /**
- * @typedef {object} ConfigCallbacksInternal
- *
- * @property {(function(Node): boolean) | NoOp} beforeNodeAdded
- * @property {(function(Node): void) | NoOp} afterNodeAdded
- * @property {(function(Node, Node): boolean) | NoOp} beforeNodeMorphed
- * @property {(function(Node, Node): void) | NoOp} afterNodeMorphed
- * @property {(function(Node): boolean) | NoOp} beforeNodeRemoved
- * @property {(function(Node): void) | NoOp} afterNodeRemoved
- * @property {(function(string, Element, "update" | "remove"): boolean) | NoOp} beforeAttributeUpdated
- */
-
-/**
  * @typedef {object} ConfigInternal
  *
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
- * @property {ConfigCallbacksInternal} callbacks
+ * @property {Callbacks} callbacks
  * @property {ConfigHeadInternal} head
  */
 
@@ -109,7 +101,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
-   * @property {ConfigInternal['callbacks']} callbacks
+   * @property {Array<Callbacks>} callbacks
    * @property {ConfigInternal['head']} head
    * @property {HTMLDivElement} pantry
    */
@@ -118,7 +110,6 @@ var Idiomorph = (function () {
   // AND NOW IT BEGINS...
   //=============================================================================
 
-  const noOp = () => {};
   /**
    * Default configuration values, updatable by users now
    * @type {ConfigInternal}
@@ -126,23 +117,37 @@ var Idiomorph = (function () {
   const defaults = {
     morphStyle: "outerHTML",
     callbacks: {
-      beforeNodeAdded: noOp,
-      afterNodeAdded: noOp,
-      beforeNodeMorphed: noOp,
-      afterNodeMorphed: noOp,
-      beforeNodeRemoved: noOp,
-      afterNodeRemoved: noOp,
-      beforeAttributeUpdated: noOp,
+      beforeNodeAdded: () => true,
+      afterNodeAdded: () => {},
+      beforeNodeMorphed: () => true,
+      afterNodeMorphed: () => {},
+      beforeNodeRemoved: () => true,
+      afterNodeRemoved: () => {},
+      beforeAttributeUpdated: () => true,
     },
     head: {
       style: "merge",
       shouldPreserve: (elt) => elt.getAttribute("im-preserve") === "true",
       shouldReAppend: (elt) => elt.getAttribute("im-re-append") === "true",
-      shouldRemove: noOp,
-      afterHeadMorphed: noOp,
+      shouldRemove: () => {},
+      afterHeadMorphed: () => {},
     },
     restoreFocus: true,
   };
+
+  /** @type {Map<string, Callbacks>} */
+  let plugins = new Map();
+  /**
+   * Add a plugin to the morphing system
+   * @param {IdiomorphPlugin} plugin
+   * @returns {void}
+   */
+  function addPlugin(plugin) {
+    const name = plugin.name;
+    // @ts-ignore we can delete this property
+    delete plugin.name;
+    plugins.set(name, plugin);
+  }
 
   /**
    * Core idiomorph function for morphing one DOM tree to another
@@ -155,7 +160,7 @@ var Idiomorph = (function () {
   function morph(oldNode, newContent, config = {}) {
     oldNode = normalizeElement(oldNode);
     const newNode = normalizeParent(newContent);
-    const ctx = createMorphContext(oldNode, newNode, config);
+    const ctx = createMorphContext(oldNode, newNode, config, plugins);
 
     const morphedNodes = saveAndRestoreFocus(ctx, () => {
       return withHeadBlocking(
@@ -349,23 +354,22 @@ var Idiomorph = (function () {
      * @returns {Node|null}
      */
     function createNode(oldParent, newChild, insertionPoint, ctx) {
-      if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
-      if (ctx.idMap.has(newChild)) {
-        // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
-        const newEmptyChild = document.createElement(
-          /** @type {Element} */ (newChild).tagName,
-        );
-        oldParent.insertBefore(newEmptyChild, insertionPoint);
-        morphNode(newEmptyChild, newChild, ctx);
-        ctx.callbacks.afterNodeAdded(newEmptyChild);
-        return newEmptyChild;
-      } else {
-        // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
-        const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
-        oldParent.insertBefore(newClonedChild, insertionPoint);
-        ctx.callbacks.afterNodeAdded(newClonedChild);
-        return newClonedChild;
-      }
+      return withNodeCallbacks(ctx, "Added", newChild, undefined, () => {
+        if (ctx.idMap.has(newChild)) {
+          // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
+          const newEmptyChild = document.createElement(
+            /** @type {Element} */ (newChild).tagName,
+          );
+          oldParent.insertBefore(newEmptyChild, insertionPoint);
+          morphNode(newEmptyChild, newChild, ctx);
+          return newEmptyChild;
+        } else {
+          // optimisation: no id state to preserve so we can just insert a clone of the newChild and its descendants
+          const newClonedChild = document.importNode(newChild, true); // importNode to not mutate newParent
+          oldParent.insertBefore(newClonedChild, insertionPoint);
+          return newClonedChild;
+        }
+      });
     }
 
     //=============================================================================
@@ -499,9 +503,9 @@ var Idiomorph = (function () {
         moveBefore(ctx.pantry, node, null);
       } else {
         // remove for realsies
-        if (ctx.callbacks.beforeNodeRemoved(node) === false) return;
-        node.parentNode?.removeChild(node);
-        ctx.callbacks.afterNodeRemoved(node);
+        withNodeCallbacks(ctx, "Removed", node, undefined, () => {
+          return node.parentNode?.removeChild(node);
+        });
       }
     }
 
@@ -613,31 +617,28 @@ var Idiomorph = (function () {
         return null;
       }
 
-      if (ctx.callbacks.beforeNodeMorphed(oldNode, newContent) === false) {
-        return oldNode;
-      }
-
-      if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
-        // ignore the head element
-      } else if (
-        oldNode instanceof HTMLHeadElement &&
-        ctx.head.style !== "morph"
-      ) {
-        // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
-        handleHeadElement(
-          oldNode,
-          /** @type {HTMLHeadElement} */ (newContent),
-          ctx,
-        );
-      } else {
-        morphAttributes(oldNode, newContent, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          // @ts-ignore newContent can be a node here because .firstChild will be null
-          morphChildren(ctx, oldNode, newContent);
+      return withNodeCallbacks(ctx, "Morphed", oldNode, newContent, () => {
+        if (oldNode instanceof HTMLHeadElement && ctx.head.ignore) {
+          // ignore the head element
+        } else if (
+          oldNode instanceof HTMLHeadElement &&
+          ctx.head.style !== "morph"
+        ) {
+          // ok to cast: if newContent wasn't also a <head>, it would've got caught in the `!isSoftMatch` branch above
+          handleHeadElement(
+            oldNode,
+            /** @type {HTMLHeadElement} */ (newContent),
+            ctx,
+          );
+        } else {
+          morphAttributes(oldNode, newContent, ctx);
+          if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+            // @ts-ignore newContent can be a node here because .firstChild will be null
+            morphChildren(ctx, oldNode, newContent);
+          }
         }
-      }
-      ctx.callbacks.afterNodeMorphed(oldNode, newContent);
-      return oldNode;
+        return oldNode;
+      });
     }
 
     /**
@@ -811,7 +812,7 @@ var Idiomorph = (function () {
         return true;
       }
       return (
-        ctx.callbacks.beforeAttributeUpdated(attr, element, updateType) ===
+        beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) ===
         false
       );
     }
@@ -831,6 +832,56 @@ var Idiomorph = (function () {
 
     return morphNode;
   })();
+
+  //=============================================================================
+  // Callback Functions
+  //=============================================================================
+  /**
+   * @param {MorphContext} ctx
+   * @param {string} name
+   * @param {Node | null} oldNode
+   * @param {Node | null | undefined} newNode
+   * @param {function} fn
+   * @returns {Node | null}
+   */
+  function withNodeCallbacks(ctx, name, oldNode, newNode, fn) {
+    const shouldPrevent = ctx.callbacks.some((plugin) => {
+      // @ts-ignore - we know this is a function
+      return plugin[`beforeNode${name}`]?.(oldNode, newNode) === false;
+    });
+
+    if (shouldPrevent) {
+      return name === "Added" ? null : oldNode;
+    }
+
+    const resultNode = fn();
+
+    // iterate backwards without a new array or index allocation
+    // @ts-ignore
+    ctx.callbacks.reduceRight((_, plugin) => {
+      // @ts-ignore - we know this is a function
+      plugin[`afterNode${name}`]?.(resultNode, newNode);
+    }, null);
+
+    return resultNode;
+  }
+
+  /**
+   * @param {MorphContext} ctx
+   * @param {string} attr
+   * @param {Element} element
+   * @param {"update" | "remove"} updateType
+   * @returns {boolean | undefined}
+   */
+  function beforeAttributeUpdatedCallbacks(ctx, attr, element, updateType) {
+    const shouldPrevent = ctx.callbacks.some((plugin) => {
+      return (
+        plugin[`beforeAttributeUpdated`]?.(attr, element, updateType) === false
+      );
+    });
+
+    if (shouldPrevent) return false;
+  }
 
   //=============================================================================
   // Head Management Functions
@@ -873,6 +924,7 @@ var Idiomorph = (function () {
    * @returns {Promise<void>[]}
    */
   function handleHeadElement(oldHead, newHead, ctx) {
+    /** @type {Node[]} */
     let added = [];
     let removed = [];
     let preserved = [];
@@ -921,6 +973,7 @@ var Idiomorph = (function () {
     // nodes to append to the head tag
     nodesToAppend.push(...srcToNewHeadNodes.values());
 
+    /** @type {Promise<void>[]} */
     let promises = [];
     for (const newNode of nodesToAppend) {
       // TODO: This could theoretically be null, based on type
@@ -928,7 +981,7 @@ var Idiomorph = (function () {
         document.createRange().createContextualFragment(newNode.outerHTML)
           .firstChild
       );
-      if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
+      withNodeCallbacks(ctx, "Added", newElt, undefined, () => {
         if (
           ("href" in newElt && newElt.href) ||
           ("src" in newElt && newElt.src)
@@ -943,18 +996,18 @@ var Idiomorph = (function () {
           promises.push(promise);
         }
         oldHead.appendChild(newElt);
-        ctx.callbacks.afterNodeAdded(newElt);
         added.push(newElt);
-      }
+        return newElt;
+      });
     }
 
     // remove all removed elements, after we have appended the new elements to avoid
     // additional network requests for things like style sheets
     for (const removedElement of removed) {
-      if (ctx.callbacks.beforeNodeRemoved(removedElement) !== false) {
+      withNodeCallbacks(ctx, "Removed", removedElement, undefined, () => {
         oldHead.removeChild(removedElement);
-        ctx.callbacks.afterNodeRemoved(removedElement);
-      }
+        return removedElement;
+      });
     }
 
     ctx.head.afterHeadMorphed(oldHead, {
@@ -974,9 +1027,10 @@ var Idiomorph = (function () {
      * @param {Element} oldNode
      * @param {Element} newContent
      * @param {Config} config
+     * @param {Map<string, Callbacks>} plugins
      * @returns {MorphContext}
      */
-    function createMorphContext(oldNode, newContent, config) {
+    function createMorphContext(oldNode, newContent, config, plugins) {
       const { persistentIds, idMap } = createIdMaps(oldNode, newContent);
 
       const mergedConfig = mergeDefaults(config);
@@ -984,6 +1038,7 @@ var Idiomorph = (function () {
       if (!["innerHTML", "outerHTML"].includes(morphStyle)) {
         throw `Do not understand how to morph style ${morphStyle}`;
       }
+      const callbacks = [...plugins.values(), mergedConfig.callbacks];
 
       return {
         target: oldNode,
@@ -996,7 +1051,7 @@ var Idiomorph = (function () {
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(),
-        callbacks: mergedConfig.callbacks,
+        callbacks: callbacks,
         head: mergedConfig.head,
       };
     }
@@ -1341,5 +1396,6 @@ var Idiomorph = (function () {
   return {
     morph,
     defaults,
+    addPlugin,
   };
 })();
