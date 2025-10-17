@@ -6,6 +6,9 @@
   * Remove AMD publish target since its EOL: https://github.com/requirejs/requirejs/issues/1816#issuecomment-707503323
   * Remove CommonJS publish target. `require("idiomorph")` no longer resolves; use `import "idiomorph"` instead. (@botandrose) #122
 
+* Added:
+  * Warn in the console when duplicate ids are detected during a morph, since they can cause subtle state loss (@botandrose) #142
+
 ## [0.7.4] - 2025-09-29
 
 * Fixed:

@@ -606,4 +606,50 @@ describe("Core morphing tests", function () {
     // included in the persistent ID set or it will pantry the id'ed node in error
     initial.outerHTML.should.equal("<span>Bar</span>");
   });
+
+  describe("duplicate id warnings", function () {
+    let warn;
+
+    beforeEach(function () {
+      warn = sinon.stub(console, "warn");
+    });
+
+    afterEach(function () {
+      warn.restore();
+    });
+
+    it("warns when the old content has duplicate ids", function () {
+      let initial = make("<div><p id='a'>Foo</p><p id='a'>Bar</p></div>");
+      Idiomorph.morph(initial, "<div><p id='a'>Baz</p></div>");
+      warn.calledOnce.should.equal(true);
+      warn.firstCall.args[1].should.eql(["a"]);
+    });
+
+    it("warns when the new content has duplicate ids", function () {
+      let initial = make("<div><p id='a'>Foo</p></div>");
+      Idiomorph.morph(initial, "<div><p id='a'>Bar</p><p id='a'>Baz</p></div>");
+      warn.calledOnce.should.equal(true);
+      warn.firstCall.args[1].should.eql(["a"]);
+    });
+
+    it("reports every duplicated id", function () {
+      let initial = make(
+        "<div><p id='a'>Foo</p><p id='a'>Bar</p><p id='b'>Baz</p><p id='b'>Qux</p></div>",
+      );
+      Idiomorph.morph(initial, "<div><p id='a'>Foo</p><p id='b'>Baz</p></div>");
+      warn.firstCall.args[1].should.eql(["a", "b"]);
+    });
+
+    it("does not warn when all ids are unique", function () {
+      let initial = make("<div><p id='a'>Foo</p><p id='b'>Bar</p></div>");
+      Idiomorph.morph(initial, "<div><p id='a'>Baz</p><p id='b'>Qux</p></div>");
+      warn.called.should.equal(false);
+    });
+
+    it("does not warn when the content has no ids at all", function () {
+      let initial = make("<div><p>Foo</p><p>Bar</p></div>");
+      Idiomorph.morph(initial, "<div><p>Baz</p><p>Qux</p></div>");
+      warn.called.should.equal(false);
+    });
+  });
 });

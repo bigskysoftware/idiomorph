@@ -1189,6 +1189,12 @@ var Idiomorph = (function () {
       for (const id of duplicateIds) {
         persistentIds.delete(id);
       }
+      if (duplicateIds.size) {
+        console.warn(
+          "[Warning] duplicate ids found during morph, state loss within these elements is possible:",
+          Array.from(duplicateIds),
+        );
+      }
       return persistentIds;
     }
 
