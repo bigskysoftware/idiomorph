@@ -28,6 +28,7 @@
  * @property {'outerHTML' | 'innerHTML'} [morphStyle]
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [keepInputValues]
  * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacks} [callbacks]
  * @property {ConfigHead} [head]
@@ -69,6 +70,7 @@
  * @property {'outerHTML' | 'innerHTML'} morphStyle
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
+ * @property {boolean} [keepInputValues]
  * @property {boolean} [restoreFocus]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
@@ -106,6 +108,7 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['morphStyle']} morphStyle
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
+   * @property {ConfigInternal['keepInputValues']} keepInputValues
    * @property {ConfigInternal['restoreFocus']} restoreFocus
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
@@ -646,10 +649,14 @@ var Idiomorph = (function () {
           ctx,
         );
       } else {
-        morphAttributes(oldNode, newContent, ctx);
-        if (!ignoreValueOfActiveElement(oldNode, ctx)) {
-          // @ts-ignore newContent can be a node here because .firstChild will be null
-          morphChildren(ctx, oldNode, newContent);
+        if (!ctx.keepInputValues || !oldNode.isEqualNode(newContent)) {
+          morphAttributes(oldNode, newContent, ctx);
+          if (!ignoreValueOfActiveElement(oldNode, ctx)) {
+            if (!ctx.keepInputValues || !oldNode.isEqualNode(newContent)) {
+              // @ts-ignore newContent can be a node here because .firstChild will be null
+              morphChildren(ctx, oldNode, newContent);
+            }
+          }
         }
       }
       ctx.callbacks.afterNodeMorphed(oldNode, newContent);
@@ -681,6 +688,17 @@ var Idiomorph = (function () {
           }
           if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
             oldElt.setAttribute(newAttribute.name, newAttribute.value);
+            // With keepInputValues, update input.value when value attribute changes
+            if (
+              ctx.keepInputValues &&
+              newAttribute.name === "value" &&
+              oldElt instanceof HTMLInputElement &&
+              newElt instanceof HTMLInputElement &&
+              newElt.type !== "file" &&
+              !ignoreValueOfActiveElement(oldElt, ctx)
+            ) {
+              oldElt.value = newElt.value;
+            }
           }
         }
         // iterate backwards to avoid skipping over items when a delete occurs
@@ -700,7 +718,18 @@ var Idiomorph = (function () {
         }
 
         if (!ignoreValueOfActiveElement(oldElt, ctx)) {
-          syncInputValue(oldElt, newElt, ctx);
+          if (!ctx.keepInputValues) {
+            syncInputValue(oldElt, newElt, ctx);
+          } else if (
+            oldElt instanceof HTMLTextAreaElement &&
+            newElt instanceof HTMLTextAreaElement &&
+            oldElt.defaultValue != newElt.defaultValue
+          ) {
+            // handle updates to TextArea value when keepInputValues is true
+            if (!ignoreAttribute("value", oldElt, "update", ctx)) {
+              oldElt.value = newElt.value;
+            }
+          }
         }
       }
 
@@ -1008,6 +1037,7 @@ var Idiomorph = (function () {
         morphStyle: morphStyle,
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
+        keepInputValues: mergedConfig.keepInputValues,
         restoreFocus: mergedConfig.restoreFocus,
         idMap: idMap,
         persistentIds: persistentIds,

@@ -373,19 +373,25 @@ describe("Core morphing tests", function () {
     document.body.removeChild(parent);
   });
 
-  it("can morph input value properly because value property is special and doesnt reflect", function () {
+  it("can morph input value properly because value property is special and doesnt reflect with keepInputValues false", function () {
     let initial = make('<div><input value="foo"></div>');
     let final = make('<input value="foo">');
     final.value = "bar";
-    Idiomorph.morph(initial, final, { morphStyle: "innerHTML" });
+    Idiomorph.morph(initial, final, {
+      morphStyle: "innerHTML",
+      keepInputValues: false,
+    });
     initial.innerHTML.should.equal('<input value="bar">');
   });
 
-  it("can morph textarea value properly because value property is special and doesnt reflect", function () {
+  it("can morph textarea value properly because value property is special and doesnt reflect with keepInputValues false", function () {
     let initial = make("<textarea>foo</textarea>");
     let final = make("<textarea>foo</textarea>");
     final.value = "bar";
-    Idiomorph.morph(initial, final, { morphStyle: "outerHTML" });
+    Idiomorph.morph(initial, final, {
+      morphStyle: "outerHTML",
+      keepInputValues: false,
+    });
     initial.value.should.equal("bar");
   });
 
@@ -395,11 +401,43 @@ describe("Core morphing tests", function () {
     final.value = "bar";
     Idiomorph.morph(initial, final, {
       morphStyle: "innerHTML",
+      keepInputValues: false,
       callbacks: {
         beforeAttributeUpdated: (attr, to, updatetype) => false,
       },
     });
     initial.innerHTML.should.equal("<textarea>foo</textarea>");
+    initial.firstChild.value.should.equal("foo");
+  });
+
+  it("can morph textarea value to the same without changing value if keepInputValues true", function () {
+    let initial = make("<textarea>foo</textarea>");
+    let final = make("<textarea>foo</textarea>");
+    initial.value = "bar";
+    Idiomorph.morph(initial, final, {
+      morphStyle: "outerHTML",
+      keepInputValues: true,
+    });
+    initial.value.should.equal("bar");
+  });
+
+  it("can morph textarea value to the same resets value if keepInputValues false", function () {
+    let initial = make("<textarea>foo</textarea>");
+    let final = make("<textarea>foo</textarea>");
+    initial.value = "bar";
+    Idiomorph.morph(initial, final, {
+      morphStyle: "outerHTML",
+      keepInputValues: false,
+    });
+    initial.value.should.equal("foo");
+  });
+
+  it("can morph textarea and updates if changing value if keepInputValues true", function () {
+    let initial = make("<textarea>foo</textarea>");
+    let final = make("<textarea>foo2</textarea>");
+    initial.value = "bar";
+    Idiomorph.morph(initial, final, { keepInputValues: true });
+    initial.value.should.equal("foo2");
   });
 
   it("can morph input checked properly, remove checked", function () {
@@ -452,7 +490,59 @@ describe("Core morphing tests", function () {
     document.body.removeChild(parent);
   });
 
-  it("can morph <select> remove selected option properly", function () {
+  it("can morph input checked properly, set checked property to true again if keepInputValues false", function () {
+    let parent = make('<div><input type="checkbox" checked></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = false;
+
+    let finalSrc = '<input type="checkbox" checked>';
+    Idiomorph.morph(initial, finalSrc, { keepInputValues: false });
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+    initial.checked.should.equal(true);
+    document.body.removeChild(parent);
+  });
+
+  it("can morph input checked properly, when checked does not reset checkbox state when no change if keepInputValues true", function () {
+    let parent = make('<div><input type="checkbox" checked></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = false;
+
+    let finalSrc = '<input type="checkbox" checked>';
+    Idiomorph.morph(initial, finalSrc, { keepInputValues: true });
+    initial.outerHTML.should.equal('<input type="checkbox" checked="">');
+    initial.checked.should.equal(false);
+    document.body.removeChild(parent);
+  });
+
+  it("can morph input checked properly, set checked property to false again if keepInputValues false", function () {
+    let parent = make('<div><input type="checkbox"></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = true;
+
+    let finalSrc = '<input type="checkbox">';
+    Idiomorph.morph(initial, finalSrc, { keepInputValues: false });
+    initial.outerHTML.should.equal('<input type="checkbox">');
+    initial.checked.should.equal(false);
+    document.body.removeChild(parent);
+  });
+
+  it("can morph input checked properly, when not checked does not reset checkbox state when no change if keepInputValues true", function () {
+    let parent = make('<div><input type="checkbox"></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+    initial.checked = true;
+
+    let finalSrc = '<input type="checkbox">';
+    Idiomorph.morph(initial, finalSrc, { keepInputValues: true });
+    initial.outerHTML.should.equal('<input type="checkbox">');
+    initial.checked.should.equal(true);
+    document.body.removeChild(parent);
+  });
+
+  it("can morph <select> remove selected option properly with keepInputValues false old behaviour", function () {
     let parent = make(`
       <div>
         <select>
@@ -476,12 +566,56 @@ describe("Core morphing tests", function () {
           <option>1</option>
         </select>
       `;
-    Idiomorph.morph(parent, finalSrc, { morphStyle: "innerHTML" });
+    Idiomorph.morph(parent, finalSrc, {
+      morphStyle: "innerHTML",
+      keepInputValues: false,
+    });
     // FIXME? morph writes different html explicitly selecting first element
     // is this a problem at all?
     parent.innerHTML.should.equal(`
         <select>
           <option selected="">0</option>
+          <option>1</option>
+        </select>
+      `);
+    select.selectedIndex.should.equal(0);
+    Array.from(select.selectedOptions).should.eql([options[0]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([true, false]);
+  });
+
+  it("can morph <select> remove selected option properly if keepInputValues true", function () {
+    let parent = make(`
+      <div>
+        <select>
+          <option>0</option>
+          <option selected>1</option>
+        </select>
+      </div>
+    `);
+    document.body.append(parent);
+    let select = parent.querySelector("select");
+    let options = parent.querySelectorAll("option");
+    select.selectedIndex.should.equal(1);
+    Array.from(select.selectedOptions).should.eql([options[1]]);
+    Array.from(options)
+      .map((o) => o.selected)
+      .should.eql([false, true]);
+
+    let finalSrc = `
+        <select>
+          <option>0</option>
+          <option>1</option>
+        </select>
+      `;
+    Idiomorph.morph(parent, finalSrc, {
+      morphStyle: "innerHTML",
+      keepInputValues: true,
+    });
+    parent.innerHTML.should.equal(`
+        <select>
+          <option>0</option>
           <option>1</option>
         </select>
       `);
@@ -605,5 +739,24 @@ describe("Core morphing tests", function () {
     // have to make sure the id located in the parent of the new content is not
     // included in the persistent ID set or it will pantry the id'ed node in error
     initial.outerHTML.should.equal("<span>Bar</span>");
+  });
+
+  it("updates input when value attribute changes even with user input with keepInputValues true", function () {
+    let parent = make('<div><input value="foo"></div>');
+    document.body.append(parent);
+    let initial = parent.querySelector("input");
+
+    initial.value = "userTyped";
+
+    let finalSrc = '<input value="newServerValue">';
+    Idiomorph.morph(initial, finalSrc, {
+      morphStyle: "outerHTML",
+      keepInputValues: true,
+    });
+
+    initial.value.should.equal("newServerValue");
+    initial.getAttribute("value").should.equal("newServerValue");
+
+    document.body.removeChild(parent);
   });
 });

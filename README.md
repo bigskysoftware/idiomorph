@@ -99,6 +99,7 @@ Idiomorph supports the following options:
 | `morphStyle: 'outerHTML'`     | The style of morphing to use, either `outerHTML` or `innerHTML`                                            | `Idiomorph.morph(..., {morphStyle:'innerHTML'})`                         |
 | `ignoreActive: false`         | If `true`, idiomorph will skip the active element                                                          | `Idiomorph.morph(..., {ignoreActive:true})`                              |
 | `ignoreActiveValue: false`    | If `true`, idiomorph will not update the active element's value                                            | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
+| `keepInputValues: false`      | If `true`, idiomorph will preserve user input values and skip morphing children when innerHTML is unchanged | `Idiomorph.morph(..., {keepInputValues:true})`                           |
 | `restoreFocus: true`          | If `true`, idiomorph will attempt to restore any lost focus and selection state after the morph.           | `Idiomorph.morph(..., {restoreFocus:true})`                              |
 | `head: {style: 'merge', ...}` | Allows you to control how the `head` tag is merged. See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:'merge'}})`                           |
 | `callbacks: {...}`            | Allows you to insert callbacks when events occur in the morph lifecycle. See the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
@@ -117,6 +118,28 @@ of the algorithm.
 | beforeNodeRemoved(node)                                   | Called before a node is removed from the DOM                                                                   | return false to not remove the node                |
 | afterNodeRemoved(node)                                    | Called after a node is removed from the DOM                                                                    | none                                               |
 | beforeAttributeUpdated(attributeName, node, mutationType) | Called before an attribute on an element is updated or removed (`mutationType` is either "update" or "remove") | return false to not update or remove the attribute |
+
+### Input Value Preservation
+
+The `keepInputValues` option provides a way to preserve user input values during morphing operations. When set to `true`:
+
+* Input elements (text, checkbox, radio, etc.) will retain their current values instead of being updated to match the new content
+* Textarea elements will preserve their current content
+* Child morphing is skipped when the innerHTML hasn't changed, improving performance
+* Only inputs and textarea elements with a changed default value will have their values updated
+
+This is particularly useful in scenarios where:
+- Users are typing in forms and you want to update other parts of the page without losing their input
+- You're doing partial page updates and want to preserve form state
+- You're implementing real-time features while maintaining user input
+
+```js
+// Preserve user input values during morph
+Idiomorph.morph(formElement, newFormHTML, {keepInputValues: true});
+
+// Default behavior - input values are updated to match new content
+Idiomorph.morph(formElement, newFormHTML, {keepInputValues: false});
+```
 
 ### The `head` tag
 

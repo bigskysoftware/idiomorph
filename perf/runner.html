@@ -28,11 +28,14 @@
     fetch(endUrl).then((r) => r.text()),
   ]).then(([start, end]) => {
     document.body.innerHTML = start;
+    const keepInputValues = params.get("keepInputValues") === "true";
     bench.start();
     if (params.get("using").includes("morphdom")) {
       morphdom(document.body.firstElementChild, end);
     } else {
-      Idiomorph.morph(document.body.firstElementChild, end);
+      Idiomorph.morph(document.body.firstElementChild, end, {
+        keepInputValues,
+      });
     }
     bench.stop();
   });
