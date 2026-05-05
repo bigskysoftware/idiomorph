@@ -235,6 +235,34 @@ describe("lifecycle hooks", function () {
     initial.outerHTML.should.equal(`<a href="#"></a>`);
   });
 
+  it("does not call beforeAttributeUpdated when the attribute value is unchanged", function () {
+    let calls = [];
+    let initial = make(`<a href="#" id="x" class="y"></a>`);
+    Idiomorph.morph(initial, `<a href="#" id="x" class="y"></a>`, {
+      callbacks: {
+        beforeAttributeUpdated: (attributeName, node, mutationType) => {
+          calls.push([attributeName, mutationType]);
+        },
+      },
+    });
+    initial.outerHTML.should.equal(`<a href="#" id="x" class="y"></a>`);
+    calls.should.eql([]);
+  });
+
+  it("calls beforeAttributeUpdated only for attributes that actually change", function () {
+    let calls = [];
+    let initial = make(`<a href="a" id="x" class="y"></a>`);
+    Idiomorph.morph(initial, `<a href="b" id="x" class="y"></a>`, {
+      callbacks: {
+        beforeAttributeUpdated: (attributeName, node, mutationType) => {
+          calls.push([attributeName, mutationType]);
+        },
+      },
+    });
+    initial.outerHTML.should.equal(`<a href="b" id="x" class="y"></a>`);
+    calls.should.eql([["href", "update"]]);
+  });
+
   it("hooks work as expected", function () {
     let beginSrc = `
             <div>

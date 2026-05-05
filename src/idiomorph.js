@@ -676,12 +676,13 @@ var Idiomorph = (function () {
         const oldAttributes = oldElt.attributes;
         const newAttributes = newElt.attributes;
         for (const newAttribute of newAttributes) {
+          if (oldElt.getAttribute(newAttribute.name) === newAttribute.value) {
+            continue;
+          }
           if (ignoreAttribute(newAttribute.name, oldElt, "update", ctx)) {
             continue;
           }
-          if (oldElt.getAttribute(newAttribute.name) !== newAttribute.value) {
-            oldElt.setAttribute(newAttribute.name, newAttribute.value);
-          }
+          oldElt.setAttribute(newAttribute.name, newAttribute.value);
         }
         // iterate backwards to avoid skipping over items when a delete occurs
         for (let i = oldAttributes.length - 1; 0 <= i; i--) {
