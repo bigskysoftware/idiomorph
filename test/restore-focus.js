@@ -289,6 +289,53 @@ describe("Option to forcibly restore focus after morph", function () {
       assertNoFocus();
     });
 
+    it("does not throw if the saved id resolves to a non-input element after morph", function () {
+      getWorkArea().innerHTML = `
+        <div>
+          <input type="text" id="focused" value="abc">
+        </div>`;
+      setFocusAndSelection("focused", "b");
+
+      // after the morph nothing input-like has id="focused"; a <div> does
+      const after = `
+        <div>
+          <div id="focused">replaced</div>
+        </div>`;
+      (function () {
+        Idiomorph.morph(getWorkArea(), after, {
+          morphStyle: "innerHTML",
+          restoreFocus: true,
+        });
+      }).should.not.throw();
+
+      getWorkArea().innerHTML.should.equal(after);
+      assertNoFocus();
+    });
+
+    it("does not throw for input types that reject setSelectionRange", function () {
+      getWorkArea().innerHTML = `
+        <div>
+          <input type="number" id="focused" value="123">
+          <input type="number" id="other">
+        </div>`;
+      // type=number does not support selection, so set focus only
+      setFocus("focused");
+
+      const after = `
+        <div>
+          <input type="number" id="other">
+          <input type="number" id="focused" value="123">
+        </div>`;
+      (function () {
+        Idiomorph.morph(getWorkArea(), after, {
+          morphStyle: "innerHTML",
+          restoreFocus: true,
+        });
+      }).should.not.throw();
+
+      getWorkArea().innerHTML.should.equal(after);
+    });
+
     it("does not restore selection if selection still set or changed", function () {
       getWorkArea().innerHTML = `
           <div>

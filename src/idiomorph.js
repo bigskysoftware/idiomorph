@@ -230,11 +230,27 @@ var Idiomorph = (function () {
       activeElementId &&
       activeElementId !== document.activeElement?.getAttribute("id")
     ) {
-      activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
+      const candidate = ctx.target.querySelector(`[id="${activeElementId}"]`);
+      // the re-queried element may not be an input/textarea even if the
+      // original was, since any element can share the saved id
+      activeElement =
+        candidate instanceof HTMLInputElement ||
+        candidate instanceof HTMLTextAreaElement
+          ? candidate
+          : null;
       activeElement?.focus();
     }
-    if (activeElement && !activeElement.selectionEnd && selectionEnd) {
-      activeElement.setSelectionRange(selectionStart, selectionEnd);
+    if (
+      activeElement &&
+      typeof activeElement.setSelectionRange === "function" &&
+      !activeElement.selectionEnd &&
+      selectionEnd
+    ) {
+      try {
+        activeElement.setSelectionRange(selectionStart, selectionEnd);
+      } catch {
+        // setSelectionRange throws on input types that don't support text selection
+      }
     }
 
     return results;
