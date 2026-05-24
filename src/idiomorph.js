@@ -230,26 +230,16 @@ var Idiomorph = (function () {
       activeElementId &&
       activeElementId !== document.activeElement?.getAttribute("id")
     ) {
-      const candidate = ctx.target.querySelector(`[id="${activeElementId}"]`);
-      // the re-queried element may not be an input/textarea even if the
-      // original was, since any element can share the saved id
-      activeElement =
-        candidate instanceof HTMLInputElement ||
-        candidate instanceof HTMLTextAreaElement
-          ? candidate
-          : null;
+      activeElement = ctx.target.querySelector(`[id="${activeElementId}"]`);
       activeElement?.focus();
     }
-    if (
-      activeElement &&
-      typeof activeElement.setSelectionRange === "function" &&
-      !activeElement.selectionEnd &&
-      selectionEnd
-    ) {
+    if (activeElement && !activeElement.selectionEnd && selectionEnd) {
       try {
         activeElement.setSelectionRange(selectionStart, selectionEnd);
       } catch {
-        // setSelectionRange throws on input types that don't support text selection
+        // the element may not support setSelectionRange: it's no longer an
+        // input/textarea after the morph, or it's an input type (number,
+        // email, date, ...) that doesn't support text selection
       }
     }
 
