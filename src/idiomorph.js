@@ -34,7 +34,7 @@
  */
 
 /**
- * @typedef {function} NoOp
+ * @callback NoOp
  *
  * @returns {void}
  */
@@ -81,12 +81,12 @@
  */
 
 /**
- * @typedef {Function} Morph
+ * @callback Morph
  *
  * @param {Element | Document} oldNode
  * @param {Element | Node | HTMLCollection | Node[] | string | null} newContent
  * @param {Config} [config]
- * @returns {undefined | Node[]}
+ * @returns {Promise<Node[]> | Node[]}
  */
 
 // base IIFE to define idiomorph
