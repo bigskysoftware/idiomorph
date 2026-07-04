@@ -368,8 +368,14 @@ var Idiomorph = (function () {
       if (ctx.callbacks.beforeNodeAdded(newChild) === false) return null;
       if (ctx.idMap.has(newChild)) {
         // node has children with ids with possible state so create a dummy elt of same type and apply full morph algorithm
-        const newEmptyChild = document.createElement(
-          /** @type {Element} */ (newChild).tagName,
+        // Recreate in the node's OWN namespace (keyed on localName, not the
+        // uppercase-for-HTML tagName — createElementNS does NOT case-normalize).
+        // Plain createElement always makes an HTML-namespaced element, so a rebuilt
+        // inline <svg> loses the SVG namespace and setAttribute folds case-sensitive
+        // names (viewBox -> viewbox), rendering the graphic blank.
+        const newEmptyChild = document.createElementNS(
+          /** @type {Element} */ (newChild).namespaceURI,
+          /** @type {Element} */ (newChild).localName,
         );
         oldParent.insertBefore(newEmptyChild, insertionPoint);
         morphNode(newEmptyChild, newChild, ctx);

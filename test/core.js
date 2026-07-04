@@ -607,3 +607,44 @@ describe("Core morphing tests", function () {
     initial.outerHTML.should.equal("<span>Bar</span>");
   });
 });
+
+describe("Foreign (SVG) namespace", function () {
+  setup();
+
+  // This is a real-browser test (Mocha `test/index.html` / web-test-runner). It
+  // asserts the intended invariant: an id-bearing inline <svg> keeps its SVG
+  // namespace and case-sensitive `viewBox` across a morph.
+  //
+  // Honesty note: on its own this test does NOT discriminate the fix in the
+  // headless suites. Verified empirically in web-test-runner (headless Chrome)
+  // and Playwright WebKit: it passes with AND without the fix, because in those
+  // engines the id-bearing <svg> is id-matched and *moved* (or cloned via
+  // importNode) rather than rebuilt through createNode's dummy -- only the HTML
+  // wrapper takes the dummy path, which is harmlessly HTML-namespaced anyway.
+  // The createElement -> HTML-namespace corruption this guards against was
+  // observed in a production macOS WKWebView app. Keep it in the browser suite
+  // so any engine that DOES route foreign content through the dummy is covered.
+  it("recreates an id-bearing inline SVG in the SVG namespace (createNode)", function () {
+    // A subtree carrying a persistent id takes createNode's id-preserving branch,
+    // which used document.createElement(tagName) -> HTML namespace. A rebuilt
+    // <svg> then loses its namespace and setAttribute folds viewBox -> viewbox.
+    let initial = make(
+      '<div id="wrap"><svg id="icon" viewBox="0 0 32 32">' +
+        '<clipPath id="cut"><path d="M0 0"/></clipPath></svg></div>',
+    );
+    // Wrap the id-bearing <svg> in a fresh <section> so its ancestor must be
+    // created, which re-anchors the <svg> itself to be rebuilt via createNode.
+    Idiomorph.morph(
+      initial,
+      '<div id="wrap"><section><svg id="icon" viewBox="0 0 32 32">' +
+        '<clipPath id="cut"><path d="M0 0"/></clipPath></svg></section></div>',
+      { morphStyle: "outerHTML" },
+    );
+
+    let svg = initial.querySelector("svg");
+    svg.namespaceURI.should.equal("http://www.w3.org/2000/svg");
+    svg.getAttribute("viewBox").should.equal("0 0 32 32");
+    // And HTML wrappers keep a lowercase localName (localName, not tagName).
+    initial.querySelector("section").localName.should.equal("section");
+  });
+});
