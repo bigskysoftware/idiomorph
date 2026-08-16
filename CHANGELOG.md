@@ -4,6 +4,7 @@
 
 * Removed:
   * Remove AMD publish target since its EOL: https://github.com/requirejs/requirejs/issues/1816#issuecomment-707503323
+  * Remove CommonJS publish target. `require("idiomorph")` no longer resolves; use `import "idiomorph"` instead. (@botandrose) #122
 
 ## [0.7.4] - 2025-09-29
 

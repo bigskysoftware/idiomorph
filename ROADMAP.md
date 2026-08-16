@@ -12,6 +12,7 @@ This document outlines the development roadmap for Idiomorph. It provides a high
 
 ### 0.8.0
 - [x] Remove AMD dist target
+- [x] Remove CommonJS dist target https://github.com/bigskysoftware/idiomorph/issues/122
 - [ ] Plugin system? https://github.com/bigskysoftware/idiomorph/issues/109
 - [ ] Move idiomorph/htmx.js out of tree into an htmx extension? https://github.com/bigskysoftware/idiomorph/issues/111
 - [ ] Narrow support for `newContent` types? https://github.com/bigskysoftware/idiomorph/issues/103
