@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* Removed:
+  * Move the htmx extension out of tree into [htmx-ext-morph](https://github.com/bigskysoftware/htmx-extensions/tree/main/src/morph). (@botandrose) #111
+
 ## [0.8.0] - 2026-09-05
 
 * Removed:

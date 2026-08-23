@@ -25,10 +25,6 @@
       "types": "./dist/idiomorph.d.ts",
       "import": "./dist/idiomorph.esm.js"
     },
-    "./htmx": {
-      "types": "./dist/idiomorph-ext.d.ts",
-      "import": "./dist/idiomorph-ext.esm.js"
-    },
     "./dist/*": "./dist/*"
   },
   "scripts": {
@@ -42,11 +38,10 @@
     "test:coverage": "npm run test:chrome && node test/lib/ensure-full-coverage.js",
     "perf": "playwright install chromium && node perf/runner.js",
 
-    "dist": "cp -r src/* dist/ && npm run-script ext && npm run-script esm && npm run-script types && npm run-script uglify && npm run-script gzip && exit",
-    "ext": "cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js",
-    "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js && (echo \"import htmx from \\\"htmx.org\\\";\n\" && cat dist/idiomorph-ext.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph-ext.esm.js",
-    "types": "tsc dist/idiomorph.esm.js dist/idiomorph-ext.esm.js --declaration --emitDeclarationOnly --allowJs --skipLibCheck --outDir dist && mv dist/idiomorph.esm.d.ts dist/idiomorph.d.ts && mv dist/idiomorph-ext.esm.d.ts dist/idiomorph-ext.d.ts",
-    "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
+    "dist": "cp -r src/* dist/ && npm run-script esm && npm run-script types && npm run-script uglify && npm run-script gzip && exit",
+    "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js",
+    "types": "tsc dist/idiomorph.esm.js --declaration --emitDeclarationOnly --allowJs --skipLibCheck --outDir dist && mv dist/idiomorph.esm.d.ts dist/idiomorph.d.ts",
+    "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js",
     "gzip": "gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz",
 
     "format": "prettier --write .",
@@ -64,7 +59,6 @@
     "chai-dom": "^1.11.0",
     "chromedriver": "latest",
     "fs-extra": "^9.1.0",
-    "htmx.org": "1.9.9",
     "lcov-parse": "^1.0.0",
     "mocha": "^11.0.1",
     "playwright": "^1.62.1",

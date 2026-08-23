@@ -11,7 +11,7 @@ This document outlines the development roadmap for Idiomorph. It provides a high
 ## Milestones
 
 ### 0.9.0
-- [ ] Move idiomorph/htmx.js out of tree into an htmx extension https://github.com/bigskysoftware/idiomorph/issues/111
+- [x] Move idiomorph/htmx.js out of tree into an htmx extension https://github.com/bigskysoftware/idiomorph/issues/111
 - [ ] Settle input value semantics, and the subtree-skipping speedup they unblock https://github.com/bigskysoftware/idiomorph/issues/144
 - [ ] Improve anonymous node matching, perhaps using Merkle trees, or fuzzy synthetic ids? https://github.com/bigskysoftware/idiomorph/issues/143
 - [ ] Plugin system? https://github.com/bigskysoftware/idiomorph/issues/109
