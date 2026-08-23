@@ -5,19 +5,7 @@
 </head>
 <body>
 
-<script><div hx-ext="morph">
-    <form hx-post="/foo" hx-swap="morph:outerHTML">
-        <input id="foo" />
-        <button type="submit">Submit</button>
-    </form>
-</div>
-
-<template url="/foo">
-    <form hx-post="/foo" hx-swap="morph:outerHTML">
-        <input id="foo" />
-        <button type="submit">Submit (again)</button>
-    </form>
-</template>
+<script>
     function doMorph() {
         let html = "<span id=\"editor\" contenteditable=\"true\">New Content... " + editor.innerHTML +
                    "</span>"
