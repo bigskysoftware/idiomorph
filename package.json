@@ -42,12 +42,13 @@
     "test:coverage": "npm run test:chrome && node test/lib/ensure-full-coverage.js",
     "perf": "playwright install chromium && node perf/runner.js",
 
-    "dist": "cp -r src/* dist/ && npm run-script ext && npm run-script esm && npm run-script types && npm run-script uglify && npm run-script gzip && exit",
+    "dist": "cp -r src/* dist/ && npm run-script ext && npm run-script esm && npm run-script types && npm run-script uglify && npm run-script gzip && npm run-script architecture && exit",
     "ext": "cat src/idiomorph.js src/idiomorph-htmx.js > dist/idiomorph-ext.js",
     "esm": "(cat src/idiomorph.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph.esm.js && (echo \"import htmx from \\\"htmx.org\\\";\n\" && cat dist/idiomorph-ext.js && echo \"\nexport {Idiomorph};\") > dist/idiomorph-ext.esm.js",
     "types": "tsc dist/idiomorph.esm.js dist/idiomorph-ext.esm.js --declaration --emitDeclarationOnly --allowJs --skipLibCheck --outDir dist && mv dist/idiomorph.esm.d.ts dist/idiomorph.d.ts && mv dist/idiomorph-ext.esm.d.ts dist/idiomorph-ext.d.ts",
     "uglify": "uglifyjs -m eval -o dist/idiomorph.min.js dist/idiomorph.js && uglifyjs -m eval -o dist/idiomorph-ext.min.js dist/idiomorph-ext.js",
     "gzip": "gzip -9 -k -f dist/idiomorph.min.js > dist/idiomorph.min.js.gz",
+    "architecture": "node scripts/architecture.js",
 
     "format": "prettier --write .",
     "format:check": "prettier --check .",
