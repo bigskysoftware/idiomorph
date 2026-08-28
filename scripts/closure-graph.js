@@ -1,86 +1,71 @@
-import ts from "typescript";
+import { parse } from "espree";
+import { analyze } from "eslint-scope";
 import fs from "node:fs";
 
 // Reads a library written as nested IIFE closures and reports what each closure
 // declares, plus every reference between those declarations.
 export function closureGraph(file) {
-  const source = ts.createSourceFile(
-    file,
-    fs.readFileSync(file, "utf8"),
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS,
-  );
-
-  const declarations = [];
-  const closure = (name, parent) => ({
-    name,
-    parent,
-    names: new Map(),
-    children: [],
+  const ecmaVersion = "latest";
+  const source = fs.readFileSync(file, "utf8");
+  const manager = analyze(parse(source, { ecmaVersion, range: true }), {
+    ecmaVersion,
   });
 
-  // a function, a class, or each declarator of a `const a = ..., b = ...`
-  const namedBy = (statement) =>
-    ts.isVariableStatement(statement)
-      ? statement.declarationList.declarations
-      : [statement].filter(({ name }) => name);
+  // `const x = (function () { ... })()` — the call's callee is the closure body
+  const iifeCallee = (variable) => {
+    const init = variable.defs[0]?.node.init;
+    return init?.callee?.type === "FunctionExpression" ? init.callee : null;
+  };
 
-  function bodyOfIife(node) {
-    if (!node || !ts.isCallExpression(node)) return null;
-    let callee = node.expression;
-    while (ts.isParenthesizedExpression(callee)) callee = callee.expression;
-    return ts.isFunctionExpression(callee) ? callee.body : null;
-  }
+  const declarations = [];
+  const byVariable = new Map();
 
   function collect(body, scope) {
-    for (const statement of body.statements) {
-      for (const { name, initializer } of namedBy(statement)) {
-        const names = ts.isIdentifier(name)
-          ? [name.text]
-          : name.elements.map((element) => element.name.text);
-        const nested = bodyOfIife(initializer);
-        if (!nested) {
-          for (const each of names) {
-            const declaration = { name: each, node: statement, scope };
-            declarations.push(declaration);
-            scope.names.set(each, declaration);
-          }
-          continue;
-        }
-        const child = closure(names.join(" · "), scope);
-        scope.children.push(child);
-        collect(nested, child);
-        // the closure hands these back, so they stay reachable out here by name
-        for (const each of names) scope.names.set(each, child.names.get(each));
+    const nested = new Map();
+    for (const variable of manager.acquire(body).variables) {
+      const callee = iifeCallee(variable);
+      if (callee) {
+        nested.set(callee, [...(nested.get(callee) ?? []), variable]);
+      } else if (variable.defs.length) {
+        const declaration = { name: variable.name, variable, scope };
+        declarations.push(declaration);
+        byVariable.set(variable, declaration);
+      }
+    }
+    for (const [callee, exported] of nested) {
+      const name = exported.map(({ name }) => name).join(" · ");
+      const child = { name, children: [] };
+      scope.children.push(child);
+      collect(callee, child);
+      // the closure hands these back, so they stay reachable out here by name
+      for (const variable of exported) {
+        const inner = declarations.find(
+          (each) => each.scope === child && each.name === variable.name,
+        );
+        byVariable.set(variable, inner);
       }
     }
   }
 
-  function lookup(scope, name) {
-    for (let s = scope; s; s = s.parent) {
-      const found = s.names.get(name);
-      if (found) return found;
-    }
-  }
+  const outermost = manager.globalScope.variables.find(iifeCallee);
+  const root = { name: outermost.name, children: [] };
+  collect(iifeCallee(outermost), root);
 
-  const outermost = source.statements
-    .flatMap(namedBy)
-    .find(({ initializer }) => bodyOfIife(initializer));
-  const root = closure(outermost.name.text, null);
-  collect(bodyOfIife(outermost.initializer), root);
+  // a reference belongs to whichever declaration's source range encloses it
+  const encloses = ({ variable }, node) => {
+    const [start, end] = variable.defs[0].node.range;
+    return start <= node.range[0] && node.range[1] <= end;
+  };
 
   const references = new Map();
-  for (const from of declarations) {
-    (function visit(node) {
-      // an identifier its parent calls `name` is being declared, not referenced
-      if (ts.isIdentifier(node) && node.parent.name !== node) {
-        const to = lookup(from.scope, node.text);
-        if (to && to !== from)
-          references.set(`${from.name} ${to.name}`, [from, to]);
+  for (const scope of manager.scopes) {
+    for (const { identifier, resolved } of scope.references) {
+      const to = byVariable.get(resolved);
+      const from = declarations.find((each) => encloses(each, identifier));
+      if (to && from && to !== from) {
+        references.set(`${from.name} ${to.name}`, [from, to]);
       }
-      ts.forEachChild(node, visit);
-    })(from.node);
+    }
   }
 
   return { root, declarations, references };

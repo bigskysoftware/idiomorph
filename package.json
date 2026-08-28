@@ -63,6 +63,8 @@
     "chai": "^4.3.6",
     "chai-dom": "^1.11.0",
     "chromedriver": "latest",
+    "eslint-scope": "^9.1.2",
+    "espree": "^11.2.0",
     "fs-extra": "^9.1.0",
     "htmx.org": "1.9.9",
     "lcov-parse": "^1.0.0",

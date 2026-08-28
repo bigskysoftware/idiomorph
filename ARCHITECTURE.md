@@ -36,7 +36,8 @@ npm run architecture
 ```
 
 This overwrites `img/architecture.svg`; nothing edits this document. It also runs as part
-of `npm run dist`, so a released build never ships a stale picture. The generator lives in
-`scripts/architecture.js`: it reads the source with the TypeScript parser that
-`npm run typecheck` already depends on, and lays the graph out with Graphviz compiled to
-wasm, so neither step needs anything installed on the machine.
+of `npm run dist`, so a released build never ships a stale picture. `scripts/closure-graph.js`
+works out the closure structure using ESLint's parser and scope analyzer, so which name
+resolves to which declaration is decided by a real scope model rather than by matching
+text. `scripts/architecture.js` draws that result with Graphviz compiled to wasm, so
+neither step needs anything installed on the machine.
