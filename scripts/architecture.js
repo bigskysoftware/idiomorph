@@ -6,7 +6,7 @@ const SOURCE = "src/idiomorph.js";
 const IMAGE = "img/architecture.svg";
 const FILLS = ["#eaf0fa", "#e9f4ec", "#fbf0e2", "#f2ecf8", "#fbecec"];
 
-const { root, declarations, references } = closureGraph(SOURCE);
+const { root, declarations } = closureGraph(SOURCE);
 
 const lines = [
   "digraph architecture {",
@@ -34,21 +34,15 @@ let clusters = 0;
   }
 })(root, 1);
 
-for (const [from, to] of references.values()) {
-  const crosses = from.scope !== to.scope;
-  lines.push(
-    `  "${from.name}" -> "${to.name}"${crosses ? ' [color="#c2410c", penwidth=1.8]' : ""};`,
-  );
+for (const from of declarations) {
+  for (const to of from.references) {
+    const crosses = from.scope !== to.scope;
+    lines.push(
+      `  "${from.name}" -> "${to.name}"${crosses ? ' [color="#c2410c", penwidth=1.8]' : ""};`,
+    );
+  }
 }
 lines.push("}");
 
-const crossing = [...references.values()].filter(
-  ([a, b]) => a.scope !== b.scope,
-);
-
 const viz = await instance();
 fs.writeFileSync(IMAGE, viz.renderString(lines.join("\n"), { format: "svg" }));
-
-console.log(
-  `${IMAGE}: ${references.size} references, ${crossing.length} crossing a closure boundary`,
-);

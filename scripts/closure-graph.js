@@ -27,7 +27,8 @@ export function closureGraph(file) {
       if (callee) {
         nested.set(callee, [...(nested.get(callee) ?? []), variable]);
       } else if (variable.defs.length) {
-        const declaration = { name: variable.name, variable, scope };
+        const { name } = variable;
+        const declaration = { name, variable, scope, references: new Set() };
         declarations.push(declaration);
         byVariable.set(variable, declaration);
       }
@@ -57,16 +58,13 @@ export function closureGraph(file) {
     return start <= node.range[0] && node.range[1] <= end;
   };
 
-  const references = new Map();
   for (const scope of manager.scopes) {
     for (const { identifier, resolved } of scope.references) {
       const to = byVariable.get(resolved);
       const from = declarations.find((each) => encloses(each, identifier));
-      if (to && from && to !== from) {
-        references.set(`${from.name} ${to.name}`, [from, to]);
-      }
+      if (to && from && to !== from) from.references.add(to);
     }
   }
 
-  return { root, declarations, references };
+  return { root, declarations };
 }
