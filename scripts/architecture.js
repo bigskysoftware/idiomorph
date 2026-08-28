@@ -5,191 +5,143 @@ const SOURCE = "src/idiomorph.js";
 const DOC = "ARCHITECTURE.md";
 const BEGIN = "<!-- begin generated graph -->";
 const END = "<!-- end generated graph -->";
+const FILLS = ["#eaf0fa", "#e9f4ec", "#fbf0e2", "#f2ecf8", "#fbecec"];
 
-const FILLS = [
-  "#eaf0fa",
-  "#e9f4ec",
-  "#fbf0e2",
-  "#f2ecf8",
-  "#fbecec",
-  "#e9f3f5",
+const source = ts.createSourceFile(
+  SOURCE,
+  fs.readFileSync(SOURCE, "utf8"),
+  ts.ScriptTarget.Latest,
+  true,
+  ts.ScriptKind.JS,
+);
+
+const declarations = [];
+let closureCount = 0;
+
+const closure = (name, parent) => ({
+  id: `c${closureCount++}`,
+  name,
+  parent,
+  names: new Map(),
+  children: [],
+});
+
+// a function, a class, or each declarator of a `const a = ..., b = ...`
+const namedBy = (statement) =>
+  ts.isVariableStatement(statement)
+    ? statement.declarationList.declarations
+    : statement.name
+      ? [statement]
+      : [];
+
+function bodyOfIife(node) {
+  if (!node || !ts.isCallExpression(node)) return null;
+  let callee = node.expression;
+  while (ts.isParenthesizedExpression(callee)) callee = callee.expression;
+  return ts.isFunctionExpression(callee) ? callee.body : null;
+}
+
+function collect(body, scope) {
+  for (const statement of body.statements) {
+    for (const { name, initializer } of namedBy(statement)) {
+      const names = ts.isIdentifier(name)
+        ? [name.text]
+        : name.elements.map((element) => element.name.text);
+      const nested = bodyOfIife(initializer);
+      if (!nested) {
+        for (const each of names) {
+          const declaration = { name: each, node: statement, scope };
+          declarations.push(declaration);
+          scope.names.set(each, declaration);
+        }
+        continue;
+      }
+      const child = closure(names.join(" · "), scope);
+      scope.children.push(child);
+      collect(nested, child);
+      // the closure hands these back, so they stay reachable out here by name
+      for (const each of names) scope.names.set(each, child.names.get(each));
+    }
+  }
+}
+
+function lookup(scope, name) {
+  for (let s = scope; s; s = s.parent) {
+    const found = s.names.get(name);
+    if (found) return found;
+  }
+}
+
+const outermost = source.statements
+  .filter(ts.isVariableStatement)
+  .flatMap((statement) => statement.declarationList.declarations)
+  .find((declaration) => bodyOfIife(declaration.initializer));
+const root = closure(outermost.name.text, null);
+collect(bodyOfIife(outermost.initializer), root);
+
+const references = new Map();
+for (const from of declarations) {
+  (function visit(node) {
+    // an identifier its parent calls `name` is being declared, not referenced
+    if (ts.isIdentifier(node) && node.parent.name !== node) {
+      const to = lookup(from.scope, node.text);
+      if (to && to !== from)
+        references.set(`${from.name} ${to.name}`, [from, to]);
+    }
+    ts.forEachChild(node, visit);
+  })(from.node);
+}
+
+// mermaid paints no background of its own, so the graph sits on a card that
+// stays legible under either github theme
+const lines = [
+  '%%{init: {"theme":"base","themeVariables":{"primaryColor":"#ffffff","primaryTextColor":"#1f2328","primaryBorderColor":"#8c959f","lineColor":"#7c8794","fontSize":"14px"}}}%%',
+  "flowchart LR",
+  '  subgraph card[" "]',
+  "    direction LR",
 ];
+const styles = [];
 
-function analyze(file) {
-  const source = ts.createSourceFile(
-    file,
-    fs.readFileSync(file, "utf8"),
-    ts.ScriptTarget.Latest,
-    true,
-    ts.ScriptKind.JS,
-  );
-
-  const decls = [];
-  let scopeCount = 0;
-  const scope = (name, parent) => ({
-    id: `s${scopeCount++}`,
-    name,
-    parent,
-    decls: new Map(),
-    exports: new Map(),
-    children: [],
-  });
-
-  function iifeOf(node) {
-    if (!node || !ts.isCallExpression(node)) return null;
-    let callee = node.expression;
-    while (ts.isParenthesizedExpression(callee)) callee = callee.expression;
-    const isFn = ts.isFunctionExpression(callee) || ts.isArrowFunction(callee);
-    return isFn ? callee : null;
+(function emit(scope, depth) {
+  const pad = "  ".repeat(depth);
+  for (const { name, scope: owner } of declarations) {
+    if (owner === scope) lines.push(`${pad}${name}("${name}")`);
   }
-
-  function declare(inScope, name, node, kind) {
-    if (decls.some((d) => d.name === name)) {
-      throw new Error(
-        `duplicate declaration name ${name}; graph ids must be unique`,
-      );
-    }
-    const decl = { name, node, kind, scope: inScope };
-    decls.push(decl);
-    inScope.decls.set(name, decl);
-  }
-
-  function collect(body, inScope) {
-    for (const stmt of body.statements ?? []) {
-      if (ts.isFunctionDeclaration(stmt) && stmt.name) {
-        declare(inScope, stmt.name.text, stmt, "function");
-      } else if (ts.isClassDeclaration(stmt) && stmt.name) {
-        declare(inScope, stmt.name.text, stmt, "class");
-      } else if (ts.isVariableStatement(stmt)) {
-        for (const decl of stmt.declarationList.declarations) {
-          collectVariable(decl, stmt, inScope);
-        }
-      }
-    }
-  }
-
-  function collectVariable(decl, stmt, inScope) {
-    const iife = iifeOf(decl.initializer);
-    if (iife) {
-      const names = ts.isIdentifier(decl.name)
-        ? [decl.name.text]
-        : decl.name.elements.map((el) => el.name.text);
-      const child = scope(names.join(" · "), inScope);
-      inScope.children.push(child);
-      collect(iife.body, child);
-      // the closure's return value re-binds its exported members in the enclosing scope
-      for (const name of names) {
-        if (child.decls.has(name))
-          inScope.exports.set(name, child.decls.get(name));
-      }
-    } else if (ts.isIdentifier(decl.name)) {
-      const init = decl.initializer;
-      const isFn =
-        init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init));
-      declare(inScope, decl.name.text, stmt, isFn ? "function" : "value");
-    }
-  }
-
-  const outermost = source.statements
-    .filter(ts.isVariableStatement)
-    .flatMap((stmt) => stmt.declarationList.declarations)
-    .find((decl) => iifeOf(decl.initializer));
-  if (!outermost) throw new Error(`no top level closure found in ${file}`);
-  const root = scope(outermost.name.text, null);
-  collect(iifeOf(outermost.initializer).body, root);
-
-  function lookup(from, name) {
-    for (let s = from; s; s = s.parent) {
-      if (s.decls.has(name)) return s.decls.get(name);
-      if (s.exports.has(name)) return s.exports.get(name);
-    }
-    return null;
-  }
-
-  const edges = [];
-  const seen = new Set();
-  for (const decl of decls) {
-    const visit = (node) => {
-      if (ts.isIdentifier(node) && !isPropertyName(node)) {
-        const to = lookup(decl.scope, node.text);
-        const key = `${decl.name} -> ${to?.name}`;
-        if (to && to !== decl && !seen.has(key)) {
-          seen.add(key);
-          edges.push({ from: decl, to });
-        }
-      }
-      ts.forEachChild(node, visit);
-    };
-    ts.forEachChild(decl.node, visit);
-  }
-
-  return { root, edges };
-}
-
-function isPropertyName(node) {
-  const parent = node.parent;
-  return (
-    (ts.isPropertyAccessExpression(parent) && parent.name === node) ||
-    (ts.isPropertyAssignment(parent) && parent.name === node) ||
-    (ts.isBindingElement(parent) && parent.propertyName === node)
-  );
-}
-
-const SHAPES = {
-  function: (name) => `${name}("${name}")`,
-  class: (name) => `${name}[["${name}"]]`,
-  value: (name) => `${name}[("${name}")]`,
-};
-
-function toMermaid({ root, edges }) {
-  const lines = ["flowchart LR"];
-  const styles = [];
-  let fill = 0;
-
-  const emit = (scope, depth) => {
-    const pad = "  ".repeat(depth);
-    for (const decl of scope.decls.values()) {
-      lines.push(`${pad}${SHAPES[decl.kind](decl.name)}`);
-    }
-    for (const child of scope.children) {
-      const color = FILLS[fill++ % FILLS.length];
-      styles.push(
-        `  style ${child.id} fill:${color},stroke:#c3cad3,color:#3d444d`,
-      );
-      lines.push(`${pad}subgraph ${child.id}["${child.name}"]`);
-      emit(child, depth + 1);
-      lines.push(`${pad}end`);
-    }
-  };
-  emit(root, 1);
-
-  const crossing = [];
-  edges.forEach(({ from, to }, index) => {
-    lines.push(`  ${from.name} --> ${to.name}`);
-    if (from.scope !== to.scope) crossing.push(index);
-  });
-
-  lines.push(...styles);
-  // mermaid requires the default link style before any indexed override
-  lines.push("  linkStyle default stroke:#7c8794,stroke-width:1.5px");
-  if (crossing.length) {
-    lines.push(
-      `  linkStyle ${crossing.join(",")} stroke:#c2410c,stroke-width:2px`,
+  for (const child of scope.children) {
+    const fill = FILLS[styles.length % FILLS.length];
+    styles.push(
+      `  style ${child.id} fill:${fill},stroke:#c3cad3,color:#3d444d`,
     );
+    lines.push(`${pad}subgraph ${child.id}["${child.name}"]`);
+    emit(child, depth + 1);
+    lines.push(`${pad}end`);
   }
-  return lines.join("\n");
-}
+})(root, 2);
+lines.push("  end");
 
-const graph = analyze(SOURCE);
+const crossing = [];
+[...references.values()].forEach(([from, to], edge) => {
+  lines.push(`  ${from.name} --> ${to.name}`);
+  if (from.scope !== to.scope) crossing.push(edge);
+});
+
+lines.push(
+  ...styles,
+  "  style card fill:#ffffff,stroke:#ffffff",
+  "  linkStyle default stroke:#7c8794,stroke-width:1.5px",
+  `  linkStyle ${crossing.join(",")} stroke:#c2410c,stroke-width:2px`,
+);
+
 const doc = fs.readFileSync(DOC, "utf8");
 const start = doc.indexOf(BEGIN);
 const end = doc.indexOf(END);
-if (start < 0 || end < 0) {
-  throw new Error(`${DOC} is missing its ${BEGIN} ${END} markers`);
-}
-const block = `${BEGIN}\n\n\`\`\`mermaid\n${toMermaid(graph)}\n\`\`\`\n\n`;
-fs.writeFileSync(DOC, doc.slice(0, start) + block + doc.slice(end));
+if (start < 0 || end < 0)
+  throw new Error(`${DOC} is missing its graph markers`);
+fs.writeFileSync(
+  DOC,
+  `${doc.slice(0, start)}${BEGIN}\n\n\`\`\`mermaid\n${lines.join("\n")}\n\`\`\`\n\n${doc.slice(end)}`,
+);
+
 console.log(
-  `${DOC}: ${graph.edges.length} references, ` +
-    `${graph.edges.filter((e) => e.from.scope !== e.to.scope).length} crossing a closure boundary`,
+  `${DOC}: ${references.size} references, ${crossing.length} crossing a closure boundary`,
 );

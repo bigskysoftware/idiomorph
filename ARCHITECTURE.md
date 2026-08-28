@@ -16,64 +16,64 @@ Every declaration in `src/idiomorph.js` is a node, and an arrow means the source
 references the target. Boxes are closures, nested exactly as they nest in the file, and
 nodes drawn outside every box live in the top-level `Idiomorph` closure.
 
-- rounded — a function
-- cylinder — shared state or configuration
-- double-edged — a class
-- **orange arrow** — the reference crosses a closure boundary
-
-Orange arrows are the ones to look at. Each is a name a closure had to expose, or a reach
+Grey arrows stay inside one closure. **Orange arrows cross a closure boundary**, and
+those are the ones to look at. Each is a name a closure had to expose, or a reach
 upward into an outer scope, and each is a place where the modularity is doing less work
 than it looks like it is.
 
 <!-- begin generated graph -->
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"primaryColor":"#ffffff","primaryTextColor":"#1f2328","primaryBorderColor":"#8c959f","lineColor":"#7c8794","fontSize":"14px"}}}%%
 flowchart LR
-  noOp("noOp")
-  defaults[("defaults")]
-  morph("morph")
-  morphOuterHTML("morphOuterHTML")
-  saveAndRestoreFocus("saveAndRestoreFocus")
-  withHeadBlocking("withHeadBlocking")
-  handleHeadElement("handleHeadElement")
-  subgraph s1["morphChildren"]
-    morphChildren("morphChildren")
-    createNode("createNode")
-    removeNode("removeNode")
-    removeNodesBetween("removeNodesBetween")
-    moveBeforeById("moveBeforeById")
-    removeElementFromAncestorsIdMaps("removeElementFromAncestorsIdMaps")
-    moveBefore("moveBefore")
-    subgraph s2["findBestMatch"]
-      findBestMatch("findBestMatch")
-      isIdSetMatch("isIdSetMatch")
-      isSoftMatch("isSoftMatch")
+  subgraph card[" "]
+    direction LR
+    noOp("noOp")
+    defaults("defaults")
+    morph("morph")
+    morphOuterHTML("morphOuterHTML")
+    saveAndRestoreFocus("saveAndRestoreFocus")
+    withHeadBlocking("withHeadBlocking")
+    handleHeadElement("handleHeadElement")
+    subgraph c1["morphChildren"]
+      morphChildren("morphChildren")
+      createNode("createNode")
+      removeNode("removeNode")
+      removeNodesBetween("removeNodesBetween")
+      moveBeforeById("moveBeforeById")
+      removeElementFromAncestorsIdMaps("removeElementFromAncestorsIdMaps")
+      moveBefore("moveBefore")
+      subgraph c2["findBestMatch"]
+        findBestMatch("findBestMatch")
+        isIdSetMatch("isIdSetMatch")
+        isSoftMatch("isSoftMatch")
+      end
     end
-  end
-  subgraph s3["morphNode"]
-    morphNode("morphNode")
-    morphAttributes("morphAttributes")
-    syncInputValue("syncInputValue")
-    syncBooleanAttribute("syncBooleanAttribute")
-    ignoreAttribute("ignoreAttribute")
-    ignoreValueOfActiveElement("ignoreValueOfActiveElement")
-  end
-  subgraph s4["createMorphContext"]
-    createMorphContext("createMorphContext")
-    mergeDefaults("mergeDefaults")
-    createPantry("createPantry")
-    createActiveElementAndParents("createActiveElementAndParents")
-    findIdElements("findIdElements")
-    populateIdMapWithTree("populateIdMapWithTree")
-    createIdMaps("createIdMaps")
-    createPersistentIds("createPersistentIds")
-  end
-  subgraph s5["normalizeElement · normalizeParent"]
-    generatedByIdiomorph[("generatedByIdiomorph")]
-    normalizeElement("normalizeElement")
-    normalizeParent("normalizeParent")
-    SlicedParentNode[["SlicedParentNode"]]
-    parseContent("parseContent")
+    subgraph c3["morphNode"]
+      morphNode("morphNode")
+      morphAttributes("morphAttributes")
+      syncInputValue("syncInputValue")
+      syncBooleanAttribute("syncBooleanAttribute")
+      ignoreAttribute("ignoreAttribute")
+      ignoreValueOfActiveElement("ignoreValueOfActiveElement")
+    end
+    subgraph c4["createMorphContext"]
+      createMorphContext("createMorphContext")
+      mergeDefaults("mergeDefaults")
+      createPantry("createPantry")
+      createActiveElementAndParents("createActiveElementAndParents")
+      findIdElements("findIdElements")
+      populateIdMapWithTree("populateIdMapWithTree")
+      createIdMaps("createIdMaps")
+      createPersistentIds("createPersistentIds")
+    end
+    subgraph c5["normalizeElement · normalizeParent"]
+      generatedByIdiomorph("generatedByIdiomorph")
+      normalizeElement("normalizeElement")
+      normalizeParent("normalizeParent")
+      SlicedParentNode("SlicedParentNode")
+      parseContent("parseContent")
+    end
   end
   defaults --> noOp
   morph --> normalizeElement
@@ -121,11 +121,12 @@ flowchart LR
   normalizeParent --> generatedByIdiomorph
   normalizeParent --> SlicedParentNode
   parseContent --> generatedByIdiomorph
-  style s1 fill:#eaf0fa,stroke:#c3cad3,color:#3d444d
-  style s2 fill:#e9f4ec,stroke:#c3cad3,color:#3d444d
-  style s3 fill:#fbf0e2,stroke:#c3cad3,color:#3d444d
-  style s4 fill:#f2ecf8,stroke:#c3cad3,color:#3d444d
-  style s5 fill:#fbecec,stroke:#c3cad3,color:#3d444d
+  style c1 fill:#eaf0fa,stroke:#c3cad3,color:#3d444d
+  style c2 fill:#e9f4ec,stroke:#c3cad3,color:#3d444d
+  style c3 fill:#fbf0e2,stroke:#c3cad3,color:#3d444d
+  style c4 fill:#f2ecf8,stroke:#c3cad3,color:#3d444d
+  style c5 fill:#fbecec,stroke:#c3cad3,color:#3d444d
+  style card fill:#ffffff,stroke:#ffffff
   linkStyle default stroke:#7c8794,stroke-width:1.5px
   linkStyle 1,2,3,6,8,9,10,12,16,23,26,38 stroke:#c2410c,stroke-width:2px
 ```
