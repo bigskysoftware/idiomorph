@@ -1,10 +1,9 @@
+import { instance } from "@viz-js/viz";
 import ts from "typescript";
 import fs from "node:fs";
 
 const SOURCE = "src/idiomorph.js";
-const DOC = "ARCHITECTURE.md";
-const BEGIN = "<!-- begin generated graph -->";
-const END = "<!-- end generated graph -->";
+const IMAGE = "img/architecture.svg";
 const FILLS = ["#eaf0fa", "#e9f4ec", "#fbf0e2", "#f2ecf8", "#fbecec"];
 
 const source = ts.createSourceFile(
@@ -16,10 +15,7 @@ const source = ts.createSourceFile(
 );
 
 const declarations = [];
-let closureCount = 0;
-
 const closure = (name, parent) => ({
-  id: `c${closureCount++}`,
   name,
   parent,
   names: new Map(),
@@ -30,9 +26,7 @@ const closure = (name, parent) => ({
 const namedBy = (statement) =>
   ts.isVariableStatement(statement)
     ? statement.declarationList.declarations
-    : statement.name
-      ? [statement]
-      : [];
+    : [statement].filter(({ name }) => name);
 
 function bodyOfIife(node) {
   if (!node || !ts.isCallExpression(node)) return null;
@@ -73,9 +67,8 @@ function lookup(scope, name) {
 }
 
 const outermost = source.statements
-  .filter(ts.isVariableStatement)
-  .flatMap((statement) => statement.declarationList.declarations)
-  .find((declaration) => bodyOfIife(declaration.initializer));
+  .flatMap(namedBy)
+  .find(({ initializer }) => bodyOfIife(initializer));
 const root = closure(outermost.name.text, null);
 collect(bodyOfIife(outermost.initializer), root);
 
@@ -92,56 +85,47 @@ for (const from of declarations) {
   })(from.node);
 }
 
-// mermaid paints no background of its own, so the graph sits on a card that
-// stays legible under either github theme
 const lines = [
-  '%%{init: {"theme":"base","themeVariables":{"primaryColor":"#ffffff","primaryTextColor":"#1f2328","primaryBorderColor":"#8c959f","lineColor":"#7c8794","fontSize":"14px"}}}%%',
-  "flowchart LR",
-  '  subgraph card[" "]',
-  "    direction LR",
+  "digraph architecture {",
+  '  bgcolor="#ffffff";',
+  "  rankdir=LR; compound=true;",
+  '  graph [fontname="Helvetica", fontsize=13, margin=0];',
+  '  node [fontname="Helvetica", fontsize=11, shape=box, height=0.34, style="rounded,filled", fillcolor="#ffffff", color="#8c959f"];',
+  '  edge [color="#7c8794", arrowsize=0.7, penwidth=1.2];',
 ];
-const styles = [];
+let clusters = 0;
 
 (function emit(scope, depth) {
   const pad = "  ".repeat(depth);
   for (const { name, scope: owner } of declarations) {
-    if (owner === scope) lines.push(`${pad}${name}("${name}")`);
+    if (owner === scope) lines.push(`${pad}"${name}";`);
   }
   for (const child of scope.children) {
-    const fill = FILLS[styles.length % FILLS.length];
-    styles.push(
-      `  style ${child.id} fill:${fill},stroke:#c3cad3,color:#3d444d`,
+    const fill = FILLS[clusters % FILLS.length];
+    lines.push(
+      `${pad}subgraph cluster_${clusters++} {`,
+      `${pad}  label="${child.name}"; margin=14; style="rounded,filled"; fillcolor="${fill}"; color="#c3cad3"; fontcolor="#3d444d";`,
     );
-    lines.push(`${pad}subgraph ${child.id}["${child.name}"]`);
     emit(child, depth + 1);
-    lines.push(`${pad}end`);
+    lines.push(`${pad}}`);
   }
-})(root, 2);
-lines.push("  end");
+})(root, 1);
 
-const crossing = [];
-[...references.values()].forEach(([from, to], edge) => {
-  lines.push(`  ${from.name} --> ${to.name}`);
-  if (from.scope !== to.scope) crossing.push(edge);
-});
+for (const [from, to] of references.values()) {
+  const crosses = from.scope !== to.scope;
+  lines.push(
+    `  "${from.name}" -> "${to.name}"${crosses ? ' [color="#c2410c", penwidth=1.8]' : ""};`,
+  );
+}
+lines.push("}");
 
-lines.push(
-  ...styles,
-  "  style card fill:#ffffff,stroke:#ffffff",
-  "  linkStyle default stroke:#7c8794,stroke-width:1.5px",
-  `  linkStyle ${crossing.join(",")} stroke:#c2410c,stroke-width:2px`,
+const crossing = [...references.values()].filter(
+  ([a, b]) => a.scope !== b.scope,
 );
 
-const doc = fs.readFileSync(DOC, "utf8");
-const start = doc.indexOf(BEGIN);
-const end = doc.indexOf(END);
-if (start < 0 || end < 0)
-  throw new Error(`${DOC} is missing its graph markers`);
-fs.writeFileSync(
-  DOC,
-  `${doc.slice(0, start)}${BEGIN}\n\n\`\`\`mermaid\n${lines.join("\n")}\n\`\`\`\n\n${doc.slice(end)}`,
-);
+const viz = await instance();
+fs.writeFileSync(IMAGE, viz.renderString(lines.join("\n"), { format: "svg" }));
 
 console.log(
-  `${DOC}: ${references.size} references, ${crossing.length} crossing a closure boundary`,
+  `${IMAGE}: ${references.size} references, ${crossing.length} crossing a closure boundary`,
 );

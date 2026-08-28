@@ -21,117 +21,7 @@ those are the ones to look at. Each is a name a closure had to expose, or a reac
 upward into an outer scope, and each is a place where the modularity is doing less work
 than it looks like it is.
 
-<!-- begin generated graph -->
-
-```mermaid
-%%{init: {"theme":"base","themeVariables":{"primaryColor":"#ffffff","primaryTextColor":"#1f2328","primaryBorderColor":"#8c959f","lineColor":"#7c8794","fontSize":"14px"}}}%%
-flowchart LR
-  subgraph card[" "]
-    direction LR
-    noOp("noOp")
-    defaults("defaults")
-    morph("morph")
-    morphOuterHTML("morphOuterHTML")
-    saveAndRestoreFocus("saveAndRestoreFocus")
-    withHeadBlocking("withHeadBlocking")
-    handleHeadElement("handleHeadElement")
-    subgraph c1["morphChildren"]
-      morphChildren("morphChildren")
-      createNode("createNode")
-      removeNode("removeNode")
-      removeNodesBetween("removeNodesBetween")
-      moveBeforeById("moveBeforeById")
-      removeElementFromAncestorsIdMaps("removeElementFromAncestorsIdMaps")
-      moveBefore("moveBefore")
-      subgraph c2["findBestMatch"]
-        findBestMatch("findBestMatch")
-        isIdSetMatch("isIdSetMatch")
-        isSoftMatch("isSoftMatch")
-      end
-    end
-    subgraph c3["morphNode"]
-      morphNode("morphNode")
-      morphAttributes("morphAttributes")
-      syncInputValue("syncInputValue")
-      syncBooleanAttribute("syncBooleanAttribute")
-      ignoreAttribute("ignoreAttribute")
-      ignoreValueOfActiveElement("ignoreValueOfActiveElement")
-    end
-    subgraph c4["createMorphContext"]
-      createMorphContext("createMorphContext")
-      mergeDefaults("mergeDefaults")
-      createPantry("createPantry")
-      createActiveElementAndParents("createActiveElementAndParents")
-      findIdElements("findIdElements")
-      populateIdMapWithTree("populateIdMapWithTree")
-      createIdMaps("createIdMaps")
-      createPersistentIds("createPersistentIds")
-    end
-    subgraph c5["normalizeElement · normalizeParent"]
-      generatedByIdiomorph("generatedByIdiomorph")
-      normalizeElement("normalizeElement")
-      normalizeParent("normalizeParent")
-      SlicedParentNode("SlicedParentNode")
-      parseContent("parseContent")
-    end
-  end
-  defaults --> noOp
-  morph --> normalizeElement
-  morph --> normalizeParent
-  morph --> createMorphContext
-  morph --> withHeadBlocking
-  morph --> saveAndRestoreFocus
-  morph --> morphChildren
-  morph --> morphOuterHTML
-  morphOuterHTML --> normalizeParent
-  morphOuterHTML --> morphChildren
-  morphChildren --> findBestMatch
-  morphChildren --> removeNodesBetween
-  morphChildren --> morphNode
-  morphChildren --> moveBeforeById
-  morphChildren --> createNode
-  morphChildren --> removeNode
-  createNode --> morphNode
-  findBestMatch --> isSoftMatch
-  findBestMatch --> isIdSetMatch
-  removeNode --> moveBefore
-  removeNodesBetween --> removeNode
-  moveBeforeById --> removeElementFromAncestorsIdMaps
-  moveBeforeById --> moveBefore
-  morphNode --> handleHeadElement
-  morphNode --> morphAttributes
-  morphNode --> ignoreValueOfActiveElement
-  morphNode --> morphChildren
-  morphAttributes --> ignoreAttribute
-  morphAttributes --> ignoreValueOfActiveElement
-  morphAttributes --> syncInputValue
-  syncInputValue --> syncBooleanAttribute
-  syncInputValue --> ignoreAttribute
-  syncBooleanAttribute --> ignoreAttribute
-  withHeadBlocking --> handleHeadElement
-  createMorphContext --> createIdMaps
-  createMorphContext --> mergeDefaults
-  createMorphContext --> createPantry
-  createMorphContext --> createActiveElementAndParents
-  mergeDefaults --> defaults
-  createIdMaps --> findIdElements
-  createIdMaps --> createPersistentIds
-  createIdMaps --> populateIdMapWithTree
-  normalizeParent --> parseContent
-  normalizeParent --> generatedByIdiomorph
-  normalizeParent --> SlicedParentNode
-  parseContent --> generatedByIdiomorph
-  style c1 fill:#eaf0fa,stroke:#c3cad3,color:#3d444d
-  style c2 fill:#e9f4ec,stroke:#c3cad3,color:#3d444d
-  style c3 fill:#fbf0e2,stroke:#c3cad3,color:#3d444d
-  style c4 fill:#f2ecf8,stroke:#c3cad3,color:#3d444d
-  style c5 fill:#fbecec,stroke:#c3cad3,color:#3d444d
-  style card fill:#ffffff,stroke:#ffffff
-  linkStyle default stroke:#7c8794,stroke-width:1.5px
-  linkStyle 1,2,3,6,8,9,10,12,16,23,26,38 stroke:#c2410c,stroke-width:2px
-```
-
-<!-- end generated graph -->
+![Idiomorph's closure dependency graph](img/architecture.svg)
 
 Two things the graph is expected to show. `morphChildren` and `morphNode` point at each
 other: that mutual recursion is the tree walk itself, and it is why they are siblings
@@ -145,7 +35,8 @@ node-by-node descent.
 npm run architecture
 ```
 
-This rewrites the block between the generated-graph markers above, in place. It also runs
-as part of `npm run dist`, so a released build never ships a stale picture. The generator
-lives in `scripts/architecture.js` and reads the source with the TypeScript parser that
-`npm run typecheck` already depends on, so it adds no dependencies of its own.
+This overwrites `img/architecture.svg`; nothing edits this document. It also runs as part
+of `npm run dist`, so a released build never ships a stale picture. The generator lives in
+`scripts/architecture.js`: it reads the source with the TypeScript parser that
+`npm run typecheck` already depends on, and lays the graph out with Graphviz compiled to
+wasm, so neither step needs anything installed on the machine.
