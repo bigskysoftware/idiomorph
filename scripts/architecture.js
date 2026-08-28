@@ -6,7 +6,7 @@ const SOURCE = "src/idiomorph.js";
 const IMAGE = "img/architecture.svg";
 const FILLS = ["#eaf0fa", "#e9f4ec", "#fbf0e2", "#f2ecf8", "#fbecec"];
 
-const { root, declarations } = closureGraph(SOURCE);
+const declarations = closureGraph(SOURCE);
 
 const lines = [
   "digraph architecture {",
@@ -18,12 +18,13 @@ const lines = [
 ];
 let clusters = 0;
 
-(function emit(scope, depth) {
+(function emit(closure, depth) {
   const pad = "  ".repeat(depth);
-  for (const { name, scope: owner } of declarations) {
-    if (owner === scope) lines.push(`${pad}"${name}";`);
-  }
-  for (const child of scope.children) {
+  for (const child of closure.children) {
+    if (!child.children) {
+      lines.push(`${pad}"${child.name}";`);
+      continue;
+    }
     const fill = FILLS[clusters % FILLS.length];
     lines.push(
       `${pad}subgraph cluster_${clusters++} {`,
@@ -32,7 +33,7 @@ let clusters = 0;
     emit(child, depth + 1);
     lines.push(`${pad}}`);
   }
-})(root, 1);
+})(declarations[0], 1);
 
 for (const from of declarations) {
   for (const to of from.references) {
