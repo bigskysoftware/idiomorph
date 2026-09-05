@@ -1,0 +1,947 @@
+<!-- Trimmed from a real OpenProject backlogs_container render; new = old with one card moved between lists (synthesised, not a server re-render). Session tokens scrubbed. -->
+<turbo-frame id="backlogs_container">
+  <div class="op-sprint-planning-container">
+    <div
+      id="owner_backlogs_container"
+      class="op-sprint-planning-lists"
+      data-controller="sortable-lists--scrollable"
+    >
+      <turbo-frame
+        id="backlogs-backlog-component-21"
+        refresh="morph"
+        style="display: contents"
+      >
+        <div
+          data-view-component="true"
+          class="Subhead border-bottom-0 pb-0 tmp-pb-0 mb-0 tmp-mb-0"
+        >
+          <h3
+            data-view-component="true"
+            class="gap-2 Subhead-heading Subhead-heading--medium text-bold d-inline-flex flex-items-center"
+          >
+            Backlog<span
+              title="283"
+              data-view-component="true"
+              class="Counter Counter--primary"
+              >283</span
+            >
+          </h3>
+        </div>
+
+        <div
+          data-view-component="true"
+          class="flex-justify-between flex-items-center d-flex flex-row"
+        >
+          <div data-view-component="true">
+            <form
+              id="backlog_bucket-clear-form"
+              data-turbo-frame="backlogs_container"
+              data-turbo-action="advance"
+              action="/projects/MYPN2/backlogs/backlog"
+              accept-charset="UTF-8"
+              method="get"
+            ></form>
+            <form
+              data-turbo-frame="backlogs_container"
+              data-turbo-action="advance"
+              action="/projects/MYPN2/backlogs/backlog"
+              accept-charset="UTF-8"
+              method="get"
+            ></form>
+          </div>
+          <div data-view-component="true">
+            <a
+              href="/projects/MYPN2/backlogs/buckets/new_dialog"
+              aria-label="New backlog bucket"
+              data-controller="async-dialog"
+              data-test-selector="op-backlog-buckets--new-backlog-bucket-button"
+              data-view-component="true"
+              class="Button--secondary Button--medium Button"
+            >
+              <span class="Button-content">
+                <span class="Button-visual Button-leadingVisual">
+                  <svg
+                    aria-hidden="true"
+                    data-component="Octicon"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    version="1.1"
+                    width="16"
+                    data-view-component="true"
+                    class="octicon octicon-plus"
+                  >
+                    <path
+                      d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="Button-label">Backlog bucket</span>
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <section id="backlogs-bucket-component-7">
+          <div data-controller="border-box-list" data-view-component="true">
+            <div
+              data-controller="sortable-lists--list"
+              data-sortable-lists--list-type-value="backlog_bucket"
+              data-sortable-lists--list-accepted-type-value="work_package"
+              data-sortable-lists--list-id-value="7"
+              data-sortable-lists--list-drop-position-value="start"
+              data-sortable-lists--list-name-value="Foobar"
+              data-test-selector="backlog-bucket-7"
+              id="backlog_bucket_7"
+              data-view-component="true"
+              class="Box Box--condensed op-border-box-list op-border-box-list_transparent op-border-box-list_header-padding-condensed"
+            >
+              <div
+                id="backlog_bucket_7_header"
+                data-view-component="true"
+                class="Box-header"
+              >
+                <div
+                  data-view-component="true"
+                  class="op-border-box-list-header"
+                >
+                  <div
+                    style="grid-area: heading"
+                    data-view-component="true"
+                    class="op-border-box-list-header--heading"
+                  >
+                    <div
+                      data-view-component="true"
+                      class="op-border-box-list-header--heading-line"
+                    >
+                      <h4
+                        data-view-component="true"
+                        class="Truncate Box-title f4"
+                      >
+                        <span data-view-component="true" class="Truncate-text">
+                          Foobar
+                        </span>
+                      </h4>
+                      <span
+                        aria-label="2 work packages"
+                        aria-live="polite"
+                        title="2"
+                        data-view-component="true"
+                        class="Counter Counter--secondary"
+                        >2</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="grid-area: menu"
+                    data-view-component="true"
+                    class="op-border-box-list-header--menu"
+                  ></div>
+                </div>
+              </div>
+
+              <ul
+                id="backlog_bucket_7_list"
+                data-border-box-list-target="list"
+                aria-labelledby="backlog_bucket_7_header"
+                data-view-component="true"
+                class="Box-list"
+              >
+                <li
+                  id="work_package_100"
+                  data-controller="sortable-lists--item"
+                  data-sortable-lists--item-id-value="100"
+                  data-sortable-lists--item-label-value="Feature: Story 0 (MYPN2-1)"
+                  data-sortable-lists--item-type-value="work_package"
+                  data-sortable-lists--item-confined-value="false"
+                  data-sortable-lists--item-external-url-value="http://localhost:3000/work_packages/MYPN2-1"
+                  data-test-selector="work-package-100"
+                  draggable="true"
+                  data-view-component="true"
+                  class="Box-row"
+                >
+                  <article
+                    tabindex="0"
+                    data-story="true"
+                    data-controller="backlogs--work-package contextual-action-menu"
+                    data-backlogs--work-package-id-value="100"
+                    data-backlogs--work-package-display-id-value="MYPN2-1"
+                    data-backlogs--work-package-split-url-value="/projects/MYPN2/backlogs/backlog/details/MYPN2-1"
+                    data-backlogs--work-package-full-url-value="/work_packages/MYPN2-1"
+                    data-sortable-lists--item-target="preview handle"
+                    aria-keyshortcuts="Enter Shift+F10"
+                    aria-label="Feature: Story 0 (MYPN2-1)"
+                    data-view-component="true"
+                    class="Box-card Box-card--clickable Box-card--draggable op-work-package-card_with-menu op-work-package-card_with-metric op-work-package-card"
+                  >
+                    <div
+                      style="grid-area: info_line"
+                      data-view-component="true"
+                      class="op-work-package-card--info_line"
+                    >
+                      <div
+                        data-view-component="true"
+                        class="op-wp-info-line flex-nowrap flex-items-center overflow-hidden d-flex flex-row"
+                      >
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--type mr-2 tmp-mr-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="__hl_inline_type_4 text-small"
+                            >FEATURE</span
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--id"
+                        >
+                          <a
+                            title="Story 0"
+                            href="/projects/MYPN2/work_packages/MYPN2-1"
+                            data-view-component="true"
+                            class="Link text-small color-fg-muted"
+                            >MYPN2-1</a
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--status ml-2 tmp-ml-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="Label op-status-badge Label--secondary Label--inline"
+                          >
+                            <span
+                              data-view-component="true"
+                              class="op-status-badge--name"
+                              >New</span
+                            ></span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style="grid-area: actions"
+                      data-view-component="true"
+                      class="op-work-package-card--actions"
+                    >
+                      <span class="op-work-package-card--metric">
+                        <span
+                          data-view-component="true"
+                          class="color-fg-subtle position-relative"
+                        >
+                          <span aria-hidden="true">0</span>
+                          <span class="sr-only">0 story points</span>
+                        </span></span
+                      >
+
+                      <span
+                        data-view-component="true"
+                        class="op-work-package-card--priority __hl_inline_priority_8 __hl_inline__small_dot no-wrap"
+                      >
+                        <span class="op-work-package-card--priority-name"
+                          >Normal</span
+                        >
+                      </span>
+
+                      <action-menu
+                        data-select-variant="none"
+                        data-view-component="true"
+                        class="op-work-package-card--menu hide-when-print"
+                      >
+                        <button
+                          id="work_package_100_menu-button"
+                          popovertarget="work_package_100_menu-overlay"
+                          aria-controls="work_package_100_menu-list"
+                          aria-haspopup="true"
+                          aria-labelledby="tooltip-b83e2f5b-334f-4ac2-af6f-2be3783b6467"
+                          type="button"
+                          data-view-component="true"
+                          class="Button Button--iconOnly Button--invisible Button--medium"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            data-component="Octicon"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            version="1.1"
+                            width="16"
+                            data-view-component="true"
+                            class="octicon octicon-kebab-horizontal Button-visual"
+                          >
+                            <path
+                              d="M8 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"
+                            ></path>
+                          </svg>
+                        </button>
+                      </action-menu>
+                    </div>
+                    <div
+                      style="grid-area: subject"
+                      data-view-component="true"
+                      class="op-work-package-card--subject"
+                    >
+                      <a
+                        draggable="false"
+                        href="/work_packages/MYPN2-1"
+                        data-view-component="true"
+                        class="Link text-semibold"
+                        >Story 0</a
+                      >
+                    </div>
+                  </article>
+                </li>
+              </ul>
+            </div>
+            <template data-border-box-list-target="emptyStateTemplate">
+              <li class="Box-row" data-empty-list-item="true">
+                <!-- BEGIN app/components/open_project/common/border_box_list_component/empty_state.html.erb
+-->
+                <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                <div
+                  data-view-component="true"
+                  class="op-border-box-list-empty-state"
+                >
+                  <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/blankslate.html.erb
+-->
+                  <div class="blankslate-container">
+                    <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      data-view-component="true"
+                      class="blankslate"
+                    >
+                      <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/heading.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                      <h4 data-view-component="true" class="blankslate-heading">
+                        Backlog bucket is empty
+                      </h4>
+                      <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/heading.rb -->
+                      <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                      <p
+                        data-view-component="true"
+                        class="blankslate-description"
+                      >
+                        Drag items here to add them
+                      </p>
+                      <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    </div>
+                    <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                  </div>
+                  <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/blankslate.html.erb -->
+
+                  <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                  <div
+                    aria-hidden="true"
+                    data-view-component="true"
+                    class="op-border-box-list-empty-state--drop-overlay"
+                  >
+                    <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/text.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    <p data-view-component="true" class="color-fg-muted f4">
+                      Drop here to add this item
+                    </p>
+                    <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/text.rb -->
+                  </div>
+                  <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb -->
+                </div>
+                <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- END app/components/open_project/common/border_box_list_component/empty_state.html.erb -->
+              </li>
+            </template>
+          </div>
+        </section>
+
+        <section id="backlogs-inbox-component-21"></section>
+      </turbo-frame>
+    </div>
+    <div
+      id="sprint_backlogs_container"
+      class="op-sprint-planning-lists"
+      data-controller="sortable-lists--scrollable"
+    >
+      <turbo-frame
+        id="backlogs-sprints-component-21"
+        refresh="morph"
+        style="display: contents"
+      >
+        <div
+          data-view-component="true"
+          class="Subhead border-bottom-0 pb-0 tmp-pb-0 mb-0 tmp-mb-0"
+        >
+          <h3
+            data-view-component="true"
+            class="gap-2 Subhead-heading Subhead-heading--medium text-bold d-inline-flex flex-items-center"
+          >
+            Sprints<span
+              data-test-selector="op-sprints--total-counter"
+              title="17"
+              data-view-component="true"
+              class="Counter Counter--primary"
+              >17</span
+            >
+          </h3>
+        </div>
+
+        <div
+          data-view-component="true"
+          class="flex-justify-between flex-items-center d-flex flex-row"
+        >
+          <div data-view-component="true">
+            <form
+              id="sprint-clear-form"
+              data-turbo-frame="backlogs_container"
+              data-turbo-action="advance"
+              action="/projects/MYPN2/backlogs/backlog"
+              accept-charset="UTF-8"
+              method="get"
+            ></form>
+            <form
+              data-turbo-frame="backlogs_container"
+              data-turbo-action="advance"
+              action="/projects/MYPN2/backlogs/backlog"
+              accept-charset="UTF-8"
+              method="get"
+            ></form>
+          </div>
+          <div data-view-component="true">
+            <a
+              href="/projects/MYPN2/backlogs/sprints/new_dialog"
+              aria-label="New sprint"
+              data-controller="async-dialog"
+              data-test-selector="op-sprints--new-sprint-button"
+              data-view-component="true"
+              class="Button--secondary Button--medium Button"
+            >
+              <span class="Button-content">
+                <span class="Button-visual Button-leadingVisual">
+                  <svg
+                    aria-hidden="true"
+                    data-component="Octicon"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    version="1.1"
+                    width="16"
+                    data-view-component="true"
+                    class="octicon octicon-plus"
+                  >
+                    <path
+                      d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="Button-label">Sprint</span>
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <section id="backlogs-sprint-component-18">
+          <div data-controller="border-box-list" data-view-component="true">
+            <div
+              data-controller="sortable-lists--list"
+              data-sortable-lists--list-type-value="sprint"
+              data-sortable-lists--list-accepted-type-value="work_package"
+              data-sortable-lists--list-id-value="18"
+              data-sortable-lists--list-drop-position-value="start"
+              data-sortable-lists--list-name-value="Sprint 1"
+              data-test-selector="sprint-18"
+              id="sprint_18"
+              data-view-component="true"
+              class="Box Box--condensed op-border-box-list op-border-box-list_transparent op-border-box-list_header-padding-condensed"
+            >
+              <div
+                id="sprint_18_header"
+                data-view-component="true"
+                class="Box-header"
+              >
+                <div
+                  data-view-component="true"
+                  class="op-border-box-list-header"
+                >
+                  <div
+                    style="grid-area: heading"
+                    data-view-component="true"
+                    class="op-border-box-list-header--heading"
+                  >
+                    <div
+                      data-view-component="true"
+                      class="op-border-box-list-header--heading-line"
+                    >
+                      <h4
+                        data-view-component="true"
+                        class="Truncate Box-title f4"
+                      >
+                        <span data-view-component="true" class="Truncate-text">
+                          Sprint 1
+                        </span>
+                      </h4>
+                      <span
+                        aria-label="8 work packages"
+                        aria-live="polite"
+                        title="8"
+                        data-view-component="true"
+                        class="Counter Counter--secondary"
+                        >8</span
+                      >
+                    </div>
+                  </div>
+                  <div
+                    style="grid-area: description"
+                    data-view-component="true"
+                    class="op-border-box-list-header--description"
+                  >
+                    <span
+                      data-view-component="true"
+                      class="row-gap-2 d-flex flex-column color-fg-muted"
+                    >
+                      <div
+                        data-justify="start"
+                        data-direction="horizontal"
+                        data-align="center"
+                        data-wrap="nowrap"
+                        data-padding="none"
+                        data-view-component="true"
+                        class="Stack"
+                      >
+                        <span
+                          data-view-component="true"
+                          class="Label text-bold color-bg-default"
+                          >In planning</span
+                        >
+
+                        <span
+                          aria-live="polite"
+                          data-view-component="true"
+                          class="velocity"
+                        >
+                          0&nbsp;points
+                        </span>
+                        <span
+                          role="group"
+                          data-view-component="true"
+                          class="ml-auto tmp-ml-auto mr-2 tmp-mr-2"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            data-component="Octicon"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            version="1.1"
+                            width="16"
+                            data-view-component="true"
+                            class="octicon octicon-calendar mr-1 tmp-mr-1"
+                          >
+                            <path
+                              d="M4.75 0a.75.75 0 0 1 .75.75V2h5V.75a.75.75 0 0 1 1.5 0V2h1.25c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 16H2.75A1.75 1.75 0 0 1 1 14.25V3.75C1 2.784 1.784 2 2.75 2H4V.75A.75.75 0 0 1 4.75 0M2.5 7.5v6.75c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V7.5Zm10.75-4H2.75a.25.25 0 0 0-.25.25V6h11V3.75a.25.25 0 0 0-.25-.25"
+                            ></path>
+                          </svg>
+                          <time datetime="2026-04-13">04/13/2026</time
+                          >&nbsp;–&nbsp;<time datetime="2026-04-27"
+                            >04/27/2026</time
+                          >
+                        </span>
+                      </div></span
+                    >
+                  </div>
+                  <div
+                    style="grid-area: actions"
+                    data-view-component="true"
+                    class="op-border-box-list-header--actions"
+                  >
+                    <a
+                      id="sprint_18_start_button"
+                      href="/projects/MYPN2/backlogs/sprints/18/start"
+                      data-turbo-method="post"
+                      data-view-component="true"
+                      class="Button--secondary Button--medium Button"
+                    >
+                      <span class="Button-content">
+                        <span class="Button-visual Button-leadingVisual">
+                          <svg
+                            aria-hidden="true"
+                            data-component="Octicon"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            version="1.1"
+                            width="16"
+                            data-view-component="true"
+                            class="octicon octicon-rocket"
+                          >
+                            <path
+                              d="M14.064 0h.186C15.216 0 16 .784 16 1.75v.186a8.75 8.75 0 0 1-2.564 6.186l-.458.459q-.472.471-.979.904v3.207c0 .608-.315 1.172-.833 1.49l-2.774 1.707a.75.75 0 0 1-1.11-.418l-.954-3.102a1 1 0 0 1-.145-.125L3.754 9.816a1 1 0 0 1-.124-.145L.528 8.717a.75.75 0 0 1-.418-1.11l1.71-2.774A1.75 1.75 0 0 1 3.31 4h3.204q.433-.508.904-.979l.459-.458A8.75 8.75 0 0 1 14.064 0M8.938 3.623h-.002l-.458.458c-.76.76-1.437 1.598-2.02 2.5l-1.5 2.317 2.143 2.143 2.317-1.5c.902-.583 1.74-1.26 2.499-2.02l.459-.458a7.25 7.25 0 0 0 2.123-5.127V1.75a.25.25 0 0 0-.25-.25h-.186a7.25 7.25 0 0 0-5.125 2.123M3.56 14.56c-.732.732-2.334 1.045-3.005 1.148a.23.23 0 0 1-.201-.064.23.23 0 0 1-.064-.201c.103-.671.416-2.273 1.15-3.003a1.502 1.502 0 1 1 2.12 2.12m6.94-3.935q-.132.09-.266.175l-2.35 1.521.548 1.783 1.949-1.2a.25.25 0 0 0 .119-.213ZM3.678 8.116 5.2 5.766q.087-.135.176-.266H3.309a.25.25 0 0 0-.213.119l-1.2 1.95ZM12 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"
+                            ></path>
+                          </svg>
+                        </span>
+                        <span class="Button-label">Start sprint</span>
+                      </span>
+                    </a>
+                  </div>
+                  <div
+                    style="grid-area: menu"
+                    data-view-component="true"
+                    class="op-border-box-list-header--menu"
+                  ></div>
+                </div>
+              </div>
+
+              <ul
+                id="sprint_18_list"
+                data-border-box-list-target="list"
+                aria-labelledby="sprint_18_header"
+                data-view-component="true"
+                class="Box-list"
+              >
+                <li
+                  id="work_package_104"
+                  data-controller="sortable-lists--item"
+                  data-sortable-lists--item-id-value="104"
+                  data-sortable-lists--item-label-value="Feature: Story 4 (MYPN2-5)"
+                  data-sortable-lists--item-type-value="work_package"
+                  data-sortable-lists--item-confined-value="false"
+                  data-sortable-lists--item-external-url-value="http://localhost:3000/work_packages/MYPN2-5"
+                  data-test-selector="work-package-104"
+                  draggable="true"
+                  data-view-component="true"
+                  class="Box-row"
+                >
+                  <article
+                    tabindex="0"
+                    data-story="true"
+                    data-controller="backlogs--work-package contextual-action-menu"
+                    data-backlogs--work-package-id-value="104"
+                    data-backlogs--work-package-display-id-value="MYPN2-5"
+                    data-backlogs--work-package-split-url-value="/projects/MYPN2/backlogs/backlog/details/MYPN2-5"
+                    data-backlogs--work-package-full-url-value="/work_packages/MYPN2-5"
+                    data-sortable-lists--item-target="preview handle"
+                    aria-keyshortcuts="Enter Shift+F10"
+                    aria-label="Feature: Story 4 (MYPN2-5)"
+                    data-view-component="true"
+                    class="Box-card Box-card--clickable Box-card--draggable op-work-package-card_with-menu op-work-package-card_with-metric op-work-package-card"
+                  >
+                    <div
+                      style="grid-area: info_line"
+                      data-view-component="true"
+                      class="op-work-package-card--info_line"
+                    >
+                      <div
+                        data-view-component="true"
+                        class="op-wp-info-line flex-nowrap flex-items-center overflow-hidden d-flex flex-row"
+                      >
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--type mr-2 tmp-mr-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="__hl_inline_type_4 text-small"
+                            >FEATURE</span
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--id"
+                        >
+                          <a
+                            title="Story 4"
+                            href="/projects/MYPN2/work_packages/MYPN2-5"
+                            data-view-component="true"
+                            class="Link text-small color-fg-muted"
+                            >MYPN2-5</a
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--status ml-2 tmp-ml-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="Label op-status-badge Label--secondary Label--inline"
+                          >
+                            <span
+                              data-view-component="true"
+                              class="op-status-badge--name"
+                              >New</span
+                            ></span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style="grid-area: actions"
+                      data-view-component="true"
+                      class="op-work-package-card--actions"
+                    >
+                      <span class="op-work-package-card--metric">
+                        <span
+                          data-view-component="true"
+                          class="color-fg-subtle position-relative"
+                        >
+                          <span aria-hidden="true">0</span>
+                          <span class="sr-only">0 story points</span>
+                        </span></span
+                      >
+
+                      <span
+                        data-view-component="true"
+                        class="op-work-package-card--priority __hl_inline_priority_8 __hl_inline__small_dot no-wrap"
+                      >
+                        <span class="op-work-package-card--priority-name"
+                          >Normal</span
+                        >
+                      </span>
+
+                      <action-menu
+                        data-select-variant="none"
+                        data-view-component="true"
+                        class="op-work-package-card--menu hide-when-print"
+                      >
+                        <button
+                          id="work_package_104_menu-button"
+                          popovertarget="work_package_104_menu-overlay"
+                          aria-controls="work_package_104_menu-list"
+                          aria-haspopup="true"
+                          aria-labelledby="tooltip-6ed074da-2170-4618-ba12-470a1254cd16"
+                          type="button"
+                          data-view-component="true"
+                          class="Button Button--iconOnly Button--invisible Button--medium"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            data-component="Octicon"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            version="1.1"
+                            width="16"
+                            data-view-component="true"
+                            class="octicon octicon-kebab-horizontal Button-visual"
+                          >
+                            <path
+                              d="M8 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"
+                            ></path>
+                          </svg>
+                        </button>
+                      </action-menu>
+                    </div>
+                    <div
+                      style="grid-area: subject"
+                      data-view-component="true"
+                      class="op-work-package-card--subject"
+                    >
+                      <a
+                        draggable="false"
+                        href="/work_packages/MYPN2-5"
+                        data-view-component="true"
+                        class="Link text-semibold"
+                        >Story 4</a
+                      >
+                    </div>
+                  </article>
+                </li>
+                <li
+                  id="work_package_105"
+                  data-controller="sortable-lists--item"
+                  data-sortable-lists--item-id-value="105"
+                  data-sortable-lists--item-label-value="Feature: Story 5 (MYPN2-6)"
+                  data-sortable-lists--item-type-value="work_package"
+                  data-sortable-lists--item-confined-value="false"
+                  data-sortable-lists--item-external-url-value="http://localhost:3000/work_packages/MYPN2-6"
+                  data-test-selector="work-package-105"
+                  draggable="true"
+                  data-view-component="true"
+                  class="Box-row"
+                >
+                  <article
+                    tabindex="0"
+                    data-story="true"
+                    data-controller="backlogs--work-package contextual-action-menu"
+                    data-backlogs--work-package-id-value="105"
+                    data-backlogs--work-package-display-id-value="MYPN2-6"
+                    data-backlogs--work-package-split-url-value="/projects/MYPN2/backlogs/backlog/details/MYPN2-6"
+                    data-backlogs--work-package-full-url-value="/work_packages/MYPN2-6"
+                    data-sortable-lists--item-target="preview handle"
+                    aria-keyshortcuts="Enter Shift+F10"
+                    aria-label="Feature: Story 5 (MYPN2-6)"
+                    data-view-component="true"
+                    class="Box-card Box-card--clickable Box-card--draggable op-work-package-card_with-menu op-work-package-card_with-metric op-work-package-card"
+                  >
+                    <div
+                      style="grid-area: info_line"
+                      data-view-component="true"
+                      class="op-work-package-card--info_line"
+                    >
+                      <div
+                        data-view-component="true"
+                        class="op-wp-info-line flex-nowrap flex-items-center overflow-hidden d-flex flex-row"
+                      >
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--type mr-2 tmp-mr-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="__hl_inline_type_4 text-small"
+                            >FEATURE</span
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--id"
+                        >
+                          <a
+                            title="Story 5"
+                            href="/projects/MYPN2/work_packages/MYPN2-6"
+                            data-view-component="true"
+                            class="Link text-small color-fg-muted"
+                            >MYPN2-6</a
+                          >
+                        </div>
+                        <div
+                          data-view-component="true"
+                          class="op-wp-info-line--status ml-2 tmp-ml-2"
+                        >
+                          <span
+                            data-view-component="true"
+                            class="Label op-status-badge Label--secondary Label--inline"
+                          >
+                            <span
+                              data-view-component="true"
+                              class="op-status-badge--name"
+                              >New</span
+                            ></span
+                          >
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style="grid-area: actions"
+                      data-view-component="true"
+                      class="op-work-package-card--actions"
+                    >
+                      <span class="op-work-package-card--metric">
+                        <span
+                          data-view-component="true"
+                          class="color-fg-subtle position-relative"
+                        >
+                          <span aria-hidden="true">0</span>
+                          <span class="sr-only">0 story points</span>
+                        </span></span
+                      >
+
+                      <span
+                        data-view-component="true"
+                        class="op-work-package-card--priority __hl_inline_priority_8 __hl_inline__small_dot no-wrap"
+                      >
+                        <span class="op-work-package-card--priority-name"
+                          >Normal</span
+                        >
+                      </span>
+
+                      <action-menu
+                        data-select-variant="none"
+                        data-view-component="true"
+                        class="op-work-package-card--menu hide-when-print"
+                      >
+                        <button
+                          id="work_package_105_menu-button"
+                          popovertarget="work_package_105_menu-overlay"
+                          aria-controls="work_package_105_menu-list"
+                          aria-haspopup="true"
+                          aria-labelledby="tooltip-874b9b93-09fe-45af-8e50-74545b4a362a"
+                          type="button"
+                          data-view-component="true"
+                          class="Button Button--iconOnly Button--invisible Button--medium"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            data-component="Octicon"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            version="1.1"
+                            width="16"
+                            data-view-component="true"
+                            class="octicon octicon-kebab-horizontal Button-visual"
+                          >
+                            <path
+                              d="M8 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m13 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"
+                            ></path>
+                          </svg>
+                        </button>
+                      </action-menu>
+                    </div>
+                    <div
+                      style="grid-area: subject"
+                      data-view-component="true"
+                      class="op-work-package-card--subject"
+                    >
+                      <a
+                        draggable="false"
+                        href="/work_packages/MYPN2-6"
+                        data-view-component="true"
+                        class="Link text-semibold"
+                        >Story 5</a
+                      >
+                    </div>
+                  </article>
+                </li>
+              </ul>
+            </div>
+            <template data-border-box-list-target="emptyStateTemplate">
+              <li class="Box-row" data-empty-list-item="true">
+                <!-- BEGIN app/components/open_project/common/border_box_list_component/empty_state.html.erb
+-->
+                <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                <div
+                  data-view-component="true"
+                  class="op-border-box-list-empty-state"
+                >
+                  <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/blankslate.html.erb
+-->
+                  <div class="blankslate-container">
+                    <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      data-view-component="true"
+                      class="blankslate"
+                    >
+                      <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/heading.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                      <h4 data-view-component="true" class="blankslate-heading">
+                        Sprint 1 is empty
+                      </h4>
+                      <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/heading.rb -->
+                      <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                      <p
+                        data-view-component="true"
+                        class="blankslate-description"
+                      >
+                        No items planned yet. Drag items here to add them.
+                      </p>
+                      <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    </div>
+                    <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                  </div>
+                  <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/blankslate.html.erb -->
+
+                  <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                  <div
+                    aria-hidden="true"
+                    data-view-component="true"
+                    class="op-border-box-list-empty-state--drop-overlay"
+                  >
+                    <!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/text.rb --><!-- BEGIN .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb -->
+                    <p data-view-component="true" class="color-fg-muted f4">
+                      Drop here to add this item
+                    </p>
+                    <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/beta/text.rb -->
+                  </div>
+                  <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb -->
+                </div>
+                <!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/base_component.rb --><!-- END .bundle/gems/ruby/4.0.0/gems/openproject-primer_view_components-0.91.1/app/components/primer/box.rb --><!-- END app/components/open_project/common/border_box_list_component/empty_state.html.erb -->
+              </li>
+            </template>
+          </div>
+        </section>
+      </turbo-frame>
+    </div>
+  </div>
+</turbo-frame>

@@ -24,6 +24,7 @@
   const benchmark = params.get("benchmark");
   const startUrl = `/perf/benchmarks/${benchmark}.old.html`;
   const endUrl = `/perf/benchmarks/${benchmark}.new.html`;
+  const options = JSON.parse(params.get("options") || "{}");
 
   Promise.all([
     fetch(startUrl).then((r) => r.text()),
@@ -34,7 +35,7 @@
     if (params.get("using").includes("morphdom")) {
       morphdom(document.body.firstElementChild, end);
     } else {
-      Idiomorph.morph(document.body.firstElementChild, end);
+      Idiomorph.morph(document.body.firstElementChild, end, options);
     }
     bench.stop();
   });

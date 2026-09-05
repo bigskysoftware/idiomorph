@@ -16,6 +16,7 @@
 * Added:
   * Publish TypeScript declarations, generated from the JSDoc types already in the source (@myabc) #152
   * Warn in the console when duplicate ids are detected during a morph, since they can cause subtle state loss (@botandrose) #142
+  * New off-by-default `skipUnchanged` option that skips morphing subtrees whose old and new content are already identical, for large speedups on mostly-unchanged pages (@myabc) #144
 
 * Fixed:
   * Fix TypeError when restoring focus to an element that doesn't support text selection (@emaia) #150

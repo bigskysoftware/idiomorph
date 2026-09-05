@@ -28,6 +28,7 @@
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
+ * @property {boolean} [skipUnchanged]
  * @property {ConfigCallbacks} [callbacks]
  * @property {ConfigHead} [head]
  */
@@ -68,6 +69,7 @@
  * @property {boolean} [ignoreActive]
  * @property {boolean} [ignoreActiveValue]
  * @property {boolean} [restoreFocus]
+ * @property {boolean} [skipUnchanged]
  * @property {ConfigCallbacksInternal} callbacks
  * @property {ConfigHeadInternal} head
  */
@@ -112,6 +114,8 @@ var Idiomorph = (function () {
    * @property {ConfigInternal['ignoreActive']} ignoreActive
    * @property {ConfigInternal['ignoreActiveValue']} ignoreActiveValue
    * @property {ConfigInternal['restoreFocus']} restoreFocus
+   * @property {boolean} skipUnchanged
+   * @property {Set<Node>} unskippableNodes
    * @property {Map<Node, Set<string>>} idMap
    * @property {Set<string>} persistentIds
    * @property {ConfigInternal['callbacks']} callbacks
@@ -148,6 +152,7 @@ var Idiomorph = (function () {
       afterHeadMorphed: noOp,
     },
     restoreFocus: true,
+    skipUnchanged: false,
   };
 
   /**
@@ -644,6 +649,23 @@ var Idiomorph = (function () {
         return oldNode;
       }
 
+      if (
+        ctx.skipUnchanged &&
+        !ctx.unskippableNodes.has(oldNode) &&
+        !ctx.unskippableNodes.has(newContent) &&
+        // re-check the pair itself: beforeNodeMorphed may have changed hidden state since the pre-scan
+        !isUnskippable(oldNode) &&
+        !isUnskippable(newContent) &&
+        // a sibling option's change can flip this option's implicit selectedness
+        // without either side's own isUnskippable check ever seeing it
+        !optionSelectionDiffers(oldNode, newContent) &&
+        oldNode.isEqualNode(newContent)
+      ) {
+        // the whole subtree is unchanged; the root has been announced, its descendants are never visited
+        ctx.callbacks.afterNodeMorphed(oldNode, newContent);
+        return oldNode;
+      }
+
       if (is.headElement(oldNode) && ctx.head.style === "none") {
         // ignore the head element
       } else if (is.headElement(oldNode) && ctx.head.style !== "morph") {
@@ -991,6 +1013,249 @@ var Idiomorph = (function () {
   }
 
   //=============================================================================
+  // Unchanged Subtree Skipping
+  //=============================================================================
+  const { isUnskippable, optionSelectionDiffers, createUnskippableNodeSet } =
+    (function () {
+      // Must stay in lockstep with the node-type checks in `isUnskippable`
+      // below: adding a node type to one without the other silently under- or
+      // over-scans.
+      const UNSKIPPABLE_SELECTOR = "input,textarea,select,option,template,head";
+
+      /**
+       * Nodes whose subtree must never be skipped under `skipUnchanged`, because
+       * `isEqualNode` either ignores state a morph would sync, or lies about them.
+       *
+       * @param {Node} node
+       * @returns {boolean}
+       */
+      function isUnskippable(node) {
+        if (is.templateElement(node)) {
+          // isEqualNode does not compare template .content
+          return true;
+        }
+        if (is.headElement(node)) {
+          // head merging has side effects (im-re-append) even when the head is unchanged
+          return true;
+        }
+        if (is.inputElement(node)) {
+          return (
+            node.type !== "file" &&
+            (node.checked !== node.defaultChecked ||
+              node.value !== defaultValueOf(node))
+          );
+        }
+        if (is.textAreaElement(node)) {
+          return node.value !== node.defaultValue;
+        }
+        if (is.selectElement(node)) {
+          // A single-select's overall selection can be dirty (e.g. cleared to
+          // selectedIndex -1, or coupled through a sibling option) without any
+          // option's own `selected` differing from its own default, so compare
+          // the live selectedIndex against what a fresh parse would select.
+          // selectedIndex is reliable across engines even where select.options
+          // is not. A multiple/size>1 select has no single selectedIndex; each
+          // of its options is dirty-checked individually by the option branch.
+          if (node.multiple || node.size > 1) {
+            return false;
+          }
+          const index = effectiveDefaultIndex(node.querySelectorAll("option"));
+          return index !== -1 && node.selectedIndex !== index;
+        }
+        if (is.optionElement(node)) {
+          // An option is dirty only when its live `selected` disagrees with
+          // BOTH the effective default of its select AND its own `selected`
+          // attribute (`defaultSelected`). Either agreement means a fresh parse
+          // of the markup would reproduce the live state, so a skip stays
+          // DOM-correct. This straddles a browser difference: a detached
+          // single-select applies its implicit first-option selection on
+          // Chromium/Firefox (a clean first option reports selected=true, which
+          // matches the effective default) but not on WebKit (it reports
+          // selected=false, which instead matches defaultSelected).
+          return (
+            node.selected !== defaultSelectedOf(node) &&
+            node.selected !== node.defaultSelected
+          );
+        }
+        return false;
+      }
+
+      /**
+       * Whether an option pair's live `selected` state has diverged. This
+       * exists to catch a coupling `isUnskippable` cannot see on its own: a
+       * single-select's implicit default selection depends on every option in
+       * the select, so removing the `selected` attribute from one option can
+       * flip another, untouched option's effective selectedness as a side
+       * effect once the morph runs — so the motivating case is exactly the one
+       * where neither option looks dirty on its own `isUnskippable` check,
+       * because each still agrees with its own default in isolation.
+       *
+       * Only meaningful when both sides sit in a real single-select: an option
+       * morphed on its own (no `<select>` ancestor, e.g. an outerHTML root
+       * morph) reports `selected: false` for reasons unrelated to this
+       * coupling, and comparing that against the old side would misfire.
+       *
+       * @param {Node} oldNode
+       * @param {Node} newNode
+       * @returns {boolean}
+       */
+      function optionSelectionDiffers(oldNode, newNode) {
+        if (!is.optionElement(oldNode) || !is.optionElement(newNode)) {
+          return false;
+        }
+        const oldSelect = oldNode.closest("select");
+        const newSelect = newNode.closest("select");
+        if (
+          !oldSelect ||
+          oldSelect.multiple ||
+          oldSelect.size > 1 ||
+          !newSelect ||
+          newSelect.multiple ||
+          newSelect.size > 1
+        ) {
+          return false;
+        }
+        return oldNode.selected !== newNode.selected;
+      }
+
+      /**
+       * The option index a fresh parse of a single-select's markup would leave
+       * selected: the last option carrying a `selected` attribute, else the
+       * first enabled option, else -1 when no option is enabled. Browsers
+       * disagree on what an all-disabled select selects (WebKit picks the first
+       * option, others select nothing), so -1 signals "no definitive default"
+       * and callers treat such a select as clean.
+       *
+       * @param {NodeListOf<HTMLOptionElement>} options
+       * @returns {number}
+       */
+      function effectiveDefaultIndex(options) {
+        for (let i = options.length - 1; i >= 0; i--) {
+          if (options[i].defaultSelected) return i;
+        }
+        for (let i = 0; i < options.length; i++) {
+          if (!options[i].disabled) return i;
+        }
+        return -1;
+      }
+
+      /**
+       * Whether an option would be selected right after parsing its markup.
+       * In a single-select without any `selected` attribute the browser selects
+       * the first enabled option, and `defaultSelected` does not reflect that.
+       *
+       * @param {HTMLOptionElement} option
+       * @returns {boolean}
+       */
+      function defaultSelectedOf(option) {
+        const select = option.closest("select");
+        if (!select || select.multiple || select.size > 1) {
+          return option.defaultSelected;
+        }
+        // WebKit leaves `select.options` empty for a select that was parsed in
+        // a detached fragment, so scan the DOM directly instead.
+        const options = select.querySelectorAll("option");
+        // the last option with a selected attribute wins; otherwise the first enabled option
+        for (let i = options.length - 1; i >= 0; i--) {
+          if (options[i].defaultSelected) return options[i] === option;
+        }
+        for (let i = 0; i < options.length; i++) {
+          if (!options[i].disabled) return options[i] === option;
+        }
+        // No enabled option: browsers disagree on what a fresh parse selects
+        // (WebKit selects the first option even though it is disabled, others
+        // select nothing), so treat the first option as the effective default.
+        // Paired with the `selected !== defaultSelected` escape hatch in
+        // isUnskippable, this reads a clean all-disabled select as clean on
+        // every engine.
+        return options.length > 0 && options[0] === option;
+      }
+
+      /**
+       * The value an input reports when its value property has not been touched.
+       * Checkbox and radio inputs report "on" when the value attribute is absent,
+       * while `defaultValue` reports "" in that case.
+       *
+       * @param {HTMLInputElement} input
+       * @returns {string}
+       */
+      function defaultValueOf(input) {
+        if (input.type === "checkbox" || input.type === "radio") {
+          return input.getAttribute("value") ?? "on";
+        }
+        return input.defaultValue;
+      }
+
+      /**
+       * Computes the set of nodes that must never be skipped by `skipUnchanged`:
+       * every unskippable node (see `isUnskippable`) plus all of its ancestors,
+       * from both the old and the new content. Ancestors matter because
+       * `isEqualNode` on an ancestor can report equality while ignoring a
+       * descendant's hidden state or a template's content.
+       *
+       * @param {Element} oldRoot
+       * @param {Element} newRoot
+       * @returns {Set<Node>}
+       */
+      function createUnskippableNodeSet(oldRoot, newRoot) {
+        /** @type {Set<Node>} */
+        const set = new Set();
+        collectUnskippableNodes(oldRoot, oldRoot, set);
+        // a duck-typed parent exposes its single child as the root, to halt the upward walk
+        // @ts-ignore
+        const newStopAt = newRoot.__idiomorphRoot || newRoot;
+        collectUnskippableNodes(newRoot, newStopAt, set);
+        return set;
+      }
+
+      /**
+       * @param {Element | DocumentFragment} root the node to scan
+       * @param {Node} stopAt the topmost node the upward walk may add
+       * @param {Set<Node>} set
+       */
+      function collectUnskippableNodes(root, stopAt, set) {
+        const candidates = Array.from(
+          root.querySelectorAll?.(UNSKIPPABLE_SELECTOR) || [],
+        );
+        // querySelectorAll excludes the root, but an outerHTML morph can have a control as its root
+        if (is.element(root) && root.matches(UNSKIPPABLE_SELECTOR)) {
+          candidates.push(root);
+        }
+        for (const candidate of candidates) {
+          if (isUnskippable(candidate)) {
+            addWithAncestors(candidate, stopAt, set);
+          }
+          if (is.templateElement(candidate)) {
+            // querySelectorAll does not descend into template content, but morphChildren does
+            collectUnskippableNodes(candidate.content, candidate.content, set);
+          }
+        }
+      }
+
+      /**
+       * @param {Node} node
+       * @param {Node} stopAt
+       * @param {Set<Node>} set
+       */
+      function addWithAncestors(node, stopAt, set) {
+        /** @type {Node} */
+        let current = node;
+        // every candidate is a descendant of (or is) stopAt, so the walk always terminates there
+        while (!set.has(current)) {
+          set.add(current);
+          if (current === stopAt) break;
+          current = /** @type {Node} */ (current.parentNode);
+        }
+      }
+
+      return {
+        isUnskippable,
+        optionSelectionDiffers,
+        createUnskippableNodeSet,
+      };
+    })();
+
+  //=============================================================================
   // Create Morph Context Functions
   //=============================================================================
   const createMorphContext = (function () {
@@ -1020,6 +1285,7 @@ var Idiomorph = (function () {
       }
 
       const doc = oldNode.ownerDocument;
+      const skipUnchanged = !!mergedConfig.skipUnchanged;
 
       return {
         target: oldNode,
@@ -1030,6 +1296,10 @@ var Idiomorph = (function () {
         ignoreActive: mergedConfig.ignoreActive,
         ignoreActiveValue: mergedConfig.ignoreActiveValue,
         restoreFocus: mergedConfig.restoreFocus,
+        skipUnchanged: skipUnchanged,
+        unskippableNodes: skipUnchanged
+          ? createUnskippableNodeSet(oldNode, newContent)
+          : new Set(),
         idMap: idMap,
         persistentIds: persistentIds,
         pantry: createPantry(doc),
@@ -1447,6 +1717,8 @@ var Idiomorph = (function () {
       inputElement: (value) => htmlElement(value, "input"),
       /** @param {Node | null | undefined} value @returns {value is HTMLOptionElement} */
       optionElement: (value) => htmlElement(value, "option"),
+      /** @param {Node | null | undefined} value @returns {value is HTMLSelectElement} */
+      selectElement: (value) => htmlElement(value, "select"),
       /** @param {Node | null | undefined} value @returns {value is HTMLTextAreaElement} */
       textAreaElement: (value) => htmlElement(value, "textarea"),
     };
