@@ -4,6 +4,7 @@
 
 * Removed:
   * Move the htmx extension out of tree into [htmx-ext-morph](https://github.com/bigskysoftware/htmx-extensions/tree/main/src/morph). (@botandrose) #111
+  * Remove the undocumented `head.block` option. I hereby commit `Idiomorph.morph()` to being a sync function. Please open an issue if you miss this. (@botandrose)
 
 ## [0.8.0] - 2026-09-05
 

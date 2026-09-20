@@ -354,26 +354,6 @@ describe("Option to forcibly restore focus after morph", function () {
       assertFocus("a\\b");
     });
 
-    it("restores focus when head blocking defers the morph", async function () {
-      getWorkArea().innerHTML = "";
-      const head = document.createElement("head");
-      head.innerHTML = "<title>old</title>";
-      getWorkArea().append(head);
-      getWorkArea().insertAdjacentHTML(
-        "beforeend",
-        `<input type="text" id="focused" value="abc">`,
-      );
-      setFocusAndSelection("focused", "b");
-
-      await Idiomorph.morph(
-        getWorkArea(),
-        "<head><title>new</title></head><textarea id='focused'>abc</textarea>",
-        { morphStyle: "innerHTML", head: { block: true } },
-      );
-
-      assertFocus("focused");
-    });
-
     it("does not throw for input types that reject setSelectionRange", function () {
       getWorkArea().innerHTML = `
         <div>

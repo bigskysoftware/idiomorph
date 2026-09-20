@@ -126,22 +126,6 @@ describe("Tests to ensure that the head tag merging works correctly", function (
     originalHead.outerHTML.should.equal("<head><title>Foo</title></head>");
   });
 
-  it("none style ignores head even when blocking", function () {
-    let parser = new DOMParser();
-    let document = parser.parseFromString(
-      "<html><head><title>Foo</title></head></html>",
-      "text/html",
-    );
-    let originalHead = document.head;
-    Idiomorph.morph(
-      document,
-      "<html><head><meta name='foo' content='bar'></head></html>",
-      { head: { style: "none", block: true } },
-    );
-
-    originalHead.outerHTML.should.equal("<head><title>Foo</title></head>");
-  });
-
   it("im-preserve preserves", function () {
     let parser = new DOMParser();
     let document = parser.parseFromString(
@@ -209,11 +193,11 @@ describe("Tests to ensure that the head tag merging works correctly", function (
     );
   });
 
-  it("can handle scripts with block mode with innerHTML morph", async function () {
+  it("can handle scripts with innerHTML morph", async function () {
     Idiomorph.morph(
       window.document,
       `<head><script src='../test/lib/fixture.js'></script></head>${window.document.body.outerHTML}`,
-      { morphStyle: "innerHTML", head: { block: true, style: "append" } },
+      { morphStyle: "innerHTML", head: { style: "append" } },
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");
@@ -223,11 +207,11 @@ describe("Tests to ensure that the head tag merging works correctly", function (
       .remove();
   });
 
-  it("can handle scripts with block mode with outerHTML morph", async function () {
+  it("can handle scripts with outerHTML morph", async function () {
     Idiomorph.morph(
       window.document,
       `<html><head><script src='../test/lib/fixture.js'></script></head>${window.document.body.outerHTML}</html>`,
-      { morphStyle: "outerHTML", head: { block: true, style: "append" } },
+      { morphStyle: "outerHTML", head: { style: "append" } },
     );
     await waitFor(() => window.hasOwnProperty("fixture"));
     window.fixture.should.equal("FIXTURE");

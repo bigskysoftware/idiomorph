@@ -2,7 +2,6 @@
  * @typedef {object} ConfigHead
  *
  * @property {'merge' | 'append' | 'morph' | 'none'} [style]
- * @property {boolean} [block]
  * @property {function(Element): boolean} [shouldPreserve]
  * @property {function(Element): boolean} [shouldReAppend]
  * @property {function(Element): boolean} [shouldRemove]
@@ -42,7 +41,6 @@
  * @typedef {object} ConfigHeadInternal
  *
  * @property {'merge' | 'append' | 'morph' | 'none'} style
- * @property {boolean} [block]
  * @property {(function(Element): boolean) | NoOp} shouldPreserve
  * @property {(function(Element): boolean) | NoOp} shouldReAppend
  * @property {(function(Element): boolean) | NoOp} shouldRemove
@@ -90,7 +88,7 @@
  * @param {Node} oldNode
  * @param {Node | HTMLCollection | Node[] | string | null} newContent
  * @param {Config} [config]
- * @returns {Promise<Node[]> | Node[]}
+ * @returns {Node[]}
  */
 
 // base IIFE to define idiomorph
@@ -156,30 +154,23 @@ var Idiomorph = (function () {
    * @param {Node} oldNode
    * @param {Node | HTMLCollection | Node[] | string | null} newContent
    * @param {Config} [config]
-   * @returns {Promise<Node[]> | Node[]}
+   * @returns {Node[]}
    */
   function morph(oldNode, newContent, config = {}) {
     const oldElt = normalizeElement(oldNode);
     const newNode = normalizeParent(newContent);
     const ctx = createMorphContext(oldElt, newNode, config);
 
-    return withHeadBlocking(
-      ctx,
-      oldElt,
-      newNode,
-      /** @param {MorphContext} ctx */ (ctx) => {
-        const morphedNodes = saveAndRestoreFocus(ctx, () => {
-          if (ctx.morphStyle === "innerHTML") {
-            morphChildren(ctx, oldElt, newNode);
-            return Array.from(oldElt.childNodes);
-          } else {
-            return morphOuterHTML(ctx, oldElt, newNode);
-          }
-        });
-        ctx.pantry.remove();
-        return morphedNodes;
-      },
-    );
+    const morphedNodes = saveAndRestoreFocus(ctx, () => {
+      if (ctx.morphStyle === "innerHTML") {
+        morphChildren(ctx, oldElt, newNode);
+        return Array.from(oldElt.childNodes);
+      } else {
+        return morphOuterHTML(ctx, oldElt, newNode);
+      }
+    });
+    ctx.pantry.remove();
+    return morphedNodes;
   }
 
   /**
@@ -861,41 +852,11 @@ var Idiomorph = (function () {
   // Head Management Functions
   //=============================================================================
   /**
-   * @param {MorphContext} ctx
-   * @param {Element} oldNode
-   * @param {Element} newNode
-   * @param {function} callback
-   * @returns {Node[] | Promise<Node[]>}
-   */
-  function withHeadBlocking(ctx, oldNode, newNode, callback) {
-    if (ctx.head.block && ctx.head.style !== "none") {
-      const oldHead = oldNode.querySelector("head");
-      const newHead = newNode.querySelector("head");
-      if (oldHead && newHead) {
-        const promises = handleHeadElement(oldHead, newHead, ctx);
-        // when head promises resolve, proceed ignoring the head tag
-        return Promise.all(promises).then(() => {
-          const newCtx = Object.assign(ctx, {
-            head: {
-              block: false,
-              style: "none",
-            },
-          });
-          return callback(newCtx);
-        });
-      }
-    }
-    // just proceed if we not head blocking
-    return callback(ctx);
-  }
-
-  /**
    *  The HEAD tag can be handled specially, either w/ a 'merge' or 'append' style
    *
    * @param {Element} oldHead
    * @param {Element} newHead
    * @param {MorphContext} ctx
-   * @returns {Promise<void>[]}
    */
   function handleHeadElement(oldHead, newHead, ctx) {
     let added = [];
@@ -946,7 +907,6 @@ var Idiomorph = (function () {
     // nodes to append to the head tag
     nodesToAppend.push(...srcToNewHeadNodes.values());
 
-    let promises = [];
     for (const newNode of nodesToAppend) {
       // TODO: This could theoretically be null, based on type
       let newElt = /** @type {ChildNode} */ (
@@ -954,19 +914,6 @@ var Idiomorph = (function () {
           .firstChild
       );
       if (ctx.callbacks.beforeNodeAdded(newElt) !== false) {
-        if (
-          ("href" in newElt && newElt.href) ||
-          ("src" in newElt && newElt.src)
-        ) {
-          /** @type {(result?: any) => void} */ let resolve;
-          let promise = new Promise(function (_resolve) {
-            resolve = _resolve;
-          });
-          newElt.addEventListener("load", function () {
-            resolve();
-          });
-          promises.push(promise);
-        }
         oldHead.appendChild(newElt);
         ctx.callbacks.afterNodeAdded(newElt);
         added.push(newElt);
@@ -987,7 +934,6 @@ var Idiomorph = (function () {
       kept: preserved,
       removed: removed,
     });
-    return promises;
   }
 
   //=============================================================================
