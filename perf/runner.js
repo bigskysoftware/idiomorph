@@ -4,6 +4,16 @@ import { chromium } from "playwright";
 
 let benchmarks = process.argv.slice(2);
 let versus;
+let options = "{}";
+
+benchmarks = benchmarks.filter((arg) => {
+  const match = arg.match(/^--options=(.*)$/);
+  if (match) {
+    options = match[1];
+    return false;
+  }
+  return true;
+});
 
 if (
   benchmarks[0] === "morphdom" ||
@@ -35,12 +45,12 @@ benchmarks.forEach((benchmark) => {
     benchmarks: [
       {
         name: `${benchmark}: ${versus}`,
-        url: `../perf/runner.html?using=${versus}&benchmark=${benchmark}`,
+        url: `../perf/runner.html?using=${versus}&benchmark=${benchmark}&options=${encodeURIComponent(options)}`,
         browser,
       },
       {
         name: `${benchmark}: src/idiomorph.js`,
-        url: `../perf/runner.html?using=idiomorph&benchmark=${benchmark}`,
+        url: `../perf/runner.html?using=idiomorph&benchmark=${benchmark}&options=${encodeURIComponent(options)}`,
         browser,
       },
     ],

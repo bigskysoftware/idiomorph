@@ -91,6 +91,7 @@ Idiomorph supports the following options:
 | `ignoreActive: false`         | If `true`, idiomorph will skip the active element                                                          | `Idiomorph.morph(..., {ignoreActive:true})`                              |
 | `ignoreActiveValue: false`    | If `true`, idiomorph will not update the active element's value                                            | `Idiomorph.morph(..., {ignoreActiveValue:true})`                         |
 | `restoreFocus: true`          | If `true`, idiomorph will attempt to restore any lost focus and selection state after the morph.           | `Idiomorph.morph(..., {restoreFocus:true})`                              |
+| `skipUnchanged: false`        | If `true`, idiomorph will not descend into subtrees that are already identical. See the [skipping unchanged content](#skipping-unchanged-content) section | `Idiomorph.morph(..., {skipUnchanged:true})`                             |
 | `head: {style: 'merge', ...}` | Allows you to control how the `head` tag is merged. See the [head](#the-head-tag) section for more details | `Idiomorph.morph(..., {head:{style:'merge'}})`                           |
 | `callbacks: {...}`            | Allows you to insert callbacks when events occur in the morph lifecycle. See the callback table below      | `Idiomorph.morph(..., {callbacks:{beforeNodeAdded:function(node){...}})` |
 
@@ -108,6 +109,18 @@ of the algorithm.
 | beforeNodeRemoved(node)                                   | Called before a node is removed from the DOM                                                                   | return false to not remove the node                |
 | afterNodeRemoved(node)                                    | Called after a node is removed from the DOM                                                                    | none                                               |
 | beforeAttributeUpdated(attributeName, node, mutationType) | Called before an attribute on an element is updated or removed (`mutationType` is either "update" or "remove") | return false to not update or remove the attribute |
+
+### Skipping unchanged content
+
+Most real-world morphs change only a small part of a large page. With `skipUnchanged: true`, idiomorph compares each pair of old and new elements with [`isEqualNode`](https://developer.mozilla.org/en-US/docs/Web/API/Node/isEqualNode) and, when they are identical, leaves the whole subtree alone instead of walking into it. On pages that mostly stay the same this makes morphs many times faster. On pages where most of the content changes between morphs, though, the extra comparisons can cost slightly more than they save, so the option is best suited to mostly-unchanged pages.
+
+Idiomorph's own morphing produces the same DOM with or without the option. What changes is what your callbacks see, and callbacks that rely on being called for every node can therefore behave differently:
+
+* `beforeNodeMorphed` and `afterNodeMorphed` are still called for the root of an unchanged subtree, so you can still veto it, but they are **not** called for its descendants. `beforeAttributeUpdated` is never called inside it either, since nothing changes.
+* Hidden state is respected: an `<input>`, `<textarea>` or `<option>` whose `value`, `checked` or `selected` property differs from its effective default (what parsing its markup would produce — an attribute-less checkbox legitimately has the value `on`, an untouched single-select has its first enabled option selected) is never skipped, nor are its ancestors, so it is synced exactly as without the option. `<template>` and `<head>` elements are never skipped either.
+* If a `beforeNodeMorphed` callback changes such hidden state on the two nodes it was handed, that is honoured. Changes it makes to *descendants* of those nodes are not: an unchanged subtree may already have been skipped by the time they would be visited, so such side effects can leave the DOM different from a morph without the option.
+
+The option is off by default in this release.
 
 ### The `head` tag
 
