@@ -698,6 +698,14 @@ var Idiomorph = (function () {
             if (ignoreAttribute(oldAttribute.name, oldElt, "remove", ctx)) {
               continue;
             }
+            if (
+              oldAttribute.name === "open" &&
+              oldElt instanceof HTMLDialogElement &&
+              newElt instanceof HTMLDialogElement
+            ) {
+              oldElt.close();
+              continue;
+            }
             oldElt.removeAttribute(oldAttribute.name);
           }
         }

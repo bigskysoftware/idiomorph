@@ -842,4 +842,39 @@ describe("Core morphing tests", function () {
       warn.called.should.equal(false);
     });
   });
+
+  describe("open dialog elements", function () {
+    beforeEach(function () {
+      clearWorkArea();
+    });
+
+    it("invokes HTMLDialogElement.close when removing [open] attribute", function () {
+      let html = "<dialog><h1>Foo</h1></dialog>";
+      let dialog = make(html);
+      getWorkArea().append(dialog);
+      dialog.showModal();
+      let close = sinon.spy(dialog, "close");
+      Idiomorph.morph(dialog, html);
+      dialog.open.should.equal(false, "removes [open] attribute");
+      close.calledOnce.should.equal(true, "invokes HTMLDialogElement.close()");
+    });
+
+    it("does not invoke HTMLDialogElement.close when cancelling the removal of the [open] attribute", function () {
+      let html = "<dialog><h1>Foo</h1></dialog>";
+      let dialog = make(html);
+      getWorkArea().append(dialog);
+      dialog.showModal();
+      let close = sinon.spy(dialog, "close");
+      Idiomorph.morph(dialog, html, {
+        callbacks: {
+          beforeAttributeUpdated: (attr, to, updatetype) => false,
+        },
+      });
+      dialog.open.should.equal(true, "retains [open] attribute");
+      close.called.should.equal(
+        false,
+        "does not invoke HTMLDialogElement.close()",
+      );
+    });
+  });
 });
